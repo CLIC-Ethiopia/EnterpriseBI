@@ -7,7 +7,8 @@ import {
 import { 
   ArrowUpRight, ArrowDownRight, MoreHorizontal, Bell, Search, Menu, Moon, Sun, 
   LayoutDashboard, Users, Database, Globe, Package, BadgeDollarSign, TrendingUp, Settings,
-  LogOut, X, Filter, Download, MessageSquare, Check, CheckCircle2, XCircle, Banknote, ShieldAlert, Calculator
+  LogOut, X, Filter, Download, MessageSquare, Check, CheckCircle2, XCircle, Banknote, ShieldAlert, Calculator,
+  Printer
 } from 'lucide-react';
 import CustomerPortal from './CustomerPortal';
 import DataAdminPortal from './DataAdminPortal';
@@ -148,18 +149,115 @@ const Dashboard: React.FC<DashboardProps> = ({
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex overflow-hidden transition-colors duration-300">
-      
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex overflow-hidden transition-colors duration-300 print:overflow-visible print:bg-white print:h-auto print:block">
+      <style>{`
+        @media print {
+          @page { margin: 0.5cm; size: landscape; }
+          
+          /* Essential Resets */
+          html, body, #root {
+            height: auto !important;
+            min-height: 0 !important;
+            overflow: visible !important;
+            background: white !important;
+          }
+
+          /* Hide Scrollbars in Print */
+          ::-webkit-scrollbar {
+            display: none;
+          }
+
+          /* Hide Sidebar and Interactive Elements */
+          aside, 
+          button, 
+          .no-print, 
+          header button, 
+          header input,
+          header .bg-gray-100,
+          header .text-gray-600 {
+            display: none !important;
+          }
+
+          /* Unset Flex constraints on wrappers to allow full height expansion */
+          div.flex.h-screen, 
+          div.flex.min-h-screen,
+          div.flex.overflow-hidden,
+          main.overflow-y-auto {
+            display: block !important;
+            height: auto !important;
+            overflow: visible !important;
+            width: 100% !important;
+          }
+          
+          /* Specific Wrapper Resets */
+          .flex-1.flex.flex-col.h-screen {
+             height: auto !important;
+             overflow: visible !important;
+          }
+
+          /* Header styling for print */
+          header {
+            position: relative !important;
+            padding: 10px 0 !important;
+            border-bottom: 2px solid #000 !important;
+            margin-bottom: 20px !important;
+            display: flex !important;
+            justify-content: space-between !important;
+            width: 100% !important;
+          }
+          
+          /* Ensure text is black */
+          h1, h2, h3, h4, p, span, td, th {
+            color: black !important;
+            text-shadow: none !important;
+          }
+          
+          /* Keep KPI trends visible but formatted */
+          .text-green-600, .text-red-600 {
+            color: black !important;
+            font-weight: bold;
+          }
+
+          /* Card Styling for Print */
+          div[class*="rounded-2xl"], div[class*="rounded-xl"], div[class*="bg-white"] {
+            box-shadow: none !important;
+            border: 1px solid #ccc !important;
+            break-inside: avoid;
+            page-break-inside: avoid;
+            background-color: white !important;
+            margin-bottom: 1rem !important;
+          }
+
+          /* Chart Containers */
+          .recharts-wrapper {
+            width: 100% !important;
+          }
+          .recharts-responsive-container {
+            min-height: 300px !important;
+          }
+          
+          /* Ensure Grid layouts work */
+          .grid {
+            display: grid !important;
+          }
+
+          /* Hide floating AI button */
+          button[class*="fixed bottom-6"] {
+            display: none !important;
+          }
+        }
+      `}</style>
+
       {/* Mobile Overlay */}
       {isSidebarOpen && (
         <div 
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden backdrop-blur-sm"
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden backdrop-blur-sm print:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
       {/* Sidebar Navigation */}
-      <aside className={`fixed lg:relative inset-y-0 left-0 w-72 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 z-50 transform transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'} flex flex-col`}>
+      <aside className={`fixed lg:relative inset-y-0 left-0 w-72 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 z-50 transform transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'} flex flex-col print:hidden`}>
         {/* Logo Area */}
         <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -265,29 +363,27 @@ const Dashboard: React.FC<DashboardProps> = ({
              </div>
           </div>
 
-        </nav>
-
-        {/* Sidebar Footer */}
-        <div className="p-4 border-t border-gray-100 dark:border-gray-700">
-           <button 
-             onClick={onLogout}
-             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors font-medium"
-           >
-             <LogOut className="w-5 h-5" />
-             <span>Sign Out</span>
-           </button>
-        </div>
+          {/* Sidebar Footer */}
+          <div className="p-4 border-t border-gray-100 dark:border-gray-700">
+             <button 
+               onClick={onLogout}
+               className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors font-medium"
+             >
+               <LogOut className="w-5 h-5" />
+               <span>Sign Out</span>
+             </button>
+          </div>
       </aside>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col h-screen overflow-hidden">
+      <div className="flex-1 flex flex-col h-screen overflow-hidden print:h-auto print:overflow-visible print:block">
         
         {/* Top Navigation Header */}
-        <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex justify-between items-center z-10">
+        <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex justify-between items-center z-10 print:border-none">
           <div className="flex items-center gap-4">
             <button 
               onClick={() => setSidebarOpen(true)}
-              className="p-2 -ml-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg lg:hidden"
+              className="p-2 -ml-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg lg:hidden print:hidden"
             >
               <Menu className="w-6 h-6 text-gray-600 dark:text-gray-300" />
             </button>
@@ -298,7 +394,7 @@ const Dashboard: React.FC<DashboardProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 print:hidden">
             <div className="hidden md:flex items-center bg-gray-100 dark:bg-gray-700 px-4 py-2 rounded-lg transition-colors">
               <Search className="w-4 h-4 text-gray-400 mr-2" />
               <input type="text" placeholder="Search data..." className="bg-transparent border-none outline-none text-sm w-48 text-gray-800 dark:text-gray-200 placeholder-gray-400" />
@@ -314,6 +410,14 @@ const Dashboard: React.FC<DashboardProps> = ({
             <button className="relative p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
               <Bell className="w-5 h-5 text-gray-600 dark:text-gray-400" />
               <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white dark:border-gray-800"></span>
+            </button>
+
+            <button 
+              onClick={() => window.print()}
+              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-gray-600 dark:text-gray-400 transition-colors"
+              title="Print Dashboard / Save as PDF"
+            >
+              <Printer className="w-5 h-5" />
             </button>
             
             <div className="h-6 w-px bg-gray-200 dark:bg-gray-700 mx-1"></div>
@@ -331,8 +435,8 @@ const Dashboard: React.FC<DashboardProps> = ({
         </header>
 
         {/* Dashboard Content */}
-        <main className="flex-1 overflow-y-auto p-6 lg:p-8">
-           <div className="max-w-7xl mx-auto space-y-8 pb-12">
+        <main className="flex-1 overflow-y-auto p-6 lg:p-8 print:overflow-visible print:h-auto print:block">
+           <div className="max-w-7xl mx-auto space-y-8 pb-12 print:max-w-none">
              
              {/* CONDITIONAL RENDERING: CUSTOMER PORTAL vs DATA ADMIN vs SYSTEM ADMIN vs ACCOUNTING vs STANDARD DASHBOARD */}
              {isCustomerView && department.customerData ? (
@@ -346,7 +450,7 @@ const Dashboard: React.FC<DashboardProps> = ({
              ) : (
                <>
                   {/* Header Actions */}
-                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 print:hidden">
                      <div>
                        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Overview</h2>
                        <p className="text-gray-500 dark:text-gray-400">Track key performance indicators and department metrics.</p>
@@ -367,12 +471,12 @@ const Dashboard: React.FC<DashboardProps> = ({
                   </div>
 
                   {/* KPI Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 print:grid-cols-4">
                     {department.kpis.map((kpi, index) => (
-                      <div key={index} className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition-all group relative">
+                      <div key={index} className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition-all group relative break-inside-avoid print:shadow-none print:border-gray-200">
                         <div className="flex justify-between items-start mb-4">
                           <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">{kpi.label}</h3>
-                          <div className="flex gap-1">
+                          <div className="flex gap-1 print:hidden">
                             {isGeneralManagement && (
                               <button 
                                 onClick={() => setActiveKpiComment(activeKpiComment === index ? null : index)}
@@ -395,7 +499,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                         
                         {/* Comment Popover */}
                         {activeKpiComment === index && (
-                          <div className="absolute top-full right-0 mt-2 w-64 bg-white dark:bg-gray-700 rounded-lg shadow-xl border border-gray-200 dark:border-gray-600 p-3 z-20">
+                          <div className="absolute top-full right-0 mt-2 w-64 bg-white dark:bg-gray-700 rounded-lg shadow-xl border border-gray-200 dark:border-gray-600 p-3 z-20 print:hidden">
                              <p className="text-xs font-semibold mb-2 text-gray-700 dark:text-gray-200">Manager Comment:</p>
                              <textarea 
                                 className="w-full text-sm p-2 border border-gray-300 dark:border-gray-500 rounded bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white mb-2 focus:ring-1 focus:ring-indigo-500 outline-none"
@@ -420,14 +524,14 @@ const Dashboard: React.FC<DashboardProps> = ({
                   </div>
 
                   {/* Charts Row */}
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 print:block">
                     {/* Main Chart */}
-                    <div className="lg:col-span-2 bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors">
+                    <div className="lg:col-span-2 bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors break-inside-avoid print:mb-6 print:shadow-none print:border-gray-200">
                       <div className="flex justify-between items-center mb-6">
                         <h3 className="text-lg font-bold text-gray-800 dark:text-white">
                           {isGeneralManagement ? "Company-Wide Performance" : "Performance Trends"}
                         </h3>
-                        <select className="bg-gray-50 dark:bg-gray-700 border-none text-sm rounded-lg px-3 py-1 text-gray-600 dark:text-gray-300 focus:ring-0">
+                        <select className="bg-gray-50 dark:bg-gray-700 border-none text-sm rounded-lg px-3 py-1 text-gray-600 dark:text-gray-300 focus:ring-0 print:hidden">
                           <option>Last 6 Months</option>
                           <option>This Year</option>
                         </select>
@@ -464,7 +568,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                     </div>
 
                     {/* Secondary Chart */}
-                    <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col transition-colors">
+                    <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col transition-colors break-inside-avoid print:mb-6 print:shadow-none print:border-gray-200">
                       <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-6">
                          {isGeneralManagement ? "Departmental Contribution" : "Distribution"}
                       </h3>
@@ -497,12 +601,12 @@ const Dashboard: React.FC<DashboardProps> = ({
                   </div>
 
                   {/* Advanced Analytics Row (Bar Chart & Table) */}
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 print:block">
                     {/* Comparison Bar Chart */}
-                    <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors">
+                    <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors break-inside-avoid print:mb-6 print:shadow-none print:border-gray-200">
                        <div className="flex justify-between items-center mb-6">
                           <h3 className="text-lg font-bold text-gray-800 dark:text-white">{department.barChartTitle}</h3>
-                          <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-gray-500">
+                          <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-gray-500 print:hidden">
                              <Download className="w-4 h-4" />
                           </button>
                        </div>
@@ -531,10 +635,10 @@ const Dashboard: React.FC<DashboardProps> = ({
                     </div>
 
                     {/* Summary Table */}
-                    <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors flex flex-col">
+                    <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors flex flex-col break-inside-avoid print:mb-6 print:shadow-none print:border-gray-200">
                        <div className="flex justify-between items-center mb-6">
                           <h3 className="text-lg font-bold text-gray-800 dark:text-white">{department.tableTitle}</h3>
-                          <button className="flex items-center gap-2 text-sm text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400">
+                          <button className="flex items-center gap-2 text-sm text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400 print:hidden">
                              <Filter className="w-4 h-4" />
                              Filter
                           </button>
@@ -563,7 +667,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                                      <td className="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">{row.value}</td>
                                      <td className="px-4 py-3">
                                         {isGeneralManagement ? (
-                                          <div className="flex items-center gap-2">
+                                          <div className="flex items-center gap-2 print:hidden">
                                             {approvedItems.has(row.id) ? (
                                               <span className="text-xs font-bold text-green-600 dark:text-green-400 flex items-center gap-1">
                                                 <CheckCircle2 className="w-4 h-4" /> Approved
@@ -606,15 +710,15 @@ const Dashboard: React.FC<DashboardProps> = ({
                             </tbody>
                          </table>
                        </div>
-                       <div className="mt-auto pt-4 text-center">
+                       <div className="mt-auto pt-4 text-center print:hidden">
                           <button className="text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:underline">View All Records</button>
                        </div>
                     </div>
                   </div>
 
                   {/* Bottom Section */}
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                     <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 print:block">
+                     <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors break-inside-avoid print:mb-6 print:shadow-none print:border-gray-200">
                         <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-4">Recent Activity</h3>
                         <div className="space-y-4">
                           {department.recentActivity.map((activity) => (
@@ -626,13 +730,13 @@ const Dashboard: React.FC<DashboardProps> = ({
                                 <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{activity.action}</p>
                                 <p className="text-xs text-gray-500 dark:text-gray-400">{activity.time}</p>
                               </div>
-                              <button className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300">View</button>
+                              <button className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 print:hidden">View</button>
                             </div>
                           ))}
                         </div>
                      </div>
 
-                     <div className={`bg-gradient-to-br from-${department.themeColor}-600 to-${department.themeColor}-800 p-6 rounded-2xl shadow-lg text-white relative overflow-hidden`}>
+                     <div className={`bg-gradient-to-br from-${department.themeColor}-600 to-${department.themeColor}-800 p-6 rounded-2xl shadow-lg text-white relative overflow-hidden break-inside-avoid print:hidden`}>
                         <div className="relative z-10">
                           <h3 className="text-xl font-bold mb-2">Quarterly Report Ready</h3>
                           <p className="text-white/80 mb-6 text-sm max-w-xs">The automated Q3 report for {department.name} has been generated and is ready for review.</p>
@@ -655,7 +759,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       {/* Floating Action Button for Mobile AI */}
       <button 
         onClick={onOpenAI}
-        className={`lg:hidden fixed bottom-6 right-6 w-14 h-14 bg-${department.themeColor}-600 text-white rounded-full shadow-lg flex items-center justify-center z-40 hover:scale-105 transition-transform`}
+        className={`lg:hidden fixed bottom-6 right-6 w-14 h-14 bg-${department.themeColor}-600 text-white rounded-full shadow-lg flex items-center justify-center z-40 hover:scale-105 transition-transform print:hidden`}
       >
         <img src="https://www.gstatic.com/lamda/images/sparkle_resting_v2_darkmode_2bdb7df2724e450073ede.gif" className="w-6 h-6" alt="AI" />
       </button>
