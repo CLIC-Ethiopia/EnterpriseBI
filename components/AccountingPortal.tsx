@@ -2,11 +2,11 @@ import React, { useState } from 'react';
 import { DepartmentData } from '../types';
 import { 
   Calculator, PieChart as PieIcon, TrendingUp, DollarSign, Calendar, Search, 
-  FileText, Sliders, ArrowRight, Plus, Download, RefreshCw
+  FileText, Sliders, ArrowRight, Plus, Download, RefreshCw, Activity, Layers, Scale
 } from 'lucide-react';
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
-  BarChart, Bar, Legend
+  BarChart, Bar, Legend, Cell, PieChart, Pie
 } from 'recharts';
 
 interface AccountingPortalProps {
@@ -31,6 +31,24 @@ const AccountingPortal: React.FC<AccountingPortalProps> = ({ data }) => {
     pricePerUnit: 250
   });
 
+  // DuPont Analysis State
+  const [dupontInputs, setDupontInputs] = useState({
+    netIncome: 320000,
+    revenue: 1450000,
+    assets: 2100000,
+    equity: 1200000
+  });
+
+  // Profit Sensitivity State
+  const [sensitivityInputs, setSensitivityInputs] = useState({
+    revenueGrowth: 0,
+    cogsIncrease: 0,
+    opexIncrease: 0,
+    baseRevenue: 1000000,
+    baseCOGS: 600000,
+    baseOpex: 200000
+  });
+
   const currentRatio = (ratioInputs.currentAssets / ratioInputs.currentLiabilities).toFixed(2);
   const quickRatio = ((ratioInputs.currentAssets - ratioInputs.inventory) / ratioInputs.currentLiabilities).toFixed(2);
   const cashRatio = (ratioInputs.cash / ratioInputs.currentLiabilities).toFixed(2);
@@ -38,12 +56,40 @@ const AccountingPortal: React.FC<AccountingPortalProps> = ({ data }) => {
   const breakevenUnits = Math.ceil(breakevenInputs.fixedCosts / (breakevenInputs.pricePerUnit - breakevenInputs.variableCostPerUnit));
   const breakevenRevenue = breakevenUnits * breakevenInputs.pricePerUnit;
 
+  // DuPont Calculations
+  const profitMargin = (dupontInputs.netIncome / dupontInputs.revenue) * 100;
+  const assetTurnover = dupontInputs.revenue / dupontInputs.assets;
+  const financialLeverage = dupontInputs.assets / dupontInputs.equity;
+  const roe = (profitMargin / 100) * assetTurnover * financialLeverage * 100;
+
+  // Sensitivity Calculations
+  const sensRevenue = sensitivityInputs.baseRevenue * (1 + sensitivityInputs.revenueGrowth / 100);
+  const sensCOGS = sensitivityInputs.baseCOGS * (1 + sensitivityInputs.cogsIncrease / 100);
+  const sensOpex = sensitivityInputs.baseOpex * (1 + sensitivityInputs.opexIncrease / 100);
+  const sensNetProfit = sensRevenue - sensCOGS - sensOpex;
+  const sensMargin = (sensNetProfit / sensRevenue) * 100;
+
   const accountingData = data.accountingData;
   const filteredLedger = accountingData?.ledger.filter(entry => 
     entry.description.toLowerCase().includes(ledgerSearch.toLowerCase()) || 
     entry.account.toLowerCase().includes(ledgerSearch.toLowerCase()) ||
     entry.id.toLowerCase().includes(ledgerSearch.toLowerCase())
   ) || [];
+
+  // Mock Data for Aging Analysis
+  const agingData = [
+    { range: '0-30 Days', Receivables: 45000, Payables: 32000 },
+    { range: '31-60 Days', Receivables: 28000, Payables: 15000 },
+    { range: '61-90 Days', Receivables: 12000, Payables: 8000 },
+    { range: '90+ Days', Receivables: 5000, Payables: 2000 },
+  ];
+
+  // Mock Data for Margins
+  const marginData = [
+    { name: 'Gross Margin', value: 42, color: '#10b981' },
+    { name: 'Op. Margin', value: 18, color: '#3b82f6' },
+    { name: 'Net Margin', value: 12, color: '#6366f1' },
+  ];
 
   return (
     <div className="space-y-6">
@@ -137,6 +183,60 @@ const AccountingPortal: React.FC<AccountingPortalProps> = ({ data }) => {
                  View Tax Calendar
               </button>
             </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+             {/* Aging Analysis */}
+             <div className="lg:col-span-2 bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
+                <div className="flex justify-between items-center mb-6">
+                   <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                     <Layers className="w-5 h-5 text-purple-500" /> Aging Analysis (AR/AP)
+                   </h3>
+                </div>
+                <div className="h-64">
+                   <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={agingData}>
+                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                         <XAxis dataKey="range" axisLine={false} tickLine={false} tick={{fill: '#9ca3af', fontSize: 12}} />
+                         <YAxis axisLine={false} tickLine={false} tick={{fill: '#9ca3af', fontSize: 12}} />
+                         <RechartsTooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                         <Legend />
+                         <Bar dataKey="Receivables" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                         <Bar dataKey="Payables" fill="#ef4444" radius={[4, 4, 0, 0]} />
+                      </BarChart>
+                   </ResponsiveContainer>
+                </div>
+             </div>
+
+             {/* Profitability Decomposition */}
+             <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-6">Profitability Margins</h3>
+                <div className="space-y-6">
+                   {marginData.map((margin, idx) => (
+                      <div key={idx} className="relative pt-1">
+                         <div className="flex mb-2 items-center justify-between">
+                            <div>
+                               <span className="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
+                                  {margin.name}
+                               </span>
+                            </div>
+                            <div className="text-right">
+                               <span className="text-sm font-bold inline-block text-gray-900 dark:text-white">
+                                  {margin.value}%
+                               </span>
+                            </div>
+                         </div>
+                         <div className="overflow-hidden h-2 mb-4 text-xs flex rounded bg-gray-200 dark:bg-gray-700">
+                            <div style={{ width: `${margin.value}%`, backgroundColor: margin.color }} className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center transition-all duration-500"></div>
+                         </div>
+                      </div>
+                   ))}
+                </div>
+                <div className="mt-4 p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl flex items-start gap-2">
+                   <Activity className="w-4 h-4 text-indigo-600 mt-1" />
+                   <p className="text-xs text-indigo-800 dark:text-indigo-300">Net margin is slightly below industry avg (14%). Review OPEX efficiency.</p>
+                </div>
+             </div>
           </div>
         </>
       )}
@@ -348,6 +448,100 @@ const AccountingPortal: React.FC<AccountingPortalProps> = ({ data }) => {
                <p className="text-xs text-gray-400 mt-4 text-center">
                   *Calculated as Fixed Costs / (Price - Variable Cost)
                </p>
+            </div>
+
+            {/* DuPont ROE Analysis */}
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
+               <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                     <Scale className="w-5 h-5 text-emerald-600" /> DuPont ROE Decomposer
+                  </h3>
+               </div>
+               <div className="grid grid-cols-2 gap-4 mb-6">
+                  <div>
+                     <label className="text-xs font-semibold text-gray-500 uppercase">Net Income</label>
+                     <input type="number" className="w-full mt-1 px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white outline-none" 
+                       value={dupontInputs.netIncome} onChange={e => setDupontInputs({...dupontInputs, netIncome: Number(e.target.value)})} />
+                  </div>
+                  <div>
+                     <label className="text-xs font-semibold text-gray-500 uppercase">Revenue</label>
+                     <input type="number" className="w-full mt-1 px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white outline-none" 
+                       value={dupontInputs.revenue} onChange={e => setDupontInputs({...dupontInputs, revenue: Number(e.target.value)})} />
+                  </div>
+                  <div>
+                     <label className="text-xs font-semibold text-gray-500 uppercase">Total Assets</label>
+                     <input type="number" className="w-full mt-1 px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white outline-none" 
+                       value={dupontInputs.assets} onChange={e => setDupontInputs({...dupontInputs, assets: Number(e.target.value)})} />
+                  </div>
+                  <div>
+                     <label className="text-xs font-semibold text-gray-500 uppercase">Avg Equity</label>
+                     <input type="number" className="w-full mt-1 px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white outline-none" 
+                       value={dupontInputs.equity} onChange={e => setDupontInputs({...dupontInputs, equity: Number(e.target.value)})} />
+                  </div>
+               </div>
+               <div className="grid grid-cols-3 gap-2 bg-emerald-50 dark:bg-emerald-900/20 p-4 rounded-xl text-center">
+                  <div className="border-r border-emerald-200 dark:border-emerald-800 pr-2">
+                     <p className="text-xs text-gray-500 mb-1">Profit Margin</p>
+                     <p className="font-bold text-emerald-700 dark:text-emerald-400">{profitMargin.toFixed(1)}%</p>
+                  </div>
+                  <div className="border-r border-emerald-200 dark:border-emerald-800 px-2">
+                     <p className="text-xs text-gray-500 mb-1">Asset Turnover</p>
+                     <p className="font-bold text-emerald-700 dark:text-emerald-400">{assetTurnover.toFixed(2)}x</p>
+                  </div>
+                  <div className="pl-2">
+                     <p className="text-xs text-gray-500 mb-1">Fin. Leverage</p>
+                     <p className="font-bold text-emerald-700 dark:text-emerald-400">{financialLeverage.toFixed(2)}</p>
+                  </div>
+               </div>
+               <div className="mt-4 flex justify-between items-center bg-white dark:bg-gray-700 p-3 rounded-lg border border-gray-200 dark:border-gray-600">
+                  <span className="font-bold text-gray-900 dark:text-white">Return on Equity (ROE)</span>
+                  <span className="text-xl font-extrabold text-emerald-600">{roe.toFixed(2)}%</span>
+               </div>
+            </div>
+
+            {/* Profit Scenario Modeler */}
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
+               <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                     <Activity className="w-5 h-5 text-purple-600" /> Sensitivity Analysis
+                  </h3>
+               </div>
+               <div className="space-y-6">
+                  <div>
+                     <div className="flex justify-between text-xs font-semibold text-gray-500 mb-2">
+                        <span>REVENUE GROWTH</span>
+                        <span className="text-purple-600">{sensitivityInputs.revenueGrowth > 0 ? '+' : ''}{sensitivityInputs.revenueGrowth}%</span>
+                     </div>
+                     <input type="range" min="-20" max="20" step="1" className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                       value={sensitivityInputs.revenueGrowth} onChange={e => setSensitivityInputs({...sensitivityInputs, revenueGrowth: Number(e.target.value)})} />
+                  </div>
+                  <div>
+                     <div className="flex justify-between text-xs font-semibold text-gray-500 mb-2">
+                        <span>COGS INCREASE</span>
+                        <span className="text-red-500">{sensitivityInputs.cogsIncrease > 0 ? '+' : ''}{sensitivityInputs.cogsIncrease}%</span>
+                     </div>
+                     <input type="range" min="-10" max="20" step="1" className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                       value={sensitivityInputs.cogsIncrease} onChange={e => setSensitivityInputs({...sensitivityInputs, cogsIncrease: Number(e.target.value)})} />
+                  </div>
+                  <div>
+                     <div className="flex justify-between text-xs font-semibold text-gray-500 mb-2">
+                        <span>OPEX VARIANCE</span>
+                        <span className="text-orange-500">{sensitivityInputs.opexIncrease > 0 ? '+' : ''}{sensitivityInputs.opexIncrease}%</span>
+                     </div>
+                     <input type="range" min="-20" max="20" step="1" className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                       value={sensitivityInputs.opexIncrease} onChange={e => setSensitivityInputs({...sensitivityInputs, opexIncrease: Number(e.target.value)})} />
+                  </div>
+               </div>
+               <div className="mt-8 bg-gray-50 dark:bg-gray-900/50 p-4 rounded-xl flex justify-between items-end">
+                  <div>
+                     <p className="text-xs text-gray-500 mb-1">Projected Net Profit</p>
+                     <p className="text-2xl font-bold text-gray-900 dark:text-white">Bir {sensNetProfit.toLocaleString(undefined, {maximumFractionDigits: 0})}</p>
+                  </div>
+                  <div className="text-right">
+                     <p className="text-xs text-gray-500 mb-1">Est. Net Margin</p>
+                     <p className={`font-bold ${sensMargin >= 10 ? 'text-green-600' : 'text-orange-600'}`}>{sensMargin.toFixed(1)}%</p>
+                  </div>
+               </div>
             </div>
          </div>
       )}
