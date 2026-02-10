@@ -1,0 +1,373 @@
+import React, { useState } from 'react';
+import { CustomerSpecificData, Product, CartItem, Order } from '../types';
+import { 
+  ShoppingBag, CreditCard, Clock, Package, CheckCircle, Truck, 
+  Search, Filter, Plus, Minus, X, ChevronRight, FileText, Info
+} from 'lucide-react';
+
+interface CustomerPortalProps {
+  data: CustomerSpecificData;
+}
+
+const CustomerPortal: React.FC<CustomerPortalProps> = ({ data }) => {
+  const [activeTab, setActiveTab] = useState<'shop' | 'orders' | 'tracking'>('shop');
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
+  const [orderSuccess, setOrderSuccess] = useState(false);
+
+  // Cart Logic
+  const addToCart = (product: Product) => {
+    setCart(prev => {
+      const existing = prev.find(item => item.id === product.id);
+      if (existing) {
+        return prev.map(item => item.id === product.id ? {...item, cartQuantity: item.cartQuantity + 1} : item);
+      }
+      return [...prev, {...product, cartQuantity: 1}];
+    });
+    setIsCartOpen(true);
+  };
+
+  const removeFromCart = (id: string) => {
+    setCart(prev => prev.filter(item => item.id !== id));
+  };
+
+  const updateQuantity = (id: string, delta: number) => {
+    setCart(prev => prev.map(item => {
+      if (item.id === id) {
+        const newQty = Math.max(1, item.cartQuantity + delta);
+        return {...item, cartQuantity: newQty};
+      }
+      return item;
+    }));
+  };
+
+  const cartTotal = cart.reduce((sum, item) => sum + (item.price * item.cartQuantity), 0);
+
+  const handleCheckout = () => {
+    setIsOrderModalOpen(true);
+    setIsCartOpen(false);
+  };
+
+  const submitOrder = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Simulate API call
+    setTimeout(() => {
+      setOrderSuccess(true);
+      setCart([]);
+      setTimeout(() => {
+        setIsOrderModalOpen(false);
+        setOrderSuccess(false);
+      }, 2000);
+    }, 1000);
+  };
+
+  return (
+    <div className="space-y-6 relative">
+      
+      {/* Top Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="bg-gradient-to-br from-blue-600 to-blue-800 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
+          <div className="relative z-10">
+            <p className="text-blue-200 text-sm font-medium mb-1">Available Credit</p>
+            <h3 className="text-3xl font-bold">Bir {data.availableCredit.toLocaleString()}</h3>
+            <div className="mt-4 flex items-center text-xs text-blue-100 bg-white/10 w-fit px-2 py-1 rounded">
+              <CreditCard className="w-3 h-3 mr-1" />
+              Limit: Bir {data.creditLimit.toLocaleString()}
+            </div>
+          </div>
+          <div className="absolute right-0 top-0 opacity-10 transform translate-x-4 -translate-y-4">
+             <CreditCard className="w-32 h-32" />
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="text-gray-500 dark:text-gray-400 text-sm font-medium mb-1">Outstanding Balance</p>
+              <h3 className="text-3xl font-bold text-gray-900 dark:text-white">Bir {data.outstandingBalance.toLocaleString()}</h3>
+            </div>
+            <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
+              <Clock className="w-6 h-6 text-orange-600 dark:text-orange-400" />
+            </div>
+          </div>
+          <p className="text-xs text-gray-400 mt-4">Due within 30 days</p>
+        </div>
+
+        <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="text-gray-500 dark:text-gray-400 text-sm font-medium mb-1">Account Status</p>
+              <h3 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-500 to-yellow-600">{data.loyaltyTier}</h3>
+            </div>
+            <div className="p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg">
+              <CheckCircle className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
+            </div>
+          </div>
+          <p className="text-xs text-green-600 dark:text-green-400 mt-4 font-medium">Eligible for 2% bulk discount</p>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex space-x-1 border-b border-gray-200 dark:border-gray-700">
+        <button 
+          onClick={() => setActiveTab('shop')}
+          className={`px-6 py-3 text-sm font-medium rounded-t-lg transition-colors ${activeTab === 'shop' ? 'bg-white dark:bg-gray-800 border-x border-t border-gray-200 dark:border-gray-700 text-blue-600 dark:text-blue-400' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'}`}
+        >
+          Product Catalog
+        </button>
+        <button 
+          onClick={() => setActiveTab('orders')}
+          className={`px-6 py-3 text-sm font-medium rounded-t-lg transition-colors ${activeTab === 'orders' ? 'bg-white dark:bg-gray-800 border-x border-t border-gray-200 dark:border-gray-700 text-blue-600 dark:text-blue-400' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'}`}
+        >
+          Order History
+        </button>
+      </div>
+
+      {/* Content Area */}
+      <div className="min-h-[400px]">
+        {activeTab === 'shop' && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {data.products.map(product => (
+              <div key={product.id} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden group hover:shadow-md transition-all">
+                <div className="h-40 w-full overflow-hidden relative">
+                   <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                   {product.stockStatus === 'Low Stock' && (
+                     <span className="absolute top-2 right-2 bg-orange-500 text-white text-xs px-2 py-1 rounded-full font-medium">Low Stock</span>
+                   )}
+                   {product.stockStatus === 'Out of Stock' && (
+                     <span className="absolute top-2 right-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full font-medium">Out of Stock</span>
+                   )}
+                </div>
+                <div className="p-4">
+                  <div className="flex justify-between items-start mb-2">
+                    <span className="text-xs font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded">{product.category}</span>
+                    <span className="text-xs text-gray-400">{product.id}</span>
+                  </div>
+                  <h4 className="font-bold text-gray-900 dark:text-white mb-1 line-clamp-1">{product.name}</h4>
+                  <p className="text-gray-500 dark:text-gray-400 text-sm mb-4 line-clamp-2">{product.description}</p>
+                  
+                  <div className="flex justify-between items-center mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+                    <div>
+                      <span className="text-lg font-bold text-gray-900 dark:text-white">Bir {product.price}</span>
+                      <span className="text-xs text-gray-400 ml-1">/ {product.unit.split(' ')[0]}</span>
+                    </div>
+                    <div className="flex gap-2">
+                       <button onClick={() => setSelectedProduct(product)} className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                          <Info className="w-5 h-5" />
+                       </button>
+                       <button 
+                         onClick={() => addToCart(product)}
+                         disabled={product.stockStatus === 'Out of Stock'}
+                         className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 dark:disabled:bg-gray-700 text-white p-2 rounded-lg transition-colors"
+                       >
+                          <Plus className="w-5 h-5" />
+                       </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {activeTab === 'orders' && (
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+             <table className="w-full text-sm text-left">
+                <thead className="bg-gray-50 dark:bg-gray-700/50 text-gray-500 dark:text-gray-400">
+                  <tr>
+                    <th className="px-6 py-4 font-medium">Order ID</th>
+                    <th className="px-6 py-4 font-medium">Date</th>
+                    <th className="px-6 py-4 font-medium">Status</th>
+                    <th className="px-6 py-4 font-medium">Items</th>
+                    <th className="px-6 py-4 font-medium">PO Number</th>
+                    <th className="px-6 py-4 font-medium text-right">Total</th>
+                    <th className="px-6 py-4 font-medium"></th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                   {data.orders.map(order => (
+                     <tr key={order.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
+                       <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">{order.id}</td>
+                       <td className="px-6 py-4 text-gray-500 dark:text-gray-400">{order.date}</td>
+                       <td className="px-6 py-4">
+                         <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                           order.status === 'Delivered' ? 'bg-green-100 text-green-700' :
+                           order.status === 'Processing' ? 'bg-blue-100 text-blue-700' :
+                           order.status === 'Shipped' ? 'bg-purple-100 text-purple-700' :
+                           'bg-gray-100 text-gray-700'
+                         }`}>
+                           {order.status}
+                         </span>
+                       </td>
+                       <td className="px-6 py-4 text-gray-500 dark:text-gray-400">{order.items} Items</td>
+                       <td className="px-6 py-4 text-gray-500 dark:text-gray-400">{order.poNumber}</td>
+                       <td className="px-6 py-4 text-right font-medium text-gray-900 dark:text-white">Bir {order.total.toLocaleString()}</td>
+                       <td className="px-6 py-4 text-right">
+                         <button className="text-blue-600 hover:text-blue-800 dark:text-blue-400 text-xs font-medium flex items-center justify-end gap-1">
+                           Details <ChevronRight className="w-3 h-3" />
+                         </button>
+                       </td>
+                     </tr>
+                   ))}
+                </tbody>
+             </table>
+          </div>
+        )}
+      </div>
+
+      {/* Cart Drawer */}
+      <div className={`fixed inset-y-0 right-0 w-96 bg-white dark:bg-gray-800 shadow-2xl transform transition-transform duration-300 z-50 flex flex-col ${isCartOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+         <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-900">
+            <div className="flex items-center gap-2">
+               <ShoppingBag className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+               <h3 className="font-bold text-gray-900 dark:text-white">Shopping Cart</h3>
+            </div>
+            <button onClick={() => setIsCartOpen(false)} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+         </div>
+         
+         <div className="flex-1 overflow-y-auto p-6 space-y-4">
+            {cart.length === 0 ? (
+               <div className="text-center py-10 text-gray-400">
+                  <Package className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                  <p>Your cart is empty.</p>
+               </div>
+            ) : (
+               cart.map(item => (
+                 <div key={item.id} className="flex gap-4">
+                    <img src={item.image} className="w-16 h-16 rounded-lg object-cover bg-gray-100" alt="" />
+                    <div className="flex-1">
+                       <h4 className="text-sm font-medium text-gray-900 dark:text-white line-clamp-1">{item.name}</h4>
+                       <p className="text-xs text-gray-500 mb-2">{item.unit}</p>
+                       <div className="flex justify-between items-center">
+                          <div className="flex items-center border border-gray-200 dark:border-gray-600 rounded">
+                             <button onClick={() => updateQuantity(item.id, -1)} className="px-2 py-1 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700"><Minus className="w-3 h-3" /></button>
+                             <span className="px-2 text-sm text-gray-900 dark:text-white">{item.cartQuantity}</span>
+                             <button onClick={() => updateQuantity(item.id, 1)} className="px-2 py-1 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700"><Plus className="w-3 h-3" /></button>
+                          </div>
+                          <span className="text-sm font-bold text-gray-900 dark:text-white">Bir {(item.price * item.cartQuantity).toLocaleString()}</span>
+                       </div>
+                    </div>
+                 </div>
+               ))
+            )}
+         </div>
+
+         <div className="p-6 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+            <div className="flex justify-between items-center mb-4">
+               <span className="text-gray-500">Subtotal</span>
+               <span className="text-xl font-bold text-gray-900 dark:text-white">Bir {cartTotal.toLocaleString()}</span>
+            </div>
+            <button 
+              onClick={handleCheckout}
+              disabled={cart.length === 0}
+              className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+               Request Order
+            </button>
+         </div>
+      </div>
+
+      {/* Product Details Modal */}
+      {selectedProduct && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+           <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-2xl w-full p-6 relative">
+              <button onClick={() => setSelectedProduct(null)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><X className="w-6 h-6" /></button>
+              <div className="flex flex-col md:flex-row gap-6">
+                 <div className="w-full md:w-1/2">
+                    <img src={selectedProduct.image} className="w-full h-64 object-cover rounded-xl" alt={selectedProduct.name} />
+                 </div>
+                 <div className="w-full md:w-1/2">
+                    <span className="text-blue-600 text-sm font-bold tracking-wide uppercase mb-2 block">{selectedProduct.category}</span>
+                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{selectedProduct.name}</h2>
+                    <p className="text-gray-500 dark:text-gray-400 mb-4">{selectedProduct.description}</p>
+                    
+                    <div className="space-y-2 mb-6">
+                       {selectedProduct.specs.map((spec, i) => (
+                          <div key={i} className="flex justify-between py-1 border-b border-gray-100 dark:border-gray-700 last:border-0">
+                             <span className="text-sm text-gray-500">{spec.label}</span>
+                             <span className="text-sm font-medium text-gray-900 dark:text-white">{spec.value}</span>
+                          </div>
+                       ))}
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                       <span className="text-2xl font-bold text-gray-900 dark:text-white">Bir {selectedProduct.price}</span>
+                       <button 
+                         onClick={() => { addToCart(selectedProduct); setSelectedProduct(null); }}
+                         className="bg-blue-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-700"
+                       >
+                          Add to Cart
+                       </button>
+                    </div>
+                 </div>
+              </div>
+           </div>
+        </div>
+      )}
+
+      {/* Checkout Modal */}
+      {isOrderModalOpen && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+           <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-lg w-full p-8 relative">
+              {orderSuccess ? (
+                 <div className="text-center py-8">
+                    <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                       <CheckCircle className="w-8 h-8" />
+                    </div>
+                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Order Request Sent!</h2>
+                    <p className="text-gray-500">Your account manager will review and confirm your PO shortly.</p>
+                 </div>
+              ) : (
+                 <>
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Submit Order Request</h2>
+                  <form onSubmit={submitOrder} className="space-y-4">
+                     <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Purchase Order (PO) Number</label>
+                        <input type="text" required className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g. PO-9923" />
+                     </div>
+                     <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Shipping Address</label>
+                        <select className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent text-gray-900 dark:text-white outline-none">
+                           <option>Main Warehouse - New York, NY</option>
+                           <option>Distribution Center - Chicago, IL</option>
+                        </select>
+                     </div>
+                     <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Additional Notes</label>
+                        <textarea className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none" rows={3}></textarea>
+                     </div>
+                     
+                     <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg flex justify-between items-center">
+                        <span className="font-medium text-gray-700 dark:text-gray-300">Total Amount</span>
+                        <span className="text-xl font-bold text-blue-600 dark:text-blue-400">Bir {cartTotal.toLocaleString()}</span>
+                     </div>
+
+                     <div className="flex gap-3 pt-4">
+                        <button type="button" onClick={() => setIsOrderModalOpen(false)} className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-gray-700">Cancel</button>
+                        <button type="submit" className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 shadow-lg shadow-blue-200 dark:shadow-none">Submit Request</button>
+                     </div>
+                  </form>
+                 </>
+              )}
+           </div>
+        </div>
+      )}
+
+      {/* Floating Cart Button */}
+      {!isCartOpen && cart.length > 0 && (
+        <button 
+          onClick={() => setIsCartOpen(true)}
+          className="fixed bottom-6 right-6 lg:right-12 z-40 bg-blue-600 text-white p-4 rounded-full shadow-lg hover:scale-105 transition-transform flex items-center gap-2"
+        >
+           <ShoppingBag className="w-6 h-6" />
+           <span className="font-bold">{cart.length}</span>
+        </button>
+      )}
+
+    </div>
+  );
+};
+
+export default CustomerPortal;
