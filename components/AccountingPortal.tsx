@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { DepartmentData } from '../types';
+import { DepartmentData, LedgerEntry } from '../types';
 import { 
   Calculator, PieChart as PieIcon, TrendingUp, DollarSign, Calendar, Search, 
-  FileText, Sliders, ArrowRight, Plus, Download, RefreshCw, Activity, Layers, Scale
+  FileText, Sliders, ArrowRight, Plus, Download, RefreshCw, Activity, Layers, Scale, X
 } from 'lucide-react';
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
@@ -17,6 +17,18 @@ const AccountingPortal: React.FC<AccountingPortalProps> = ({ data }) => {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'ledger' | 'analysis'>('dashboard');
   const [ledgerSearch, setLedgerSearch] = useState('');
   
+  // Local state for ledger to allow adding new entries
+  const [localLedger, setLocalLedger] = useState<LedgerEntry[]>(data.accountingData?.ledger || []);
+  const [isEntryModalOpen, setIsEntryModalOpen] = useState(false);
+  const [newEntry, setNewEntry] = useState<Partial<LedgerEntry>>({
+    date: new Date().toISOString().split('T')[0],
+    description: '',
+    account: '',
+    type: 'Debit',
+    amount: 0,
+    status: 'Pending'
+  });
+
   // Analysis Tool States
   const [ratioInputs, setRatioInputs] = useState({
     currentAssets: 1250000,
@@ -70,11 +82,38 @@ const AccountingPortal: React.FC<AccountingPortalProps> = ({ data }) => {
   const sensMargin = (sensNetProfit / sensRevenue) * 100;
 
   const accountingData = data.accountingData;
-  const filteredLedger = accountingData?.ledger.filter(entry => 
+  
+  // Use localLedger instead of props data for filtering
+  const filteredLedger = localLedger.filter(entry => 
     entry.description.toLowerCase().includes(ledgerSearch.toLowerCase()) || 
     entry.account.toLowerCase().includes(ledgerSearch.toLowerCase()) ||
     entry.id.toLowerCase().includes(ledgerSearch.toLowerCase())
-  ) || [];
+  );
+
+  const handleAddEntry = (e: React.FormEvent) => {
+    e.preventDefault();
+    const entry: LedgerEntry = {
+      id: `JE-${Math.floor(1000 + Math.random() * 9000)}`, // Generate random 4-digit ID
+      date: newEntry.date || '',
+      description: newEntry.description || '',
+      account: newEntry.account || '',
+      type: newEntry.type as 'Debit' | 'Credit',
+      amount: Number(newEntry.amount),
+      status: newEntry.status as 'Posted' | 'Pending' | 'Flagged'
+    };
+
+    setLocalLedger([entry, ...localLedger]);
+    setIsEntryModalOpen(false);
+    // Reset form
+    setNewEntry({
+      date: new Date().toISOString().split('T')[0],
+      description: '',
+      account: '',
+      type: 'Debit',
+      amount: 0,
+      status: 'Pending'
+    });
+  };
 
   // Mock Data for Aging Analysis
   const agingData = [
@@ -258,7 +297,10 @@ const AccountingPortal: React.FC<AccountingPortalProps> = ({ data }) => {
                <button className="px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors">
                   <Download className="w-4 h-4" /> Export CSV
                </button>
-               <button className="px-3 py-2 bg-cyan-600 text-white rounded-lg text-sm flex items-center gap-2 hover:bg-cyan-700 transition-colors shadow-lg shadow-cyan-200 dark:shadow-none">
+               <button 
+                  onClick={() => setIsEntryModalOpen(true)}
+                  className="px-3 py-2 bg-cyan-600 text-white rounded-lg text-sm flex items-center gap-2 hover:bg-cyan-700 transition-colors shadow-lg shadow-cyan-200 dark:shadow-none"
+               >
                   <Plus className="w-4 h-4" /> Manual Entry
                </button>
              </div>
@@ -544,6 +586,107 @@ const AccountingPortal: React.FC<AccountingPortalProps> = ({ data }) => {
                </div>
             </div>
          </div>
+      )}
+
+      {/* Manual Entry Modal */}
+      {isEntryModalOpen && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-lg w-full p-8 shadow-2xl border border-gray-100 dark:border-gray-700">
+            <div className="flex justify-between items-center mb-6">
+               <h3 className="text-xl font-bold text-gray-900 dark:text-white">New Ledger Entry</h3>
+               <button onClick={() => setIsEntryModalOpen(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                 <X className="w-5 h-5" />
+               </button>
+            </div>
+            <form onSubmit={handleAddEntry} className="space-y-4">
+               <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Date</label>
+                  <input 
+                    type="date" 
+                    required
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent text-gray-900 dark:text-white focus:ring-2 focus:ring-cyan-500 outline-none"
+                    value={newEntry.date}
+                    onChange={(e) => setNewEntry({...newEntry, date: e.target.value})}
+                  />
+               </div>
+               <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+                  <input 
+                    type="text" 
+                    required
+                    placeholder="e.g. Office Supplies Payment"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent text-gray-900 dark:text-white focus:ring-2 focus:ring-cyan-500 outline-none"
+                    value={newEntry.description}
+                    onChange={(e) => setNewEntry({...newEntry, description: e.target.value})}
+                  />
+               </div>
+               <div className="grid grid-cols-2 gap-4">
+                 <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Account</label>
+                    <input 
+                      type="text" 
+                      required
+                      placeholder="e.g. Cash"
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent text-gray-900 dark:text-white focus:ring-2 focus:ring-cyan-500 outline-none"
+                      value={newEntry.account}
+                      onChange={(e) => setNewEntry({...newEntry, account: e.target.value})}
+                    />
+                 </div>
+                 <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Amount</label>
+                    <input 
+                      type="number" 
+                      required
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent text-gray-900 dark:text-white focus:ring-2 focus:ring-cyan-500 outline-none"
+                      value={newEntry.amount}
+                      onChange={(e) => setNewEntry({...newEntry, amount: Number(e.target.value)})}
+                    />
+                 </div>
+               </div>
+               <div className="grid grid-cols-2 gap-4">
+                 <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Type</label>
+                    <select 
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-cyan-500 outline-none"
+                      value={newEntry.type}
+                      onChange={(e) => setNewEntry({...newEntry, type: e.target.value as any})}
+                    >
+                      <option value="Debit">Debit</option>
+                      <option value="Credit">Credit</option>
+                    </select>
+                 </div>
+                 <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Status</label>
+                    <select 
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-cyan-500 outline-none"
+                      value={newEntry.status}
+                      onChange={(e) => setNewEntry({...newEntry, status: e.target.value as any})}
+                    >
+                      <option value="Posted">Posted</option>
+                      <option value="Pending">Pending</option>
+                      <option value="Flagged">Flagged</option>
+                    </select>
+                 </div>
+               </div>
+               
+               <div className="pt-6 flex gap-3">
+                  <button 
+                    type="button" 
+                    onClick={() => setIsEntryModalOpen(false)} 
+                    className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    type="submit" 
+                    className="flex-1 px-4 py-2 bg-cyan-600 text-white font-medium rounded-lg hover:bg-cyan-700 transition-colors shadow-lg shadow-cyan-200 dark:shadow-none"
+                  >
+                    Add Entry
+                  </button>
+               </div>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   );

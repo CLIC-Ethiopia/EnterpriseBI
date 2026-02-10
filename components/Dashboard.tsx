@@ -48,6 +48,22 @@ const Dashboard: React.FC<DashboardProps> = ({
   const isSystemAdmin = department.id === DepartmentType.SYSTEM_ADMIN;
   const isAccounting = department.id === DepartmentType.ACCOUNTING;
 
+  // Determine current user based on department for display purposes
+  const currentUser = (() => {
+    switch(department.id) {
+      case DepartmentType.GENERAL: return { name: "Frehun Adefris", role: "Director" };
+      case DepartmentType.FINANCE: return { name: "Belete Chala", role: "CFO" };
+      case DepartmentType.ACCOUNTING: return { name: "Anteneh Aseres", role: "Sr. Accountant" };
+      case DepartmentType.SALES: return { name: "Tigist Bekele", role: "Sales Manager" };
+      case DepartmentType.INVENTORY: return { name: "Dawit Kebede", role: "Warehouse Mgr" };
+      case DepartmentType.HR: return { name: "Hanna Alemu", role: "HR Director" };
+      case DepartmentType.SYSTEM_ADMIN: return { name: "Abel Girma", role: "Sys Admin" };
+      case DepartmentType.DATA_ADMIN: return { name: "Sara Tefera", role: "Data Analyst" };
+      case DepartmentType.CUSTOMER: return { name: "Solomon Tesfaye", role: "Partner" };
+      default: return { name: "Frehun Adefris", role: "Director" };
+    }
+  })();
+
   // Dynamic color selection based on department theme
   const getThemeColor = (opacity = 1) => {
     const colors: Record<string, string> = {
@@ -304,11 +320,11 @@ const Dashboard: React.FC<DashboardProps> = ({
             
             <div className="flex items-center gap-3">
                <div className="text-right hidden sm:block">
-                 <p className="text-sm font-medium text-gray-900 dark:text-white">Alex Morgan</p>
-                 <p className="text-xs text-gray-500 dark:text-gray-400">Director</p>
+                 <p className="text-sm font-medium text-gray-900 dark:text-white">{currentUser.name}</p>
+                 <p className="text-xs text-gray-500 dark:text-gray-400">{currentUser.role}</p>
                </div>
-               <div className="w-9 h-9 rounded-full bg-gray-200 dark:bg-gray-700 border-2 border-white dark:border-gray-800 shadow-sm overflow-hidden">
-                <img src={`https://picsum.photos/seed/user/100/100`} alt="User" className="w-full h-full object-cover" />
+               <div className="w-9 h-9 rounded-full bg-gray-200 dark:bg-gray-700 border-2 border-white dark:border-gray-800 shadow-sm overflow-hidden flex items-center justify-center font-bold text-gray-600 dark:text-gray-300">
+                  {currentUser.name.charAt(0)}
                </div>
             </div>
           </div>

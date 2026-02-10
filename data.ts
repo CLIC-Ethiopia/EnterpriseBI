@@ -310,18 +310,21 @@ export const DEPARTMENTS: DepartmentData[] = [
     summaryTableData: [],
     systemAdminData: {
       users: [
-        { id: 1, name: "Alex Morgan", role: "Director", department: "Executive", employeeId: "EMP-8821", pin: "1234", status: "Active", lastLogin: "Today, 09:15 AM", email: "a.morgan@globaltrade.co" },
-        { id: 2, name: "Sarah Connor", role: "Manager", department: "Warehouse", employeeId: "EMP-9001", pin: "4321", status: "Active", lastLogin: "Yesterday, 04:20 PM", email: "s.connor@globaltrade.co" },
-        { id: 3, name: "James Bond", role: "Agent", department: "Sales", employeeId: "EMP-0007", pin: "0007", status: "Active", lastLogin: "Today, 10:00 AM", email: "j.bond@globaltrade.co" },
-        { id: 4, name: "Ellen Ripley", role: "Supervisor", department: "Warehouse", employeeId: "EMP-2122", pin: "9988", status: "Locked", lastLogin: "2 days ago", email: "e.ripley@globaltrade.co" },
-        { id: 5, name: "Tony Stark", role: "Consultant", department: "R&D", employeeId: "EMP-3000", pin: "1010", status: "Suspended", lastLogin: "Last Week", email: "t.stark@globaltrade.co" },
-        { id: 6, name: "Bruce Wayne", role: "Investor", department: "Finance", employeeId: "EMP-1001", pin: "9090", status: "Active", lastLogin: "Today, 08:00 AM", email: "b.wayne@globaltrade.co" },
+        { id: 1, name: "Frehun Adefris", role: "Director", department: "Executive", employeeId: "EMP-1001", pin: "1234", status: "Active", lastLogin: "Today, 09:15 AM", email: "f.adefris@globaltrade.co" },
+        { id: 2, name: "Belete Chala", role: "Chief Financial Officer", department: "Finance", employeeId: "EMP-2023", pin: "9001", status: "Active", lastLogin: "Today, 08:00 AM", email: "b.chala@globaltrade.co" },
+        { id: 3, name: "Anteneh Aseres", role: "Senior Accountant", department: "Accounting", employeeId: "EMP-3045", pin: "0007", status: "Active", lastLogin: "Today, 08:30 AM", email: "a.aseres@globaltrade.co" },
+        { id: 4, name: "Tigist Bekele", role: "Sales Manager", department: "Sales", employeeId: "EMP-4100", pin: "9988", status: "Active", lastLogin: "2 hours ago", email: "t.bekele@globaltrade.co" },
+        { id: 5, name: "Dawit Kebede", role: "Warehouse Manager", department: "Inventory", employeeId: "EMP-5200", pin: "1010", status: "Active", lastLogin: "Yesterday", email: "d.kebede@globaltrade.co" },
+        { id: 6, name: "Hanna Alemu", role: "HR Director", department: "HR", employeeId: "EMP-6300", pin: "4455", status: "Active", lastLogin: "Today, 09:00 AM", email: "h.alemu@globaltrade.co" },
+        { id: 7, name: "Abel Girma", role: "System Administrator", department: "System Admin", employeeId: "EMP-7000", pin: "0000", status: "Active", lastLogin: "Now", email: "a.girma@globaltrade.co" },
+        { id: 8, name: "Sara Tefera", role: "Data Analyst", department: "Data Admin", employeeId: "EMP-8001", pin: "1111", status: "Active", lastLogin: "Yesterday", email: "s.tefera@globaltrade.co" },
+        { id: 9, name: "Solomon Tesfaye", role: "Client Partner", department: "Customer", employeeId: "EXT-9000", pin: "1234", status: "Active", lastLogin: "Today, 10:45 AM", email: "solomon@partner.co" },
       ],
       logs: [
-        { id: 1, event: "Login Success", user: "Alex Morgan", time: "10:42 AM", ip: "192.168.1.10", status: "Success" },
-        { id: 2, event: "Failed Login (3 attempts)", user: "Ellen Ripley", time: "09:15 AM", ip: "192.168.1.45", status: "Warning" },
-        { id: 3, event: "Password Reset", user: "System Admin", time: "Yesterday", ip: "192.168.1.5", status: "Success" },
-        { id: 4, event: "New User Created", user: "System Admin", time: "Yesterday", ip: "192.168.1.5", status: "Success" },
+        { id: 1, event: "Login Success", user: "Frehun Adefris", time: "09:15 AM", ip: "192.168.1.10", status: "Success" },
+        { id: 2, event: "Failed Login (3 attempts)", user: "Dawit Kebede", time: "Yesterday", ip: "192.168.1.45", status: "Warning" },
+        { id: 3, event: "Password Reset", user: "Abel Girma", time: "Yesterday", ip: "192.168.1.5", status: "Success" },
+        { id: 4, event: "New User Created", user: "Abel Girma", time: "Yesterday", ip: "192.168.1.5", status: "Success" },
       ]
     }
   },
