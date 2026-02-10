@@ -7,11 +7,12 @@ import {
 import { 
   ArrowUpRight, ArrowDownRight, MoreHorizontal, Bell, Search, Menu, Moon, Sun, 
   LayoutDashboard, Users, Database, Globe, Package, BadgeDollarSign, TrendingUp, Settings,
-  LogOut, X, Filter, Download, MessageSquare, Check, CheckCircle2, XCircle, Banknote, ShieldAlert
+  LogOut, X, Filter, Download, MessageSquare, Check, CheckCircle2, XCircle, Banknote, ShieldAlert, Calculator
 } from 'lucide-react';
 import CustomerPortal from './CustomerPortal';
 import DataAdminPortal from './DataAdminPortal';
 import SystemAdminPortal from './SystemAdminPortal';
+import AccountingPortal from './AccountingPortal';
 
 interface DashboardProps {
   department: DepartmentData;
@@ -45,6 +46,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   const isCustomerView = department.id === DepartmentType.CUSTOMER;
   const isDataAdmin = department.id === DepartmentType.DATA_ADMIN;
   const isSystemAdmin = department.id === DepartmentType.SYSTEM_ADMIN;
+  const isAccounting = department.id === DepartmentType.ACCOUNTING;
 
   // Dynamic color selection based on department theme
   const getThemeColor = (opacity = 1) => {
@@ -56,6 +58,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       indigo: `rgba(99, 102, 241, ${opacity})`,
       slate: `rgba(100, 116, 139, ${opacity})`,
       gray: `rgba(107, 114, 128, ${opacity})`,
+      cyan: `rgba(6, 182, 212, ${opacity})`,
     };
     return colors[department.themeColor] || colors.blue;
   };
@@ -84,6 +87,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       case 'LayoutDashboard': return <LayoutDashboard className="w-5 h-5" />;
       case 'Database': return <Database className="w-5 h-5" />;
       case 'ShieldAlert': return <ShieldAlert className="w-5 h-5" />;
+      case 'Calculator': return <Calculator className="w-5 h-5" />;
       default: return <Package className="w-5 h-5" />;
     }
   };
@@ -314,13 +318,15 @@ const Dashboard: React.FC<DashboardProps> = ({
         <main className="flex-1 overflow-y-auto p-6 lg:p-8">
            <div className="max-w-7xl mx-auto space-y-8 pb-12">
              
-             {/* CONDITIONAL RENDERING: CUSTOMER PORTAL vs DATA ADMIN vs SYSTEM ADMIN vs STANDARD DASHBOARD */}
+             {/* CONDITIONAL RENDERING: CUSTOMER PORTAL vs DATA ADMIN vs SYSTEM ADMIN vs ACCOUNTING vs STANDARD DASHBOARD */}
              {isCustomerView && department.customerData ? (
                <CustomerPortal data={department.customerData} />
              ) : isDataAdmin ? (
                <DataAdminPortal allDepartments={allDepartments} />
              ) : isSystemAdmin && department.systemAdminData ? (
                <SystemAdminPortal data={department.systemAdminData} />
+             ) : isAccounting ? (
+               <AccountingPortal data={department} />
              ) : (
                <>
                   {/* Header Actions */}

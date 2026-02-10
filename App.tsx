@@ -16,8 +16,8 @@ const App: React.FC = () => {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [selectedDeptForLogin, setSelectedDeptForLogin] = useState<DepartmentData | null>(null);
   
-  // Theme State
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  // Theme State - Default to Dark Mode
+  const [isDarkMode, setIsDarkMode] = useState(true);
 
   useEffect(() => {
     if (isDarkMode) {

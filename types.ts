@@ -1,6 +1,8 @@
+
 export enum DepartmentType {
   GENERAL = 'GENERAL',
   FINANCE = 'FINANCE',
+  ACCOUNTING = 'ACCOUNTING',
   INVENTORY = 'INVENTORY',
   HR = 'HR',
   SALES = 'SALES',
@@ -104,6 +106,22 @@ export interface SystemAdminData {
   logs: SystemLog[];
 }
 
+// Accounting Interfaces
+export interface LedgerEntry {
+  id: string;
+  date: string;
+  description: string;
+  account: string;
+  type: 'Debit' | 'Credit';
+  amount: number;
+  status: 'Posted' | 'Pending' | 'Flagged';
+}
+
+export interface AccountingData {
+  ledger: LedgerEntry[];
+  upcomingTax: { name: string; amount: number; dueDate: string }[];
+}
+
 export interface DepartmentData {
   id: DepartmentType;
   name: string;
@@ -120,6 +138,7 @@ export interface DepartmentData {
   summaryTableData: SummaryRow[];
   customerData?: CustomerSpecificData; // Optional field for customer view
   systemAdminData?: SystemAdminData; // Optional field for system admin
+  accountingData?: AccountingData; // Optional field for accounting
 }
 
 export interface AIInsight {
