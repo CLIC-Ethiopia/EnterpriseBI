@@ -1,15 +1,216 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   ArrowLeft, Book, Zap, LayoutGrid, Users, Mail, HelpCircle, 
   Server, Shield, Monitor, Smartphone, Lock, Database, Wifi, Laptop,
-  Layers, Key, Network, Cpu, Box
+  Layers, Key, Network, Cpu, Box, X, Terminal, Code, Globe, 
+  ChevronRight, CheckCircle2, FileJson, Settings
 } from 'lucide-react';
 
 interface InfoPageProps {
   onBack: () => void;
 }
 
+interface StackItemDetails {
+  role: string;
+  requirements: string[];
+  installation: string[];
+  integration: string;
+  configTips: string[];
+}
+
+interface StackItem {
+  id: string;
+  title: string;
+  tool: string;
+  desc: string;
+  icon: React.ElementType;
+  color: string; // Tailwind color class base (e.g. 'orange', 'blue')
+  details: StackItemDetails;
+}
+
 const InfoPage: React.FC<InfoPageProps> = ({ onBack }) => {
+  const [selectedStackItem, setSelectedStackItem] = useState<StackItem | null>(null);
+
+  const stackItems: StackItem[] = [
+    {
+      id: 'infra',
+      title: 'Bare Metal Virtualization',
+      tool: 'Proxmox VE',
+      desc: 'Enterprise virtualization platform managing VMs and containers on physical hardware.',
+      icon: Server,
+      color: 'orange',
+      details: {
+        role: 'Acts as the Type-1 Hypervisor, converting the physical micro-datacenter server into a flexible private cloud. It hosts the VMs for the OS, Database, and Application logic.',
+        requirements: ['64-bit CPU (Intel VT-x or AMD-V support)', '8GB+ RAM (16GB recommended)', 'SSD Storage for OS + Data', 'Static IP Address'],
+        installation: [
+          'Download Proxmox VE ISO from official site.',
+          'Flash to USB drive using Etcher/Rufus.',
+          'Boot server from USB and follow installation wizard.',
+          'Access web interface at https://[IP]:8006.'
+        ],
+        integration: 'Serves as the foundation layer. All other components (Ubuntu, Docker, Postgres) run as Virtual Machines or LXC containers inside Proxmox.',
+        configTips: ['Create a bridge network (vmbr0) for local LAN access.', 'Schedule nightly backups of VMs to a secondary drive.', 'Enable firewall at the datacenter level.']
+      }
+    },
+    {
+      id: 'os',
+      title: 'Operating System',
+      tool: 'Ubuntu Server LTS',
+      desc: 'Stable Linux foundation optimized for running Docker workloads and services.',
+      icon: Layers,
+      color: 'slate',
+      details: {
+        role: 'The Guest Operating System running inside the main Virtual Machine. It provides the kernel and environment for the container runtime.',
+        requirements: ['2 vCPU cores allocated', '4GB RAM allocated', '20GB Disk Space', 'Virtualization enabled in BIOS/Proxmox'],
+        installation: [
+          'Create new VM in Proxmox.',
+          'Mount Ubuntu Server LTS ISO.',
+          'Run installer (Select "Minimal Install").',
+          'Enable OpenSSH Server during setup.'
+        ],
+        integration: 'Hosts the Docker engine. Connected to the network via Proxmox bridge.',
+        configTips: ['Disable root login via SSH.', 'Set up UFW (Uncomplicated Firewall) to allow only ports 22, 80, 443.', 'Configure automatic security updates.']
+      }
+    },
+    {
+      id: 'container',
+      title: 'Container Orchestration',
+      tool: 'Docker + Portainer',
+      desc: 'Containerizes applications for isolation and manages them via GUI.',
+      icon: Box,
+      color: 'blue',
+      details: {
+        role: 'Docker runs the application, database, and proxy as isolated containers. Portainer provides a web UI to manage these containers without using CLI.',
+        requirements: ['Ubuntu Server installed', 'Sudo privileges', 'Internet connection for pulling images'],
+        installation: [
+          'Run: curl -fsSL https://get.docker.com | sh',
+          'Run: docker volume create portainer_data',
+          'Run: docker run -d -p 9000:9000 --name portainer ... portainer/portainer-ce',
+          'Access Portainer at http://[VM-IP]:9000'
+        ],
+        integration: 'Manages the lifecycle of Keycloak, Postgres, Nginx, and the Custom App containers.',
+        configTips: ['Use Docker Compose for defining multi-container stacks.', 'Limit container resources (CPU/RAM) to prevent crashes.', 'Prune unused images regularly.']
+      }
+    },
+    {
+      id: 'backend',
+      title: 'Backend Logic',
+      tool: 'Node.js Runtime',
+      desc: 'High-performance JavaScript runtime executing business rules and API logic.',
+      icon: Cpu,
+      color: 'emerald',
+      details: {
+        role: 'Executes the server-side code. It handles data processing, communicates with the database, and enforces business logic before sending data to the frontend.',
+        requirements: ['Node.js v18 or v20 (LTS)', 'NPM or Yarn package manager', 'Container environment (Docker)'],
+        installation: [
+          'Define in Dockerfile: FROM node:18-alpine',
+          'Copy package.json and install dependencies.',
+          'Expose internal port (e.g., 3000).',
+          'Command: npm start'
+        ],
+        integration: 'Connects to PostgreSQL via Sequelize/TypeORM. Validates tokens via Keycloak public keys.',
+        configTips: ['Use PM2 or Docker restart policies for uptime.', 'Enable compression middleware.', 'Use environment variables for secrets (DB creds).']
+      }
+    },
+    {
+      id: 'api',
+      title: 'API Connectivity',
+      tool: 'REST / Express.js',
+      desc: 'Standardized API layer connecting Frontend to Backend securely.',
+      icon: Code,
+      color: 'violet',
+      details: {
+        role: 'The communication interface. Defines endpoints (GET, POST) that the React frontend calls to fetch or submit data.',
+        requirements: ['Express.js framework', 'CORS enabled for local domain', 'JSON body parser'],
+        installation: [
+          'Install: npm install express cors helmet',
+          'Setup routes: app.use("/api/v1", routes)',
+          'Secure: app.use(helmet())'
+        ],
+        integration: 'Acts as the glue between UI and Data. Responses are formatted as standard JSON. Errors use standard HTTP codes (401, 404, 500).',
+        configTips: ['Version your API (e.g., /api/v1/).', 'Implement rate limiting to prevent abuse.', 'Use Swagger for documentation.']
+      }
+    },
+    {
+      id: 'frontend',
+      title: 'User Interface',
+      tool: 'React + Vite',
+      desc: 'Modern, responsive web application served to client devices.',
+      icon: Monitor,
+      color: 'pink',
+      details: {
+        role: 'The client-side application users interact with. It renders dashboards, forms, and visuals in the browser.',
+        requirements: ['Modern Web Browser (Chrome/Edge)', 'Network access to BI Server'],
+        installation: [
+          'Build: npm run build',
+          'Output: /dist folder with static assets',
+          'Serve: Use Nginx container to serve /dist folder'
+        ],
+        integration: 'Consumes the REST API. Authenticates users by redirecting to Keycloak login page.',
+        configTips: ['Implement code splitting for faster loads.', 'Use PWA (Progressive Web App) capabilities for offline support.', 'Cache static assets efficiently.']
+      }
+    },
+    {
+      id: 'db',
+      title: 'Data Persistence',
+      tool: 'PostgreSQL',
+      desc: 'Relational database storing inventory, logs, and financial records.',
+      icon: Database,
+      color: 'indigo',
+      details: {
+        role: 'Primary data store. chosen for its reliability, ACID compliance, and support for complex queries needed for BI.',
+        requirements: ['Docker Volume for persistence', '1GB+ RAM allocated'],
+        installation: [
+          'Pull image: docker pull postgres:15',
+          'Run with environment vars: POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB',
+          'Map port 5432 internally.'
+        ],
+        integration: 'Accessed only by the Backend Node.js container. Not exposed directly to the network.',
+        configTips: ['Perform regular pg_dump backups.', 'Use connection pooling in the backend.', 'Index frequently queried columns (e.g., SKU, Date).']
+      }
+    },
+    {
+      id: 'auth',
+      title: 'Identity Access',
+      tool: 'Keycloak',
+      desc: 'Centralized authentication server enforcing Role-Based Access Control.',
+      icon: Key,
+      color: 'yellow',
+      details: {
+        role: 'Single Sign-On (SSO) provider. Handles user logins, password resets, and issues JWT tokens containing user roles (e.g., "Manager", "Warehouse").',
+        requirements: ['Java/OpenJDK (included in container)', 'Dedicated Database (can use Postgres)'],
+        installation: [
+          'Run Keycloak container.',
+          'Create Realm "GlobalTrade".',
+          'Define Clients (Frontend App) and Roles.',
+          'Create Users and assign roles.'
+        ],
+        integration: 'Frontend redirects here for login. Backend verifies the JWT token signature against Keycloak.',
+        configTips: ['Enable HTTPS required.', 'Set short token lifespans (e.g., 5 mins) with refresh tokens.', 'Customize login theme to match company brand.']
+      }
+    },
+    {
+      id: 'network',
+      title: 'Internal Routing',
+      tool: 'Nginx Proxy Manager',
+      desc: 'Reverse proxy handling SSL, domain routing, and firewalling.',
+      icon: Network,
+      color: 'green',
+      details: {
+        role: 'The traffic cop. It sits at the edge of the container network, receiving all requests and routing them to the correct container (Frontend vs Backend) based on path.',
+        requirements: ['Port 80 and 443 exposed on host'],
+        installation: [
+          'Deploy Nginx Proxy Manager container.',
+          'Login to admin UI (default port 81).',
+          'Create Proxy Host: bi.local -> Frontend Container:80.',
+          'Create Custom Location: /api -> Backend Container:3000.'
+        ],
+        integration: 'The only entry point for user traffic. Manages SSL certificates (even self-signed for local LAN).',
+        configTips: ['Force SSL/HTTPS.', 'Enable HSTS.', 'Block common exploit paths.']
+      }
+    }
+  ];
+
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900 transition-colors duration-300">
       <div className="max-w-6xl mx-auto px-6 py-12">
@@ -254,69 +455,62 @@ const InfoPage: React.FC<InfoPageProps> = ({ onBack }) => {
         <div className="mb-16">
           <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">Software Architecture & Stack</h2>
           <p className="text-gray-600 dark:text-gray-300 mb-8 max-w-4xl">
-             To ensure a robust, free, and secure on-premise environment, we employ a "Local Cloud" architecture using industry-standard open-source software. 
-             This stack provides enterprise-grade virtualization, containerization, and access control without recurring license fees.
+             We employ a full "Local Cloud" architecture. Below is the complete stack map. Click on any component to view detailed configuration manuals and installation procedures.
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-             {/* Card 1: Infrastructure */}
-             <StackCard 
-               icon={<Server className="w-6 h-6 text-orange-500" />}
-               title="Bare Metal Virtualization"
-               tool="Proxmox VE"
-               desc="An open-source enterprise virtualization platform. It converts the physical micro-datacenter into a flexible 'Private Cloud', allowing us to run multiple isolated Virtual Machines (VMs) for the Database, App Server, and Security Gateway on single hardware."
-             />
+             {stackItems.map((item) => {
+               // Dynamic color class mapping
+               const colorClasses: Record<string, string> = {
+                  orange: 'text-orange-500 bg-orange-100 dark:bg-orange-900/30',
+                  slate: 'text-slate-500 bg-slate-100 dark:bg-slate-900/30',
+                  blue: 'text-blue-500 bg-blue-100 dark:bg-blue-900/30',
+                  yellow: 'text-yellow-500 bg-yellow-100 dark:bg-yellow-900/30',
+                  green: 'text-green-500 bg-green-100 dark:bg-green-900/30',
+                  indigo: 'text-indigo-500 bg-indigo-100 dark:bg-indigo-900/30',
+                  emerald: 'text-emerald-500 bg-emerald-100 dark:bg-emerald-900/30',
+                  violet: 'text-violet-500 bg-violet-100 dark:bg-violet-900/30',
+                  pink: 'text-pink-500 bg-pink-100 dark:bg-pink-900/30',
+               };
+               const theme = colorClasses[item.color] || colorClasses.blue;
 
-             {/* Card 2: Orchestration */}
-             <StackCard 
-               icon={<Box className="w-6 h-6 text-blue-500" />}
-               title="Container Management"
-               tool="Docker + Portainer"
-               desc="Applications are containerized using Docker for portability and isolation. Portainer provides a user-friendly UI to manage these containers, making it easy for local IT to deploy updates or restart services without command-line complexity."
-             />
-
-             {/* Card 3: RBAC & Security */}
-             <StackCard 
-               icon={<Key className="w-6 h-6 text-yellow-500" />}
-               title="Identity Access (RBAC)"
-               tool="Keycloak"
-               desc="The gold standard for open-source Identity and Access Management. Keycloak handles user logins and enforces Role-Based Access Control (RBAC), ensuring Warehouse staff cannot access Finance data, and locking the system against unauthorized devices."
-             />
-
-             {/* Card 4: Networking */}
-             <StackCard 
-               icon={<Network className="w-6 h-6 text-green-500" />}
-               title="Internal Routing"
-               tool="Nginx Proxy Manager"
-               desc="Acts as the traffic cop for the local network. It provides a secure reverse proxy, handling SSL certificates (HTTPS) and routing friendly domains like 'bi.local' to the correct internal container ports."
-             />
-
-             {/* Card 5: Database */}
-             <StackCard 
-               icon={<Database className="w-6 h-6 text-indigo-500" />}
-               title="Data Persistence"
-               tool="PostgreSQL"
-               desc="A powerful, open-source relational database. Chosen for its reliability and complex query support, it stores all inventory logs, ledger entries, and user metadata securely on an encrypted disk partition."
-             />
-
-             {/* Card 6: OS Layer */}
-             <StackCard 
-               icon={<Layers className="w-6 h-6 text-slate-500" />}
-               title="Operating System"
-               tool="Ubuntu Server LTS"
-               desc="The stable, long-term support version of Ubuntu Linux serves as the guest Operating System for our VMs. It provides a secure, lightweight foundation optimized for running Docker workloads."
-             />
+               return (
+                  <div 
+                    key={item.id}
+                    onClick={() => setSelectedStackItem(item)}
+                    className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-xl hover:scale-[1.02] transition-all cursor-pointer group"
+                  >
+                     <div className="flex items-center justify-between mb-4">
+                        <div className={`p-3 rounded-lg ${theme}`}>
+                           <item.icon className="w-6 h-6" />
+                        </div>
+                        <span className="bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-300 text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                           Details
+                        </span>
+                     </div>
+                     <div>
+                        <h4 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">{item.title}</h4>
+                        <p className="text-lg font-bold text-gray-900 dark:text-white mb-2">{item.tool}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed line-clamp-2">
+                           {item.desc}
+                        </p>
+                     </div>
+                  </div>
+               );
+             })}
           </div>
         </div>
 
+        {/* FAQ Section */}
         <div className="border-t border-gray-200 dark:border-gray-800 pt-12">
            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-8">Frequently Asked Questions</h2>
            <div className="space-y-4">
+              {/* Existing FAQs */}
               <details className="group bg-gray-50 dark:bg-gray-800/50 rounded-xl overflow-hidden">
                  <summary className="flex justify-between items-center font-medium cursor-pointer list-none p-5 text-gray-900 dark:text-white">
                     <span>How often is the data updated?</span>
                     <span className="transition group-open:rotate-180">
-                       <svg fill="none" height="24" shapeRendering="geometricPrecision" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="24"><path d="M6 9l6 6 6-6"></path></svg>
+                       <ArrowLeft className="w-5 h-5 transform -rotate-90" />
                     </span>
                  </summary>
                  <div className="text-gray-500 dark:text-gray-400 px-5 pb-5">
@@ -327,46 +521,131 @@ const InfoPage: React.FC<InfoPageProps> = ({ onBack }) => {
                  <summary className="flex justify-between items-center font-medium cursor-pointer list-none p-5 text-gray-900 dark:text-white">
                     <span>Can I customize my dashboard view?</span>
                     <span className="transition group-open:rotate-180">
-                       <svg fill="none" height="24" shapeRendering="geometricPrecision" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="24"><path d="M6 9l6 6 6-6"></path></svg>
+                       <ArrowLeft className="w-5 h-5 transform -rotate-90" />
                     </span>
                  </summary>
                  <div className="text-gray-500 dark:text-gray-400 px-5 pb-5">
                     Yes, use the "Settings" button on your dashboard to toggle visibility of specific widgets and arrange the layout to your preference.
                  </div>
               </details>
-              <details className="group bg-gray-50 dark:bg-gray-800/50 rounded-xl overflow-hidden">
-                 <summary className="flex justify-between items-center font-medium cursor-pointer list-none p-5 text-gray-900 dark:text-white">
-                    <span>How do I reset my PIN?</span>
-                    <span className="transition group-open:rotate-180">
-                       <svg fill="none" height="24" shapeRendering="geometricPrecision" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="24"><path d="M6 9l6 6 6-6"></path></svg>
-                    </span>
-                 </summary>
-                 <div className="text-gray-500 dark:text-gray-400 px-5 pb-5">
-                    Contact your System Administrator. For security reasons, PIN resets cannot be performed via self-service at this time.
-                 </div>
-              </details>
            </div>
         </div>
       </div>
+
+      {/* Manual Modal */}
+      {selectedStackItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm bg-black/60">
+           <div className="bg-white dark:bg-gray-900 w-full max-w-4xl max-h-[90vh] rounded-2xl shadow-2xl overflow-hidden flex flex-col border border-gray-200 dark:border-gray-700 animate-in fade-in zoom-in duration-200">
+              
+              {/* Header */}
+              <div className="p-6 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center sticky top-0">
+                 <div className="flex items-center gap-4">
+                    <div className="p-3 bg-indigo-100 dark:bg-indigo-900/30 rounded-xl">
+                       <selectedStackItem.icon className="w-8 h-8 text-indigo-600 dark:text-indigo-400" />
+                    </div>
+                    <div>
+                       <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{selectedStackItem.tool}</h3>
+                       <p className="text-gray-500 dark:text-gray-400 text-sm font-medium">{selectedStackItem.title}</p>
+                    </div>
+                 </div>
+                 <button 
+                   onClick={() => setSelectedStackItem(null)}
+                   className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg text-gray-500 dark:text-gray-400 transition-colors"
+                 >
+                    <X className="w-6 h-6" />
+                 </button>
+              </div>
+
+              {/* Content */}
+              <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-8 scroll-smooth">
+                 
+                 {/* Role Description */}
+                 <section>
+                    <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                       <Globe className="w-5 h-5 text-blue-500" /> System Role
+                    </h4>
+                    <p className="text-gray-600 dark:text-gray-300 leading-relaxed text-base bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-100 dark:border-gray-700">
+                       {selectedStackItem.details.role}
+                    </p>
+                 </section>
+
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    {/* Requirements */}
+                    <section>
+                       <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                          <CheckCircle2 className="w-5 h-5 text-green-500" /> Prerequisites
+                       </h4>
+                       <ul className="space-y-2">
+                          {selectedStackItem.details.requirements.map((req, i) => (
+                             <li key={i} className="flex items-start gap-3 text-sm text-gray-600 dark:text-gray-300">
+                                <div className="min-w-[6px] h-[6px] rounded-full bg-green-500 mt-2"></div>
+                                {req}
+                             </li>
+                          ))}
+                       </ul>
+                    </section>
+
+                    {/* Config Tips */}
+                    <section>
+                       <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                          <Settings className="w-5 h-5 text-orange-500" /> Configuration Tips
+                       </h4>
+                       <ul className="space-y-2">
+                          {selectedStackItem.details.configTips.map((tip, i) => (
+                             <li key={i} className="flex items-start gap-3 text-sm text-gray-600 dark:text-gray-300">
+                                <div className="min-w-[6px] h-[6px] rounded-full bg-orange-500 mt-2"></div>
+                                {tip}
+                             </li>
+                          ))}
+                       </ul>
+                    </section>
+                 </div>
+
+                 {/* Installation Steps */}
+                 <section>
+                    <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                       <Terminal className="w-5 h-5 text-gray-600 dark:text-gray-400" /> Installation Guide
+                    </h4>
+                    <div className="bg-gray-900 rounded-xl p-6 font-mono text-sm text-gray-300 shadow-inner overflow-x-auto">
+                       {selectedStackItem.details.installation.map((step, i) => (
+                          <div key={i} className="mb-3 last:mb-0">
+                             <div className="flex gap-3">
+                                <span className="text-gray-600 select-none">{(i + 1).toString().padStart(2, '0')}</span>
+                                <span className="text-green-400">$</span>
+                                <span>{step}</span>
+                             </div>
+                          </div>
+                       ))}
+                    </div>
+                 </section>
+
+                 {/* Integration */}
+                 <section>
+                    <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                       <Network className="w-5 h-5 text-indigo-500" /> Integration Context
+                    </h4>
+                    <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed border-l-4 border-indigo-500 pl-4">
+                       {selectedStackItem.details.integration}
+                    </p>
+                 </section>
+
+              </div>
+              
+              {/* Footer */}
+              <div className="p-4 bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex justify-end">
+                 <button 
+                   onClick={() => setSelectedStackItem(null)}
+                   className="px-6 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold rounded-lg hover:opacity-90 transition-opacity"
+                 >
+                    Close Manual
+                 </button>
+              </div>
+           </div>
+        </div>
+      )}
+
     </div>
   );
 };
-
-const StackCard = ({ icon, title, tool, desc }: { icon: React.ReactNode, title: string, tool: string, desc: string }) => (
-   <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow">
-      <div className="flex items-center gap-3 mb-4">
-         <div className="p-2 bg-gray-100 dark:bg-gray-700 rounded-lg">
-            {icon}
-         </div>
-         <div>
-            <h4 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{title}</h4>
-            <p className="text-lg font-bold text-gray-900 dark:text-white">{tool}</p>
-         </div>
-      </div>
-      <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
-         {desc}
-      </p>
-   </div>
-);
 
 export default InfoPage;
