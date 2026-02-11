@@ -3,9 +3,10 @@ import { ArrowRight, BarChart3, ShieldCheck, Zap, Globe, Cpu, MousePointerClick 
 
 interface LandingPageProps {
   onEnter: () => void;
+  onShowInfo: () => void;
 }
 
-const LandingPage: React.FC<LandingPageProps> = ({ onEnter }) => {
+const LandingPage: React.FC<LandingPageProps> = ({ onEnter, onShowInfo }) => {
   return (
     <div className="min-h-screen bg-gray-900 text-white overflow-hidden relative selection:bg-indigo-500 selection:text-white font-sans">
       {/* Background Gradients */}
@@ -22,7 +23,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnter }) => {
           </div>
           GlobalTrade<span className="text-indigo-400">BI</span>
         </div>
-        <button className="text-sm font-medium text-gray-400 hover:text-white transition-colors">Documentation</button>
+        <button onClick={onShowInfo} className="text-sm font-medium text-gray-400 hover:text-white transition-colors">Documentation</button>
       </nav>
 
       {/* Hero Section */}

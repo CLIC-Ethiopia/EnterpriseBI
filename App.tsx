@@ -5,12 +5,14 @@ import Dashboard from './components/Dashboard';
 import DepartmentCarousel from './components/DepartmentCarousel';
 import AIAnalyst from './components/AIAnalyst';
 import LandingPage from './components/LandingPage';
-import { LayoutGrid, Globe, Moon, Sun } from 'lucide-react';
+import InfoPage from './components/InfoPage';
+import { LayoutGrid, Globe, Moon, Sun, HelpCircle } from 'lucide-react';
 
-type ViewState = 'LANDING' | 'SELECTION' | 'DASHBOARD';
+type ViewState = 'LANDING' | 'SELECTION' | 'DASHBOARD' | 'INFO';
 
 const App: React.FC = () => {
   const [viewState, setViewState] = useState<ViewState>('LANDING');
+  const [previousViewState, setPreviousViewState] = useState<ViewState>('LANDING');
   const [activeDepartment, setActiveDepartment] = useState<DepartmentData | null>(null);
   const [isAIAnalystOpen, setIsAIAnalystOpen] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -60,6 +62,15 @@ const App: React.FC = () => {
     setShowLoginModal(true);
   };
 
+  const handleShowInfo = () => {
+    setPreviousViewState(viewState);
+    setViewState('INFO');
+  };
+
+  const handleBackFromInfo = () => {
+    setViewState(previousViewState);
+  };
+
   return (
     <div className={`min-h-screen ${viewState === 'LANDING' ? '' : 'bg-gray-50 dark:bg-gray-900'} font-sans text-gray-900 dark:text-gray-100 selection:bg-indigo-100 selection:text-indigo-900 transition-colors duration-300`}>
       
@@ -73,7 +84,11 @@ const App: React.FC = () => {
 
       {/* View Controller */}
       {viewState === 'LANDING' && (
-        <LandingPage onEnter={() => setViewState('SELECTION')} />
+        <LandingPage onEnter={() => setViewState('SELECTION')} onShowInfo={handleShowInfo} />
+      )}
+
+      {viewState === 'INFO' && (
+        <InfoPage onBack={handleBackFromInfo} />
       )}
 
       {viewState === 'DASHBOARD' && activeDepartment && (
@@ -86,6 +101,7 @@ const App: React.FC = () => {
             onLogout={handleLogout}
             isDarkMode={isDarkMode}
             toggleTheme={toggleTheme}
+            onShowInfo={handleShowInfo}
           />
           <AIAnalyst 
             department={activeDepartment} 
@@ -106,6 +122,14 @@ const App: React.FC = () => {
               <span className="text-xl font-bold tracking-tight text-gray-900 dark:text-white">GlobalTrade<span className="text-indigo-600 dark:text-indigo-400">BI</span></span>
             </div>
             <div className="flex items-center gap-4">
+              <button 
+                onClick={handleShowInfo}
+                className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 transition-colors"
+                aria-label="Help & Info"
+                title="Help & Info"
+              >
+                <HelpCircle className="w-5 h-5" />
+              </button>
               <button 
                 onClick={toggleTheme}
                 className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 transition-colors"

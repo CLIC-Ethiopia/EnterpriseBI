@@ -8,7 +8,7 @@ import {
   ArrowUpRight, ArrowDownRight, MoreHorizontal, Bell, Search, Menu, Moon, Sun, 
   LayoutDashboard, Users, Database, Globe, Package, BadgeDollarSign, TrendingUp, Settings,
   LogOut, X, Filter, Download, MessageSquare, Check, CheckCircle2, XCircle, Banknote, ShieldAlert, Calculator,
-  Printer
+  Printer, HelpCircle
 } from 'lucide-react';
 import CustomerPortal from './CustomerPortal';
 import DataAdminPortal from './DataAdminPortal';
@@ -24,6 +24,7 @@ interface DashboardProps {
   onLogout: () => void;
   isDarkMode: boolean;
   toggleTheme: () => void;
+  onShowInfo: () => void;
 }
 
 const COLORS = ['#4f46e5', '#10b981', '#f59e0b', '#ef4444'];
@@ -35,7 +36,8 @@ const Dashboard: React.FC<DashboardProps> = ({
   onOpenAI, 
   onLogout, 
   isDarkMode, 
-  toggleTheme 
+  toggleTheme,
+  onShowInfo
 }) => {
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const [activeKpiComment, setActiveKpiComment] = useState<number | null>(null);
@@ -411,6 +413,14 @@ const Dashboard: React.FC<DashboardProps> = ({
               <input type="text" placeholder="Search data..." className="bg-transparent border-none outline-none text-sm w-48 text-gray-800 dark:text-gray-200 placeholder-gray-400" />
             </div>
             
+            <button 
+              onClick={onShowInfo}
+              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-gray-600 dark:text-gray-400 transition-colors"
+              title="Help & Info"
+            >
+              <HelpCircle className="w-5 h-5" />
+            </button>
+
             <button 
               onClick={toggleTheme}
               className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-gray-600 dark:text-gray-400 transition-colors"
