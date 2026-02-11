@@ -375,6 +375,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                </button>
              </div>
           </div>
+        </nav>
 
           {/* Sidebar Footer */}
           <div className="p-4 border-t border-gray-100 dark:border-gray-700">
