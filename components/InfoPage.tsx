@@ -1,7 +1,7 @@
 import React from 'react';
 import { 
   ArrowLeft, Book, Zap, LayoutGrid, Users, Mail, HelpCircle, 
-  Server, Shield, Monitor, Smartphone, Lock, Database, Wifi 
+  Server, Shield, Monitor, Smartphone, Lock, Database, Wifi, Laptop 
 } from 'lucide-react';
 
 interface InfoPageProps {
@@ -104,22 +104,30 @@ const InfoPage: React.FC<InfoPageProps> = ({ onBack }) => {
             <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
               
               {/* Visual Diagram */}
-              <div className="relative h-[400px] bg-gray-800/50 rounded-2xl border border-gray-700 p-6 flex items-center justify-center overflow-hidden">
+              <div className="relative h-[500px] bg-gray-800/50 rounded-2xl border border-gray-700 p-6 flex items-center justify-center overflow-hidden">
                 
                 {/* Local Network Boundary Ring */}
                 <div className="absolute inset-4 border-2 border-dashed border-gray-700 rounded-3xl opacity-50"></div>
-                <div className="absolute top-6 right-6 flex items-center gap-2 text-xs font-mono text-gray-400 bg-gray-800 px-2 py-1 rounded border border-gray-700">
+                <div className="absolute top-6 right-6 flex items-center gap-2 text-xs font-mono text-gray-400 bg-gray-800 px-2 py-1 rounded border border-gray-700 z-30">
                    <Lock className="w-3 h-3 text-emerald-400" /> LOCAL INTRANET ONLY
                 </div>
 
                 {/* Connection Lines (CSS) */}
                 <div className="absolute top-1/2 left-1/2 w-full h-full -translate-x-1/2 -translate-y-1/2 pointer-events-none">
-                    {/* Line to Top Left */}
-                    <div className="absolute top-[25%] left-[20%] w-[30%] h-[1px] bg-gradient-to-r from-transparent via-indigo-500/50 to-indigo-500 transform rotate-[25deg]"></div>
-                    {/* Line to Bottom Right */}
-                    <div className="absolute bottom-[25%] right-[20%] w-[30%] h-[1px] bg-gradient-to-l from-transparent via-indigo-500/50 to-indigo-500 transform rotate-[25deg]"></div>
-                    {/* Line to Bottom Left */}
-                    <div className="absolute bottom-[25%] left-[20%] w-[30%] h-[1px] bg-gradient-to-r from-transparent via-indigo-500/50 to-indigo-500 transform -rotate-[25deg]"></div>
+                    {/* Line to Top Left (Sys Admin) */}
+                    <div className="absolute top-[20%] left-[20%] w-[30%] h-[1px] bg-gradient-to-r from-transparent via-indigo-500/50 to-indigo-500 transform rotate-[35deg]"></div>
+                    {/* Line to Top Right (Manager) */}
+                    <div className="absolute top-[20%] right-[20%] w-[30%] h-[1px] bg-gradient-to-l from-transparent via-indigo-500/50 to-indigo-500 transform -rotate-[35deg]"></div>
+                    
+                    {/* Line to Bottom Right (Warehouse) */}
+                    <div className="absolute bottom-[20%] right-[20%] w-[30%] h-[1px] bg-gradient-to-l from-transparent via-indigo-500/50 to-indigo-500 transform rotate-[35deg]"></div>
+                    {/* Line to Bottom Left (Finance) */}
+                    <div className="absolute bottom-[20%] left-[20%] w-[30%] h-[1px] bg-gradient-to-r from-transparent via-indigo-500/50 to-indigo-500 transform -rotate-[35deg]"></div>
+
+                    {/* Line to Middle Left (HR) */}
+                    <div className="absolute top-[50%] left-[10%] w-[40%] h-[1px] bg-gradient-to-r from-transparent via-indigo-500/50 to-indigo-500"></div>
+                    {/* Line to Middle Right (Sales) */}
+                    <div className="absolute top-[50%] right-[10%] w-[40%] h-[1px] bg-gradient-to-l from-transparent via-indigo-500/50 to-indigo-500"></div>
                 </div>
 
                 {/* Central Micro-Datacenter */}
@@ -145,31 +153,59 @@ const InfoPage: React.FC<InfoPageProps> = ({ onBack }) => {
                 </div>
 
                 {/* Connecting Clients */}
-                {/* Client 1: Top Left */}
-                <div className="absolute top-12 left-8 sm:left-12 flex flex-col items-center">
-                   <div className="w-10 h-10 bg-gray-700 rounded-lg flex items-center justify-center border border-gray-600 shadow-lg relative">
+                
+                {/* 1. System Admin PC (Top Left) */}
+                <div className="absolute top-12 left-8 sm:left-12 flex flex-col items-center z-20">
+                   <div className="w-10 h-10 bg-gray-700 rounded-lg flex items-center justify-center border border-gray-600 shadow-lg relative group hover:scale-110 transition-transform cursor-default bg-gradient-to-b from-gray-700 to-gray-800">
                       <Monitor className="w-5 h-5 text-gray-300" />
                       <div className="absolute -bottom-1 -right-1 w-2 h-2 bg-green-500 rounded-full border border-gray-700"></div>
                    </div>
-                   <p className="mt-2 text-[10px] text-gray-400 font-mono">ADMIN_PC_01</p>
+                   <p className="mt-2 text-[10px] text-white font-semibold bg-gray-800/90 px-2 py-0.5 rounded border border-gray-600 shadow-sm whitespace-nowrap">System Admin PC</p>
                 </div>
                 
-                {/* Client 2: Bottom Right */}
-                <div className="absolute bottom-12 right-8 sm:right-12 flex flex-col items-center">
-                   <div className="w-10 h-10 bg-gray-700 rounded-lg flex items-center justify-center border border-gray-600 shadow-lg relative">
+                {/* 2. Manager Laptop (Top Right) */}
+                <div className="absolute top-12 right-8 sm:right-12 flex flex-col items-center z-20">
+                   <div className="w-10 h-10 bg-gray-700 rounded-lg flex items-center justify-center border border-gray-600 shadow-lg relative group hover:scale-110 transition-transform cursor-default bg-gradient-to-b from-gray-700 to-gray-800">
+                      <Laptop className="w-5 h-5 text-gray-300" />
+                      <div className="absolute -bottom-1 -right-1 w-2 h-2 bg-green-500 rounded-full border border-gray-700"></div>
+                   </div>
+                   <p className="mt-2 text-[10px] text-white font-semibold bg-gray-800/90 px-2 py-0.5 rounded border border-gray-600 shadow-sm whitespace-nowrap">Manager Laptop</p>
+                </div>
+
+                 {/* 3. Finance Workstation (Bottom Left) */}
+                 <div className="absolute bottom-12 left-8 sm:left-12 flex flex-col items-center z-20">
+                   <div className="w-10 h-10 bg-gray-700 rounded-lg flex items-center justify-center border border-gray-600 shadow-lg relative group hover:scale-110 transition-transform cursor-default bg-gradient-to-b from-gray-700 to-gray-800">
+                      <Monitor className="w-5 h-5 text-gray-300" />
+                      <div className="absolute -bottom-1 -right-1 w-2 h-2 bg-green-500 rounded-full border border-gray-700"></div>
+                   </div>
+                   <p className="mt-2 text-[10px] text-white font-semibold bg-gray-800/90 px-2 py-0.5 rounded border border-gray-600 shadow-sm whitespace-nowrap">Finance Workstation</p>
+                </div>
+                
+                {/* 4. Warehouse Tablet (Bottom Right) */}
+                <div className="absolute bottom-12 right-8 sm:right-12 flex flex-col items-center z-20">
+                   <div className="w-10 h-10 bg-gray-700 rounded-lg flex items-center justify-center border border-gray-600 shadow-lg relative group hover:scale-110 transition-transform cursor-default bg-gradient-to-b from-gray-700 to-gray-800">
                       <Smartphone className="w-5 h-5 text-gray-300" />
                       <div className="absolute -bottom-1 -right-1 w-2 h-2 bg-green-500 rounded-full border border-gray-700"></div>
                    </div>
-                   <p className="mt-2 text-[10px] text-gray-400 font-mono">WH_TAB_04</p>
+                   <p className="mt-2 text-[10px] text-white font-semibold bg-gray-800/90 px-2 py-0.5 rounded border border-gray-600 shadow-sm whitespace-nowrap">Warehouse Tablet</p>
                 </div>
 
-                 {/* Client 3: Bottom Left */}
-                 <div className="absolute bottom-12 left-8 sm:left-12 flex flex-col items-center">
-                   <div className="w-10 h-10 bg-gray-700 rounded-lg flex items-center justify-center border border-gray-600 shadow-lg relative">
-                      <Monitor className="w-5 h-5 text-gray-300" />
+                {/* 5. HR Desktop (Middle Left) */}
+                <div className="absolute top-1/2 -translate-y-1/2 left-2 sm:left-6 flex flex-col items-center z-20">
+                   <div className="w-10 h-10 bg-gray-700 rounded-lg flex items-center justify-center border border-gray-600 shadow-lg relative group hover:scale-110 transition-transform cursor-default bg-gradient-to-b from-gray-700 to-gray-800">
+                      <Users className="w-5 h-5 text-gray-300" />
                       <div className="absolute -bottom-1 -right-1 w-2 h-2 bg-green-500 rounded-full border border-gray-700"></div>
                    </div>
-                   <p className="mt-2 text-[10px] text-gray-400 font-mono">FIN_PC_02</p>
+                   <p className="mt-2 text-[10px] text-white font-semibold bg-gray-800/90 px-2 py-0.5 rounded border border-gray-600 shadow-sm whitespace-nowrap">HR Desktop</p>
+                </div>
+
+                {/* 6. Sales Tablet (Middle Right) */}
+                <div className="absolute top-1/2 -translate-y-1/2 right-2 sm:right-6 flex flex-col items-center z-20">
+                   <div className="w-10 h-10 bg-gray-700 rounded-lg flex items-center justify-center border border-gray-600 shadow-lg relative group hover:scale-110 transition-transform cursor-default bg-gradient-to-b from-gray-700 to-gray-800">
+                      <Smartphone className="w-5 h-5 text-gray-300" />
+                      <div className="absolute -bottom-1 -right-1 w-2 h-2 bg-green-500 rounded-full border border-gray-700"></div>
+                   </div>
+                   <p className="mt-2 text-[10px] text-white font-semibold bg-gray-800/90 px-2 py-0.5 rounded border border-gray-600 shadow-sm whitespace-nowrap">Sales Tablet</p>
                 </div>
                 
               </div>
