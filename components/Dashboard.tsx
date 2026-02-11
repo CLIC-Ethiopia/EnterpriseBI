@@ -504,7 +504,10 @@ const Dashboard: React.FC<DashboardProps> = ({
 
                   {/* KPI Grid */}
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 print:grid-cols-4">
-                    {department.kpis.map((kpi, index) => (
+                    {department.kpis.map((kpi, index) => {
+                      // Fix for potential non-string values from API
+                      const changeStr = String(kpi.change || "");
+                      return (
                       <div key={index} className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition-all group relative break-inside-avoid print:shadow-none print:border-gray-200">
                         <div className="flex justify-between items-start mb-4">
                           <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">{kpi.label}</h3>
@@ -523,9 +526,9 @@ const Dashboard: React.FC<DashboardProps> = ({
                         <div className="flex items-baseline gap-2 mb-2">
                           <span className="text-3xl font-bold text-gray-900 dark:text-white">{kpi.value}</span>
                         </div>
-                        <div className={`flex items-center text-sm ${kpi.trend === 'up' && kpi.change.startsWith('+') ? 'text-green-600 dark:text-green-400' : kpi.trend === 'neutral' ? 'text-gray-500 dark:text-gray-400' : 'text-red-600 dark:text-red-400'}`}>
-                          {kpi.change.startsWith('+') ? <ArrowUpRight className="w-4 h-4 mr-1" /> : kpi.change === '0%' ? null : <ArrowDownRight className="w-4 h-4 mr-1" />}
-                          <span className="font-medium">{kpi.change}</span>
+                        <div className={`flex items-center text-sm ${kpi.trend === 'up' && changeStr.startsWith('+') ? 'text-green-600 dark:text-green-400' : kpi.trend === 'neutral' ? 'text-gray-500 dark:text-gray-400' : 'text-red-600 dark:text-red-400'}`}>
+                          {changeStr.startsWith('+') ? <ArrowUpRight className="w-4 h-4 mr-1" /> : changeStr === '0%' ? null : <ArrowDownRight className="w-4 h-4 mr-1" />}
+                          <span className="font-medium">{changeStr}</span>
                           <span className="text-gray-400 dark:text-gray-500 ml-2 font-normal">vs last month</span>
                         </div>
                         
@@ -552,7 +555,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                            </div>
                         )}
                       </div>
-                    ))}
+                    )})}
                   </div>
 
                   {/* Charts Row */}
