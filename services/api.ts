@@ -42,3 +42,26 @@ export const fetchDepartments = async (): Promise<DepartmentData[] | null> => {
     return null;
   }
 };
+
+export const addProduct = async (product: any): Promise<boolean> => {
+  if (!GAS_API_URL) {
+      console.warn("No API URL");
+      return false;
+  }
+
+  try {
+    const response = await fetch(GAS_API_URL, {
+      method: 'POST',
+      body: JSON.stringify({
+        action: 'addProduct',
+        data: product
+      })
+    });
+    
+    const result = await response.json();
+    return result.status === 'success';
+  } catch (error) {
+    console.error("Error adding product:", error);
+    return false;
+  }
+};
