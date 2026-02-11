@@ -46,6 +46,11 @@ export const DEPARTMENTS: DepartmentData[] = [
       { id: 3, item: "Senior VP Hiring", category: "HR", status: "Stable", value: "Bir 180k Salary", completion: 0 },
       { id: 4, item: "Bulk Chemical Purchase", category: "Inventory", status: "Warning", value: "Bir 220,000", completion: 0 },
       { id: 5, item: "Sales Software Upgrade", category: "Sales", status: "Good", value: "Bir 12,000", completion: 0 },
+    ],
+    suggestedPrompts: [
+      "Summarize the top operational risks affecting net profit.",
+      "Compare Q1 vs Q2 efficiency ratios across departments.",
+      "Draft a brief for the board meeting based on current profit trends."
     ]
   },
   {
@@ -88,6 +93,11 @@ export const DEPARTMENTS: DepartmentData[] = [
       { id: 1, item: "T-Bills 2025", category: "Low Risk", status: "Good", value: "Bir 500k", completion: 100 },
       { id: 2, item: "Growth Fund Alpha", category: "High Risk", status: "Stable", value: "Bir 250k", completion: 80 },
       { id: 3, item: "Forex Reserves", category: "Liquidity", status: "Warning", value: "Bir 1.2M", completion: 100 },
+    ],
+    suggestedPrompts: [
+      "Analyze the variance between projected and actual revenue for Q3.",
+      "Recommend portfolio adjustments to reduce liquidity risk.",
+      "Calculate the impact of a 5% increase in Opex on EBITDA."
     ]
   },
   {
@@ -145,7 +155,12 @@ export const DEPARTMENTS: DepartmentData[] = [
         { name: "Payroll Tax Oct", amount: 45000, dueDate: "2024-11-05" },
         { name: "Corporate Income Tax", amount: 550000, dueDate: "2024-12-31" },
       ]
-    }
+    },
+    suggestedPrompts: [
+      "Identify any flagged journal entries that require immediate attention.",
+      "Forecast cash flow based on the current Days Sales Outstanding.",
+      "Summarize upcoming tax liabilities and due dates."
+    ]
   },
   {
     id: DepartmentType.SALES,
@@ -192,6 +207,11 @@ export const DEPARTMENTS: DepartmentData[] = [
       { id: 3, item: "Global Chem", category: "Industrial", status: "Stable", value: "Bir 800k", completion: 80 },
       { id: 4, item: "FastFashion Inc.", category: "Retail", status: "Critical", value: "Bir 200k", completion: 25 },
       { id: 5, item: "BuildIt Group", category: "Construction", status: "Good", value: "Bir 600k", completion: 90 },
+    ],
+    suggestedPrompts: [
+      "Which region is underperforming against sales targets?",
+      "Analyze the trend of lead conversion rates over the last week.",
+      "Identify key accounts that are at risk of churning."
     ]
   },
   {
@@ -240,6 +260,271 @@ export const DEPARTMENTS: DepartmentData[] = [
       { id: 3, item: "Dye Pigment Red", category: "Chemicals", status: "Warning", value: "50 kg", completion: 40 },
       { id: 4, item: "Polyester Sheets", category: "Textiles", status: "Good", value: "800 m", completion: 92 },
       { id: 5, item: "Safety Solvent", category: "Safety", status: "Stable", value: "120 Units", completion: 65 },
+    ],
+    inventoryData: {
+      products: [
+        {
+          id: "TEX-RAW-001",
+          name: "Raw Cotton Bales (Giza 86)",
+          category: "Raw Fiber",
+          price: 18500,
+          unit: "Bale (225kg)",
+          image: "https://images.unsplash.com/photo-1614806687350-1c5c645b2049?auto=format&fit=crop&q=80&w=400",
+          stockStatus: "In Stock",
+          description: "Premium Extra Long Staple (ELS) Egyptian cotton. High tenacity and uniformity.",
+          specs: [{label: "Staple Length", value: "33mm"}, {label: "Micronaire", value: "3.8-4.2"}, {label: "Strength", value: "45 g/tex"}],
+          quantity: 450,
+          location: "Zone A-01",
+          supplier: "Nile Cotton Co.",
+          lastRestock: "2024-10-15",
+          incoming: 50
+        },
+        {
+          id: "TEX-SYN-022",
+          name: "Polyester Staple Fiber (PSF)",
+          category: "Raw Fiber",
+          price: 1250,
+          unit: "Bag (50kg)",
+          image: "https://images.unsplash.com/photo-1533090161767-e6ffed986c88?auto=format&fit=crop&q=80&w=400",
+          stockStatus: "In Stock",
+          description: "Semi-dull, high tenacity polyester fiber for blending with cotton or viscose.",
+          specs: [{label: "Denier", value: "1.2D"}, {label: "Cut Length", value: "38mm"}, {label: "Color", value: "Raw White"}],
+          quantity: 1200,
+          location: "Zone A-04",
+          supplier: "Sinopec Fibers",
+          lastRestock: "2024-10-20",
+          incoming: 200
+        },
+        {
+          id: "CHEM-DYE-R19",
+          name: "Reactive Blue 19 Dye",
+          category: "Dyes & Pigments",
+          price: 450,
+          unit: "Drum (25kg)",
+          image: "https://images.unsplash.com/photo-1550684848-fac1c5b4e853?auto=format&fit=crop&q=80&w=400",
+          stockStatus: "In Stock",
+          description: "High-fastness brilliant blue reactive dye for cellulosic fibers and viscose.",
+          specs: [{label: "Type", value: "Anthraquinone"}, {label: "Solubility", value: "High"}, {label: "Temp", value: "60°C"}],
+          quantity: 85,
+          location: "Zone C-15",
+          supplier: "Huntsman",
+          lastRestock: "2024-09-12",
+          incoming: 0
+        },
+        {
+          id: "CHEM-PROC-50",
+          name: "Hydrogen Peroxide 50%",
+          category: "Process Chemicals",
+          price: 850,
+          unit: "IBC Tank (1000L)",
+          image: "https://images.unsplash.com/photo-1605333144182-4e45d625d886?auto=format&fit=crop&q=80&w=400",
+          stockStatus: "In Stock",
+          description: "Industrial grade bleaching agent for textile preparation and pretreatment.",
+          specs: [{label: "Concentration", value: "50% w/w"}, {label: "Appearance", value: "Clear Liquid"}, {label: "Grade", value: "Technical"}],
+          quantity: 12,
+          location: "Zone H-01",
+          supplier: "Solvay",
+          lastRestock: "2024-10-22",
+          incoming: 4
+        },
+        {
+          id: "YRN-SPX-40D",
+          name: "Spandex/Elastane Yarn (40D)",
+          category: "Yarn",
+          price: 120,
+          unit: "Cone (1kg)",
+          image: "https://images.unsplash.com/photo-1617066860049-760c23c22b40?auto=format&fit=crop&q=80&w=400",
+          stockStatus: "Low Stock",
+          description: "High-stretch elastane yarn for activewear and stretch fabrics.",
+          specs: [{label: "Denier", value: "40D"}, {label: "Elongation", value: "500%"}, {label: "Luster", value: "Dull"}],
+          quantity: 45,
+          location: "Zone B-11",
+          supplier: "Hyosung",
+          lastRestock: "2024-08-30",
+          incoming: 100
+        },
+        {
+          id: "CHEM-ALK-ASH",
+          name: "Soda Ash Light",
+          category: "Process Chemicals",
+          price: 650,
+          unit: "Sack (50kg)",
+          image: "https://images.unsplash.com/photo-1588691885697-3ac790d81d24?auto=format&fit=crop&q=80&w=400",
+          stockStatus: "In Stock",
+          description: "Sodium Carbonate used for pH control in dyeing and scouring processes.",
+          specs: [{label: "Purity", value: "99.2% min"}, {label: "Form", value: "White Powder"}, {label: "pH", value: "11"}],
+          quantity: 600,
+          location: "Zone C-05",
+          supplier: "Tata Chemicals",
+          lastRestock: "2024-10-05",
+          incoming: 0
+        },
+        {
+          id: "CHEM-DYE-D60",
+          name: "Disperse Red 60 Dye",
+          category: "Dyes & Pigments",
+          price: 520,
+          unit: "Box (25kg)",
+          image: "https://images.unsplash.com/photo-1627931336444-245c4302c019?auto=format&fit=crop&q=80&w=400",
+          stockStatus: "Out of Stock",
+          description: "Bright red disperse dye for polyester and acetate fibers with good leveling.",
+          specs: [{label: "Class", value: "E-Type"}, {label: "Light Fastness", value: "6-7"}, {label: "Sublimation", value: "Good"}],
+          quantity: 0,
+          location: "Zone C-18",
+          supplier: "DyStar",
+          lastRestock: "2024-07-20",
+          incoming: 50
+        },
+        {
+          id: "LUB-KNIT-22",
+          name: "Industrial Knitting Oil (ISO 22)",
+          category: "Auxiliaries",
+          price: 3200,
+          unit: "Drum (200L)",
+          image: "https://images.unsplash.com/photo-1622358896068-07cb12ab06c5?auto=format&fit=crop&q=80&w=400",
+          stockStatus: "In Stock",
+          description: "Scourable needle oil for circular knitting machines to prevent friction and rust.",
+          specs: [{label: "Viscosity", value: "ISO VG 22"}, {label: "Washability", value: "Excellent"}, {label: "Color", value: "Clear"}],
+          quantity: 18,
+          location: "Zone L-03",
+          supplier: "TotalEnergies",
+          lastRestock: "2024-09-15",
+          incoming: 5
+        },
+        {
+          id: "FAB-GRG-100",
+          name: "Greige Woven Fabric (100% Cotton)",
+          category: "Fabric",
+          price: 15500,
+          unit: "Roll (1000m)",
+          image: "https://images.unsplash.com/photo-1520188741372-a4282361d15c?auto=format&fit=crop&q=80&w=400",
+          stockStatus: "In Stock",
+          description: "Unfinished plain weave cotton fabric ready for dyeing or printing.",
+          specs: [{label: "Construction", value: "60x60 / 20x20"}, {label: "Width", value: "63 inch"}, {label: "GSM", value: "140"}],
+          quantity: 35,
+          location: "Zone F-10",
+          supplier: "WeaveMasters",
+          lastRestock: "2024-10-18",
+          incoming: 10
+        },
+        {
+          id: "TEX-ROLL-DNM",
+          name: "Heavyweight Denim Fabric Roll (14oz)",
+          category: "Textile Roll",
+          price: 18200,
+          unit: "Roll (500m)",
+          image: "https://images.unsplash.com/photo-1584589167171-541ce45f1eea?auto=format&fit=crop&q=80&w=400",
+          stockStatus: "In Stock",
+          description: "Durable 14oz raw indigo denim suitable for jeans and heavy-duty apparel.",
+          specs: [{label: "Weight", value: "14oz"}, {label: "Width", value: "60 inch"}, {label: "Weave", value: "Twill"}],
+          quantity: 22,
+          location: "Zone F-12",
+          supplier: "Denim Co.",
+          lastRestock: "2024-09-25",
+          incoming: 8
+        },
+        {
+          id: "TEX-ROLL-CNV",
+          name: "Water-Resistant Canvas Roll (Olive)",
+          category: "Textile Roll",
+          price: 14500,
+          unit: "Roll (300m)",
+          image: "https://images.unsplash.com/photo-1523450001312-faa4e2e37f0f?auto=format&fit=crop&q=80&w=400",
+          stockStatus: "Low Stock",
+          description: "Heavy-duty waxed canvas, water-resistant finish for outdoor gear.",
+          specs: [{label: "GSM", value: "340"}, {label: "Width", value: "58 inch"}, {label: "Finish", value: "Waxed"}],
+          quantity: 8,
+          location: "Zone F-15",
+          supplier: "TechFabrics",
+          lastRestock: "2024-08-10",
+          incoming: 20
+        },
+        {
+          id: "TEX-ROLL-SILK",
+          name: "Pure Silk Satin Roll (Ivory)",
+          category: "Textile Roll",
+          price: 45000,
+          unit: "Roll (200m)",
+          image: "https://images.unsplash.com/photo-1563811802958-d784570624a1?auto=format&fit=crop&q=80&w=400",
+          stockStatus: "In Stock",
+          description: "Luxurious 100% silk satin with high luster and soft drape for high-end fashion.",
+          specs: [{label: "Momme", value: "19mm"}, {label: "Width", value: "44 inch"}, {label: "Grade", value: "6A"}],
+          quantity: 12,
+          location: "Zone S-01",
+          supplier: "Silk Road Imports",
+          lastRestock: "2024-10-01",
+          incoming: 5
+        },
+        {
+          id: "CHEM-ACID-ACE",
+          name: "Acetic Acid Glacial (99.8%)",
+          category: "Process Chemicals",
+          price: 950,
+          unit: "IBC Tank (1000kg)",
+          image: "https://images.unsplash.com/photo-1629899732168-5a9d824d5570?auto=format&fit=crop&q=80&w=400",
+          stockStatus: "In Stock",
+          description: "Essential pH regulator for dyeing and finishing processes.",
+          specs: [{label: "Purity", value: "99.85%"}, {label: "Color", value: "Transparent"}, {label: "Grade", value: "Industrial"}],
+          quantity: 45,
+          location: "Zone C-12",
+          supplier: "Global Chem Industries",
+          lastRestock: "2024-10-10",
+          incoming: 20
+        },
+        {
+          id: "TEX-FIB-VIS",
+          name: "Viscose Staple Fiber (VSF)",
+          category: "Raw Fiber",
+          price: 1450,
+          unit: "Bale (200kg)",
+          image: "https://images.unsplash.com/photo-1596395914147-380d19f6a100?auto=format&fit=crop&q=80&w=400", 
+          stockStatus: "In Stock",
+          description: "High-quality cellulosic fiber with silk-like aesthetic and excellent drape.",
+          specs: [{label: "Denier", value: "1.5D"}, {label: "Cut", value: "38mm"}, {label: "Brightness", value: "Semi-Dull"}],
+          quantity: 240,
+          location: "Zone A-05",
+          supplier: "Lenzing Group",
+          lastRestock: "2024-09-28",
+          incoming: 0
+        },
+        {
+          id: "AUX-SOFT-FLK",
+          name: "Cationic Softener Flakes",
+          category: "Auxiliaries",
+          price: 2200,
+          unit: "Bag (25kg)",
+          image: "https://images.unsplash.com/photo-1615560416962-d27c62d8544d?auto=format&fit=crop&q=80&w=400", 
+          stockStatus: "Low Stock",
+          description: "Concentrated softener for cotton and blended fabrics, imparting soft hand feel.",
+          specs: [{label: "Ionicity", value: "Cationic"}, {label: "pH", value: "4.5-5.5"}, {label: "Solubility", value: "Hot Water"}],
+          quantity: 15,
+          location: "Zone B-22",
+          supplier: "Archroma",
+          lastRestock: "2024-08-15",
+          incoming: 50
+        },
+        {
+          id: "RAW-NYL-CHP",
+          name: "Nylon 6 Chips (Semi-Dull)",
+          category: "Raw Material",
+          price: 1800,
+          unit: "Bag (750kg)",
+          image: "https://images.unsplash.com/photo-1623945032486-1329a147d33b?auto=format&fit=crop&q=80&w=400",
+          stockStatus: "In Stock",
+          description: "High viscosity nylon 6 chips for spinning high-tenacity industrial yarns.",
+          specs: [{label: "Viscosity", value: "2.7"}, {label: "Moisture", value: "0.05%"}, {label: "Melting Pt", value: "220°C"}],
+          quantity: 80,
+          location: "Zone A-02",
+          supplier: "BASF",
+          lastRestock: "2024-10-01",
+          incoming: 10
+        }
+      ]
+    },
+    suggestedPrompts: [
+      "Predict next month's demand for chemicals based on historical data.",
+      "List all items with 'Critical' stock status.",
+      "Analyze the ratio of inbound to outbound shipments."
     ]
   },
   {
@@ -287,6 +572,11 @@ export const DEPARTMENTS: DepartmentData[] = [
       { id: 3, item: "Sales Associate", category: "Sales", status: "Stable", value: "5 Open", completion: 70 },
       { id: 4, item: "HR Specialist", category: "Admin", status: "Good", value: "1 Open", completion: 90 },
       { id: 5, item: "Forklift Operator", category: "Logistics", status: "Stable", value: "3 Open", completion: 60 },
+    ],
+    suggestedPrompts: [
+      "Analyze the correlation between training hours and retention rate.",
+      "Identify the departments with the highest turnover.",
+      "Draft a recruitment strategy for 'Critical' open positions."
     ]
   },
   {
@@ -326,7 +616,12 @@ export const DEPARTMENTS: DepartmentData[] = [
         { id: 3, event: "Password Reset", user: "Abel Girma", time: "Yesterday", ip: "192.168.1.5", status: "Success" },
         { id: 4, event: "New User Created", user: "Abel Girma", time: "Yesterday", ip: "192.168.1.5", status: "Success" },
       ]
-    }
+    },
+    suggestedPrompts: [
+      "Review the security logs for any suspicious activity.",
+      "List all users with 'Locked' status.",
+      "Analyze the trend of failed login attempts."
+    ]
   },
   {
     id: DepartmentType.DATA_ADMIN,
@@ -341,7 +636,12 @@ export const DEPARTMENTS: DepartmentData[] = [
     barChartTitle: "",
     barChartData: [],
     tableTitle: "",
-    summaryTableData: []
+    summaryTableData: [],
+    suggestedPrompts: [
+      "Verify data consistency across all departmental datasets.",
+      "Identify duplicate records in the master registry.",
+      "Summarize the most frequently accessed data categories."
+    ]
   },
   {
     id: DepartmentType.CUSTOMER,
@@ -370,61 +670,143 @@ export const DEPARTMENTS: DepartmentData[] = [
       ],
       products: [
         {
-          id: "CHEM-001",
-          name: "Industrial Acetone (99.5%)",
-          category: "Solvents",
+          id: "TEX-RAW-001",
+          name: "Raw Cotton Bales (Giza 86)",
+          category: "Raw Fiber",
+          price: 18500,
+          unit: "Bale (225kg)",
+          image: "https://images.unsplash.com/photo-1614806687350-1c5c645b2049?auto=format&fit=crop&q=80&w=400",
+          stockStatus: "In Stock",
+          description: "Premium Extra Long Staple (ELS) Egyptian cotton. High tenacity and uniformity.",
+          specs: [{label: "Staple Length", value: "33mm"}, {label: "Micronaire", value: "3.8-4.2"}, {label: "Strength", value: "45 g/tex"}]
+        },
+        {
+          id: "TEX-SYN-022",
+          name: "Polyester Staple Fiber (PSF)",
+          category: "Raw Fiber",
+          price: 1250,
+          unit: "Bag (50kg)",
+          image: "https://images.unsplash.com/photo-1533090161767-e6ffed986c88?auto=format&fit=crop&q=80&w=400",
+          stockStatus: "In Stock",
+          description: "Semi-dull, high tenacity polyester fiber for blending with cotton or viscose.",
+          specs: [{label: "Denier", value: "1.2D"}, {label: "Cut Length", value: "38mm"}, {label: "Color", value: "Raw White"}]
+        },
+        {
+          id: "CHEM-DYE-R19",
+          name: "Reactive Blue 19 Dye",
+          category: "Dyes & Pigments",
           price: 450,
-          unit: "Barrel (200L)",
-          image: "https://images.unsplash.com/photo-1622358896068-07cb12ab06c5?auto=format&fit=crop&q=80&w=300&h=200",
+          unit: "Drum (25kg)",
+          image: "https://images.unsplash.com/photo-1550684848-fac1c5b4e853?auto=format&fit=crop&q=80&w=400",
           stockStatus: "In Stock",
-          description: "High-purity acetone suitable for industrial cleaning and synthesis applications.",
-          specs: [{label: "Purity", value: "99.5%"}, {label: "Grade", value: "Technical"}, {label: "Boiling Point", value: "56°C"}]
+          description: "High-fastness brilliant blue reactive dye for cellulosic fibers and viscose.",
+          specs: [{label: "Type", value: "Anthraquinone"}, {label: "Solubility", value: "High"}, {label: "Temp", value: "60°C"}]
         },
         {
-          id: "TEX-202",
-          name: "Poly-Blend Fabric Roll",
-          category: "Textiles",
-          price: 1200,
-          unit: "Roll (500m)",
-          image: "https://images.unsplash.com/photo-1620799140408-ed5341cd2431?auto=format&fit=crop&q=80&w=300&h=200",
+          id: "CHEM-PROC-50",
+          name: "Hydrogen Peroxide 50%",
+          category: "Process Chemicals",
+          price: 850,
+          unit: "IBC Tank (1000L)",
+          image: "https://images.unsplash.com/photo-1605333144182-4e45d625d886?auto=format&fit=crop&q=80&w=400",
+          stockStatus: "In Stock",
+          description: "Industrial grade bleaching agent for textile preparation and pretreatment.",
+          specs: [{label: "Concentration", value: "50% w/w"}, {label: "Appearance", value: "Clear Liquid"}, {label: "Grade", value: "Technical"}]
+        },
+        {
+          id: "YRN-SPX-40D",
+          name: "Spandex/Elastane Yarn (40D)",
+          category: "Yarn",
+          price: 120,
+          unit: "Cone (1kg)",
+          image: "https://images.unsplash.com/photo-1617066860049-760c23c22b40?auto=format&fit=crop&q=80&w=400",
           stockStatus: "Low Stock",
-          description: "Durable polyester-cotton blend, pre-treated for dye absorption.",
-          specs: [{label: "GSM", value: "180"}, {label: "Width", value: "60 inch"}, {label: "Weave", value: "Plain"}]
+          description: "High-stretch elastane yarn for activewear and stretch fabrics.",
+          specs: [{label: "Denier", value: "40D"}, {label: "Elongation", value: "500%"}, {label: "Luster", value: "Dull"}]
         },
         {
-          id: "CHEM-055",
-          name: "Sulfuric Acid (Concentrated)",
-          category: "Acids",
-          price: 380,
-          unit: "Drum (100L)",
-          image: "https://images.unsplash.com/photo-1605333144182-4e45d625d886?auto=format&fit=crop&q=80&w=300&h=200",
+          id: "CHEM-ALK-ASH",
+          name: "Soda Ash Light",
+          category: "Process Chemicals",
+          price: 650,
+          unit: "Sack (50kg)",
+          image: "https://images.unsplash.com/photo-1588691885697-3ac790d81d24?auto=format&fit=crop&q=80&w=400",
           stockStatus: "In Stock",
-          description: "Industrial grade sulfuric acid for processing and manufacturing.",
-          specs: [{label: "Concentration", value: "98%"}, {label: "Appearance", value: "Clear Oily"}, {label: "Density", value: "1.84 g/cm3"}]
+          description: "Sodium Carbonate used for pH control in dyeing and scouring processes.",
+          specs: [{label: "Purity", value: "99.2% min"}, {label: "Form", value: "White Powder"}, {label: "pH", value: "11"}]
         },
         {
-          id: "TEX-305",
-          name: "Organic Cotton Yarn",
-          category: "Raw Material",
-          price: 85,
-          unit: "Spool (5kg)",
-          image: "https://images.unsplash.com/photo-1596541618331-b82b99818804?auto=format&fit=crop&q=80&w=300&h=200",
-          stockStatus: "In Stock",
-          description: "100% certified organic cotton yarn, suitable for premium garment production.",
-          specs: [{label: "Count", value: "40s"}, {label: "Origin", value: "Egypt"}, {label: "Certification", value: "GOTS"}]
-        },
-        {
-          id: "CHEM-102",
-          name: "Titanium Dioxide Pigment",
-          category: "Additives",
-          price: 2100,
-          unit: "Pallet (500kg)",
-          image: "https://images.unsplash.com/photo-1550989460-0adf9ea622e2?auto=format&fit=crop&q=80&w=300&h=200",
+          id: "CHEM-DYE-D60",
+          name: "Disperse Red 60 Dye",
+          category: "Dyes & Pigments",
+          price: 520,
+          unit: "Box (25kg)",
+          image: "https://images.unsplash.com/photo-1627931336444-245c4302c019?auto=format&fit=crop&q=80&w=400",
           stockStatus: "Out of Stock",
-          description: "Premium white pigment for paints, coatings, and plastics.",
-          specs: [{label: "Form", value: "Powder"}, {label: "Whiteness", value: "98%"}, {label: "Oil Absorption", value: "21g/100g"}]
+          description: "Bright red disperse dye for polyester and acetate fibers with good leveling.",
+          specs: [{label: "Class", value: "E-Type"}, {label: "Light Fastness", value: "6-7"}, {label: "Sublimation", value: "Good"}]
+        },
+        {
+          id: "LUB-KNIT-22",
+          name: "Industrial Knitting Oil (ISO 22)",
+          category: "Auxiliaries",
+          price: 3200,
+          unit: "Drum (200L)",
+          image: "https://images.unsplash.com/photo-1622358896068-07cb12ab06c5?auto=format&fit=crop&q=80&w=400",
+          stockStatus: "In Stock",
+          description: "Scourable needle oil for circular knitting machines to prevent friction and rust.",
+          specs: [{label: "Viscosity", value: "ISO VG 22"}, {label: "Washability", value: "Excellent"}, {label: "Color", value: "Clear"}]
+        },
+        {
+          id: "FAB-GRG-100",
+          name: "Greige Woven Fabric (100% Cotton)",
+          category: "Fabric",
+          price: 15500,
+          unit: "Roll (1000m)",
+          image: "https://images.unsplash.com/photo-1520188741372-a4282361d15c?auto=format&fit=crop&q=80&w=400",
+          stockStatus: "In Stock",
+          description: "Unfinished plain weave cotton fabric ready for dyeing or printing.",
+          specs: [{label: "Construction", value: "60x60 / 20x20"}, {label: "Width", value: "63 inch"}, {label: "GSM", value: "140"}]
+        },
+        {
+          id: "TEX-ROLL-DNM",
+          name: "Heavyweight Denim Fabric Roll (14oz)",
+          category: "Textile Roll",
+          price: 18200,
+          unit: "Roll (500m)",
+          image: "https://images.unsplash.com/photo-1584589167171-541ce45f1eea?auto=format&fit=crop&q=80&w=400",
+          stockStatus: "In Stock",
+          description: "Durable 14oz raw indigo denim suitable for jeans and heavy-duty apparel.",
+          specs: [{label: "Weight", value: "14oz"}, {label: "Width", value: "60 inch"}, {label: "Weave", value: "Twill"}]
+        },
+        {
+          id: "TEX-ROLL-CNV",
+          name: "Water-Resistant Canvas Roll (Olive)",
+          category: "Textile Roll",
+          price: 14500,
+          unit: "Roll (300m)",
+          image: "https://images.unsplash.com/photo-1523450001312-faa4e2e37f0f?auto=format&fit=crop&q=80&w=400",
+          stockStatus: "Low Stock",
+          description: "Heavy-duty waxed canvas, water-resistant finish for outdoor gear.",
+          specs: [{label: "GSM", value: "340"}, {label: "Width", value: "58 inch"}, {label: "Finish", value: "Waxed"}]
+        },
+        {
+          id: "TEX-ROLL-SILK",
+          name: "Pure Silk Satin Roll (Ivory)",
+          category: "Textile Roll",
+          price: 45000,
+          unit: "Roll (200m)",
+          image: "https://images.unsplash.com/photo-1563811802958-d784570624a1?auto=format&fit=crop&q=80&w=400",
+          stockStatus: "In Stock",
+          description: "Luxurious 100% silk satin with high luster and soft drape for high-end fashion.",
+          specs: [{label: "Momme", value: "19mm"}, {label: "Width", value: "44 inch"}, {label: "Grade", value: "6A"}]
         }
       ]
-    }
+    },
+    suggestedPrompts: [
+      "What is my current available credit limit?",
+      "List my orders that are currently 'Processing'.",
+      "Are there any alternative products for 'Out of Stock' items?"
+    ]
   },
 ];

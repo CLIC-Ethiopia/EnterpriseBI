@@ -50,6 +50,18 @@ export interface Product {
   description: string;
 }
 
+export interface WarehouseProduct extends Product {
+  quantity: number;
+  location: string;
+  supplier: string;
+  lastRestock: string;
+  incoming: number;
+}
+
+export interface InventoryData {
+  products: WarehouseProduct[];
+}
+
 export interface OrderItem {
   productId: string;
   productName: string;
@@ -136,9 +148,11 @@ export interface DepartmentData {
   barChartData: ChartDataPoint[];
   tableTitle: string;
   summaryTableData: SummaryRow[];
+  suggestedPrompts?: string[]; // New field for AI prompts
   customerData?: CustomerSpecificData; // Optional field for customer view
   systemAdminData?: SystemAdminData; // Optional field for system admin
   accountingData?: AccountingData; // Optional field for accounting
+  inventoryData?: InventoryData; // Optional field for warehouse inventory
 }
 
 export interface AIInsight {

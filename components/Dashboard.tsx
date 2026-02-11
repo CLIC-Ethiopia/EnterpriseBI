@@ -14,6 +14,7 @@ import CustomerPortal from './CustomerPortal';
 import DataAdminPortal from './DataAdminPortal';
 import SystemAdminPortal from './SystemAdminPortal';
 import AccountingPortal from './AccountingPortal';
+import WarehouseCatalog from './WarehouseCatalog';
 
 interface DashboardProps {
   department: DepartmentData;
@@ -42,12 +43,14 @@ const Dashboard: React.FC<DashboardProps> = ({
   const [tempComment, setTempComment] = useState("");
   const [approvedItems, setApprovedItems] = useState<Set<number>>(new Set());
   const [rejectedItems, setRejectedItems] = useState<Set<number>>(new Set());
+  const [isWarehouseCatalogOpen, setIsWarehouseCatalogOpen] = useState(false);
 
   const isGeneralManagement = department.id === DepartmentType.GENERAL;
   const isCustomerView = department.id === DepartmentType.CUSTOMER;
   const isDataAdmin = department.id === DepartmentType.DATA_ADMIN;
   const isSystemAdmin = department.id === DepartmentType.SYSTEM_ADMIN;
   const isAccounting = department.id === DepartmentType.ACCOUNTING;
+  const isInventory = department.id === DepartmentType.INVENTORY;
 
   // Determine current user based on department for display purposes
   const currentUser = (() => {
@@ -256,6 +259,14 @@ const Dashboard: React.FC<DashboardProps> = ({
         />
       )}
 
+      {/* Warehouse Catalog Modal */}
+      {isWarehouseCatalogOpen && department.inventoryData && (
+        <WarehouseCatalog 
+           products={department.inventoryData.products} 
+           onClose={() => setIsWarehouseCatalogOpen(false)} 
+        />
+      )}
+
       {/* Sidebar Navigation */}
       <aside className={`fixed lg:relative inset-y-0 left-0 w-72 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 z-50 transform transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'} flex flex-col print:hidden`}>
         {/* Logo Area */}
@@ -456,10 +467,20 @@ const Dashboard: React.FC<DashboardProps> = ({
                        <p className="text-gray-500 dark:text-gray-400">Track key performance indicators and department metrics.</p>
                      </div>
                      <div className="flex gap-3">
-                        <button className="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-2">
-                           <Settings className="w-4 h-4" />
-                           Settings
-                        </button>
+                        {isInventory ? (
+                           <button 
+                              onClick={() => setIsWarehouseCatalogOpen(true)}
+                              className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700 transition-colors flex items-center gap-2 shadow-sm shadow-emerald-200 dark:shadow-none"
+                           >
+                              <Package className="w-4 h-4" />
+                              Product Catalogue
+                           </button>
+                        ) : (
+                           <button className="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-2">
+                              <Settings className="w-4 h-4" />
+                              Settings
+                           </button>
+                        )}
                         <button 
                           onClick={onOpenAI}
                           className={`px-4 py-2 bg-${department.themeColor}-600 text-white rounded-lg hover:opacity-90 transition-opacity font-medium text-sm flex items-center gap-2 shadow-sm shadow-${department.themeColor}-200 dark:shadow-none`}
