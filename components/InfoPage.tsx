@@ -1,7 +1,8 @@
 import React from 'react';
 import { 
   ArrowLeft, Book, Zap, LayoutGrid, Users, Mail, HelpCircle, 
-  Server, Shield, Monitor, Smartphone, Lock, Database, Wifi, Laptop 
+  Server, Shield, Monitor, Smartphone, Lock, Database, Wifi, Laptop,
+  Layers, Key, Network, Cpu, Box
 } from 'lucide-react';
 
 interface InfoPageProps {
@@ -11,7 +12,7 @@ interface InfoPageProps {
 const InfoPage: React.FC<InfoPageProps> = ({ onBack }) => {
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900 transition-colors duration-300">
-      <div className="max-w-5xl mx-auto px-6 py-12">
+      <div className="max-w-6xl mx-auto px-6 py-12">
         <button 
           onClick={onBack}
           className="group flex items-center gap-2 text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 mb-10 transition-colors"
@@ -236,35 +237,75 @@ const InfoPage: React.FC<InfoPageProps> = ({ onBack }) => {
 
                 <div>
                    <h3 className="text-xl font-bold text-white mb-2 flex items-center gap-2">
-                     <Database className="w-5 h-5 text-purple-400" />
-                     Software Stack
+                     <Shield className="w-5 h-5 text-purple-400" />
+                     Zero-Trust Local Access
                    </h3>
-                   <div className="mt-3 space-y-3">
-                      <div className="flex items-start gap-3 text-sm text-gray-300 bg-gray-800/50 p-3 rounded-lg border border-gray-700">
-                         <div className="w-2 h-2 mt-1.5 rounded-full bg-blue-400 flex-shrink-0"></div>
-                         <div>
-                            <span className="font-bold text-white">Frontend Application</span>
-                            <p className="text-xs text-gray-500 mt-0.5">React-based interactive dashboards for all departments.</p>
-                         </div>
-                      </div>
-                      <div className="flex items-start gap-3 text-sm text-gray-300 bg-gray-800/50 p-3 rounded-lg border border-gray-700">
-                         <div className="w-2 h-2 mt-1.5 rounded-full bg-green-400 flex-shrink-0"></div>
-                         <div>
-                            <span className="font-bold text-white">Local Database</span>
-                            <p className="text-xs text-gray-500 mt-0.5">Encrypted SQL/NoSQL instance hosting inventory & financial records.</p>
-                         </div>
-                      </div>
-                      <div className="flex items-start gap-3 text-sm text-gray-300 bg-gray-800/50 p-3 rounded-lg border border-gray-700">
-                         <div className="w-2 h-2 mt-1.5 rounded-full bg-red-400 flex-shrink-0"></div>
-                         <div>
-                            <span className="font-bold text-white">Security Layer</span>
-                            <p className="text-xs text-gray-500 mt-0.5">Internal firewall, role-based auth, and access logging.</p>
-                         </div>
-                      </div>
-                   </div>
+                   <p className="text-gray-400 text-sm leading-relaxed">
+                      Even within the local network, every request is authenticated. 
+                      Firewall rules isolate the database from direct employee access, routing traffic exclusively through the application layer.
+                   </p>
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Software Architecture Section */}
+        <div className="mb-16">
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">Software Architecture & Stack</h2>
+          <p className="text-gray-600 dark:text-gray-300 mb-8 max-w-4xl">
+             To ensure a robust, free, and secure on-premise environment, we employ a "Local Cloud" architecture using industry-standard open-source software. 
+             This stack provides enterprise-grade virtualization, containerization, and access control without recurring license fees.
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+             {/* Card 1: Infrastructure */}
+             <StackCard 
+               icon={<Server className="w-6 h-6 text-orange-500" />}
+               title="Bare Metal Virtualization"
+               tool="Proxmox VE"
+               desc="An open-source enterprise virtualization platform. It converts the physical micro-datacenter into a flexible 'Private Cloud', allowing us to run multiple isolated Virtual Machines (VMs) for the Database, App Server, and Security Gateway on single hardware."
+             />
+
+             {/* Card 2: Orchestration */}
+             <StackCard 
+               icon={<Box className="w-6 h-6 text-blue-500" />}
+               title="Container Management"
+               tool="Docker + Portainer"
+               desc="Applications are containerized using Docker for portability and isolation. Portainer provides a user-friendly UI to manage these containers, making it easy for local IT to deploy updates or restart services without command-line complexity."
+             />
+
+             {/* Card 3: RBAC & Security */}
+             <StackCard 
+               icon={<Key className="w-6 h-6 text-yellow-500" />}
+               title="Identity Access (RBAC)"
+               tool="Keycloak"
+               desc="The gold standard for open-source Identity and Access Management. Keycloak handles user logins and enforces Role-Based Access Control (RBAC), ensuring Warehouse staff cannot access Finance data, and locking the system against unauthorized devices."
+             />
+
+             {/* Card 4: Networking */}
+             <StackCard 
+               icon={<Network className="w-6 h-6 text-green-500" />}
+               title="Internal Routing"
+               tool="Nginx Proxy Manager"
+               desc="Acts as the traffic cop for the local network. It provides a secure reverse proxy, handling SSL certificates (HTTPS) and routing friendly domains like 'bi.local' to the correct internal container ports."
+             />
+
+             {/* Card 5: Database */}
+             <StackCard 
+               icon={<Database className="w-6 h-6 text-indigo-500" />}
+               title="Data Persistence"
+               tool="PostgreSQL"
+               desc="A powerful, open-source relational database. Chosen for its reliability and complex query support, it stores all inventory logs, ledger entries, and user metadata securely on an encrypted disk partition."
+             />
+
+             {/* Card 6: OS Layer */}
+             <StackCard 
+               icon={<Layers className="w-6 h-6 text-slate-500" />}
+               title="Operating System"
+               tool="Ubuntu Server LTS"
+               desc="The stable, long-term support version of Ubuntu Linux serves as the guest Operating System for our VMs. It provides a secure, lightweight foundation optimized for running Docker workloads."
+             />
           </div>
         </div>
 
@@ -310,5 +351,22 @@ const InfoPage: React.FC<InfoPageProps> = ({ onBack }) => {
     </div>
   );
 };
+
+const StackCard = ({ icon, title, tool, desc }: { icon: React.ReactNode, title: string, tool: string, desc: string }) => (
+   <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow">
+      <div className="flex items-center gap-3 mb-4">
+         <div className="p-2 bg-gray-100 dark:bg-gray-700 rounded-lg">
+            {icon}
+         </div>
+         <div>
+            <h4 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{title}</h4>
+            <p className="text-lg font-bold text-gray-900 dark:text-white">{tool}</p>
+         </div>
+      </div>
+      <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+         {desc}
+      </p>
+   </div>
+);
 
 export default InfoPage;
