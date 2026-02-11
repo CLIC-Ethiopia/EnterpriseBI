@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { DepartmentData, LedgerEntry } from '../types';
 import { 
@@ -12,9 +13,10 @@ import {
 interface AccountingPortalProps {
   data: DepartmentData;
   onOpenAI: () => void;
+  isDarkMode: boolean;
 }
 
-const AccountingPortal: React.FC<AccountingPortalProps> = ({ data, onOpenAI }) => {
+const AccountingPortal: React.FC<AccountingPortalProps> = ({ data, onOpenAI, isDarkMode }) => {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'ledger' | 'analysis'>('dashboard');
   const [ledgerSearch, setLedgerSearch] = useState('');
   
@@ -61,6 +63,21 @@ const AccountingPortal: React.FC<AccountingPortalProps> = ({ data, onOpenAI }) =
     baseCOGS: 600000,
     baseOpex: 200000
   });
+
+  // Updated Tooltip Style for Better Contrast
+  const tooltipStyle = {
+    backgroundColor: isDarkMode ? '#1f2937' : '#ffffff',
+    borderColor: isDarkMode ? '#374151' : '#e2e8f0',
+    color: isDarkMode ? '#f3f4f6' : '#1f2937',
+    borderRadius: '8px',
+    border: '1px solid',
+    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+    padding: '8px 12px',
+  };
+
+  const itemStyle = {
+    color: isDarkMode ? '#f3f4f6' : '#1f2937',
+  };
 
   const currentRatio = (ratioInputs.currentAssets / ratioInputs.currentLiabilities).toFixed(2);
   const quickRatio = ((ratioInputs.currentAssets - ratioInputs.inventory) / ratioInputs.currentLiabilities).toFixed(2);
@@ -181,7 +198,7 @@ const AccountingPortal: React.FC<AccountingPortalProps> = ({ data, onOpenAI }) =
               </div>
             ))}
           </div>
-          {/* ... Rest of Dashboard Content (No changes needed below) ... */}
+          
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Payables vs Receivables */}
             <div className="lg:col-span-2 bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
@@ -199,10 +216,13 @@ const AccountingPortal: React.FC<AccountingPortalProps> = ({ data, onOpenAI }) =
                          <stop offset="95%" stopColor="#06b6d4" stopOpacity={0}/>
                        </linearGradient>
                      </defs>
-                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDarkMode ? '#374151' : '#e5e7eb'} />
                      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#9ca3af', fontSize: 12}} dy={10} />
                      <YAxis axisLine={false} tickLine={false} tick={{fill: '#9ca3af', fontSize: 12}} />
-                     <RechartsTooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                     <RechartsTooltip 
+                        contentStyle={tooltipStyle}
+                        itemStyle={itemStyle} 
+                     />
                      <Legend />
                      <Area type="monotone" dataKey="Payables" stroke="#ef4444" fillOpacity={1} fill="url(#colorPay)" />
                      <Area type="monotone" dataKey="Receivables" stroke="#06b6d4" fillOpacity={1} fill="url(#colorRec)" />
@@ -245,10 +265,13 @@ const AccountingPortal: React.FC<AccountingPortalProps> = ({ data, onOpenAI }) =
                 <div className="h-64">
                    <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={agingData}>
-                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDarkMode ? '#374151' : '#e5e7eb'} />
                          <XAxis dataKey="range" axisLine={false} tickLine={false} tick={{fill: '#9ca3af', fontSize: 12}} />
                          <YAxis axisLine={false} tickLine={false} tick={{fill: '#9ca3af', fontSize: 12}} />
-                         <RechartsTooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                         <RechartsTooltip 
+                            contentStyle={tooltipStyle}
+                            itemStyle={itemStyle} 
+                         />
                          <Legend />
                          <Bar dataKey="Receivables" fill="#3b82f6" radius={[4, 4, 0, 0]} />
                          <Bar dataKey="Payables" fill="#ef4444" radius={[4, 4, 0, 0]} />

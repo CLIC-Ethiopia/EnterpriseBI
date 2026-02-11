@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { 
   Globe, Printer, Info, Sun, Moon, Home, LogOut 
@@ -35,7 +36,7 @@ const BottomDock: React.FC<BottomDockProps> = ({
   return (
     <div className="fixed bottom-0 left-0 right-0 z-[100] pointer-events-none flex items-end justify-between px-6 pb-6 print:hidden">
       
-      {/* Left: Spacer to maintain layout balance (Company info removed) */}
+      {/* Left: Spacer to maintain layout balance */}
       <div className="pointer-events-none w-1 h-1"></div>
 
       {/* Center: Macbook-style Dock */}
@@ -65,18 +66,8 @@ const BottomDock: React.FC<BottomDockProps> = ({
          </div>
       </div>
 
-      {/* Right: Dev Info - Reshaped to be wider and shorter */}
-      <div className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl border border-gray-200 dark:border-gray-800 rounded-2xl p-3 shadow-2xl pointer-events-auto hidden md:block transition-transform hover:scale-105 origin-bottom-right">
-         <div className="flex items-baseline justify-end gap-3 mb-1">
-            <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">System Architect</span>
-            <h3 className="font-bold text-gray-900 dark:text-white text-sm">Prof. Frehun A. Demissie</h3>
-         </div>
-         <div className="flex items-center justify-end gap-3">
-            <a href="mailto:frehun.demissie@gmail.com" className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-medium">frehun.demissie@gmail.com</a>
-            <span className="text-gray-300 dark:text-gray-700 text-[10px]">|</span>
-            <p className="text-xs text-gray-500 dark:text-gray-400">+251 911 69 2277</p>
-         </div>
-      </div>
+      {/* Right: Spacer (Dev Info removed) */}
+      <div className="pointer-events-none w-1 h-1"></div>
 
     </div>
   );

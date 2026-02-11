@@ -109,13 +109,20 @@ const Dashboard: React.FC<DashboardProps> = ({
   // Chart configuration for Dark Mode
   const gridColor = isDarkMode ? '#374151' : '#f1f5f9';
   const axisColor = '#94a3b8';
+  
+  // Updated Tooltip Style for Better Contrast
   const tooltipStyle = {
-    backgroundColor: isDarkMode ? '#1f2937' : '#fff',
-    borderColor: isDarkMode ? '#374151' : '#fff',
-    color: isDarkMode ? '#fff' : '#000',
+    backgroundColor: isDarkMode ? '#1f2937' : '#ffffff',
+    borderColor: isDarkMode ? '#374151' : '#e2e8f0',
+    color: isDarkMode ? '#f3f4f6' : '#1f2937',
     borderRadius: '8px',
     border: '1px solid',
-    boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
+    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+    padding: '8px 12px',
+  };
+
+  const itemStyle = {
+    color: isDarkMode ? '#f3f4f6' : '#1f2937',
   };
 
   const getIcon = (name: string) => {
@@ -168,7 +175,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   const standardDepartments = allDepartments.filter(d => 
     d.id !== DepartmentType.GENERAL && 
     d.id !== DepartmentType.CUSTOMER && 
-    d.id !== DepartmentType.DATA_ADMIN &&
+    d.id !== DepartmentType.DATA_ADMIN && 
     d.id !== DepartmentType.SYSTEM_ADMIN
   );
 
@@ -334,15 +341,21 @@ const Dashboard: React.FC<DashboardProps> = ({
           </div>
         </nav>
 
-          {/* Sidebar Footer */}
+          {/* Sidebar Footer - Updated with System Architect Info */}
           <div className="p-4 border-t border-gray-100 dark:border-gray-700 flex-shrink-0">
-             <button 
-               onClick={onLogout}
-               className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors font-medium"
-             >
-               <LogOut className="w-5 h-5" />
-               <span>Sign Out</span>
-             </button>
+             <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-3 border border-gray-100 dark:border-gray-600">
+                <div className="flex items-center justify-between mb-2">
+                   <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">System Architect</span>
+                   <button onClick={onLogout} className="text-gray-400 hover:text-red-500 transition-colors" title="Sign Out">
+                      <LogOut className="w-4 h-4" />
+                   </button>
+                </div>
+                <h3 className="font-bold text-gray-900 dark:text-white text-xs mb-1">Prof. Frehun A. Demissie</h3>
+                <div className="space-y-0.5">
+                    <a href="mailto:frehun.demissie@gmail.com" className="text-[10px] text-indigo-600 dark:text-indigo-400 hover:underline block truncate">frehun.demissie@gmail.com</a>
+                    <p className="text-[10px] text-gray-500 dark:text-gray-400">+251 911 69 2277</p>
+                </div>
+             </div>
           </div>
       </aside>
 
@@ -453,7 +466,7 @@ const Dashboard: React.FC<DashboardProps> = ({
              ) : isSystemAdmin && department.systemAdminData ? (
                <SystemAdminPortal data={department.systemAdminData} onOpenAI={onOpenAI} />
              ) : isAccounting ? (
-               <AccountingPortal data={department} onOpenAI={onOpenAI} />
+               <AccountingPortal data={department} onOpenAI={onOpenAI} isDarkMode={isDarkMode} />
              ) : (
                <>
                   {/* ... Standard Dashboard ... */}
@@ -582,6 +595,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                             <YAxis axisLine={false} tickLine={false} tick={{fill: axisColor, fontSize: 12}} />
                             <RechartsTooltip 
                               contentStyle={tooltipStyle}
+                              itemStyle={itemStyle}
                               cursor={{stroke: '#cbd5e1', strokeWidth: 1, strokeDasharray: '4 4'}}
                             />
                             {Object.keys(department.mainChartData[0] || {}).filter(k => k !== 'name').map((key, i) => (
@@ -620,7 +634,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke={isDarkMode ? '#1f2937' : '#fff'} strokeWidth={2} />
                                 ))}
                               </Pie>
-                              <RechartsTooltip contentStyle={tooltipStyle} />
+                              <RechartsTooltip contentStyle={tooltipStyle} itemStyle={itemStyle} />
                               <Legend verticalAlign="bottom" height={36} formatter={(value) => <span style={{ color: isDarkMode ? '#e5e7eb' : '#374151' }}>{value}</span>} />
                             </PieChart>
                          </ResponsiveContainer>
@@ -650,6 +664,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                               <YAxis axisLine={false} tickLine={false} tick={{fill: axisColor, fontSize: 12}} />
                               <RechartsTooltip 
                                  contentStyle={tooltipStyle}
+                                 itemStyle={itemStyle}
                                  cursor={{fill: isDarkMode ? '#374151' : '#f1f5f9'}}
                               />
                               <Legend wrapperStyle={{paddingTop: '20px'}} formatter={(value) => <span style={{ color: isDarkMode ? '#e5e7eb' : '#374151' }}>{value}</span>}/>
