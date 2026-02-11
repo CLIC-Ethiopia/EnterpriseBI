@@ -1,5 +1,6 @@
+
 import React, { useState } from 'react';
-import { DepartmentData, DepartmentType } from '../types';
+import { DepartmentData, DepartmentType, TickerItem } from '../types';
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend, BarChart, Bar
@@ -15,6 +16,9 @@ import DataAdminPortal from './DataAdminPortal';
 import SystemAdminPortal from './SystemAdminPortal';
 import AccountingPortal from './AccountingPortal';
 import WarehouseCatalog from './WarehouseCatalog';
+import SmartTicker from './SmartTicker';
+import LogisticsMap from './LogisticsMap';
+import WarehouseHeatmap from './WarehouseHeatmap';
 
 interface DashboardProps {
   department: DepartmentData;
@@ -28,6 +32,16 @@ interface DashboardProps {
 }
 
 const COLORS = ['#4f46e5', '#10b981', '#f59e0b', '#ef4444'];
+
+// Mock Ticker Data
+const tickerItems: TickerItem[] = [
+  { label: 'USD/ETB', value: '121.50', change: 0.45, type: 'currency' },
+  { label: 'EUR/ETB', value: '132.80', change: -0.12, type: 'currency' },
+  { label: 'Cotton Futures', value: '$84.20', change: 1.2, type: 'commodity' },
+  { label: 'Brent Crude', value: '$82.40', change: -0.5, type: 'commodity' },
+  { label: 'System Alert', value: 'Scheduled Maintenance 02:00 AM', change: 0, type: 'alert' },
+  { label: 'Inventory', value: 'Low Stock: Chemical Zone C', change: 0, type: 'alert' },
+];
 
 const Dashboard: React.FC<DashboardProps> = ({ 
   department, 
@@ -53,6 +67,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   const isSystemAdmin = department.id === DepartmentType.SYSTEM_ADMIN;
   const isAccounting = department.id === DepartmentType.ACCOUNTING;
   const isInventory = department.id === DepartmentType.INVENTORY;
+  const isSales = department.id === DepartmentType.SALES;
 
   // Determine current user based on department for display purposes
   const currentUser = (() => {
@@ -392,6 +407,11 @@ const Dashboard: React.FC<DashboardProps> = ({
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col h-screen overflow-hidden print:h-auto print:overflow-visible print:block">
         
+        {/* Smart Ticker Component */}
+        {!isCustomerView && (
+           <SmartTicker items={tickerItems} />
+        )}
+
         {/* Top Navigation Header */}
         <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex justify-between items-center z-10 print:border-none">
           <div className="flex items-center gap-4">
@@ -557,6 +577,22 @@ const Dashboard: React.FC<DashboardProps> = ({
                       </div>
                     )})}
                   </div>
+
+                  {/* SPECIALIZED VISUALIZATIONS */}
+                  {/* Logistics Map (Sales & Inventory Only) */}
+                  {(isSales || isInventory) && department.logisticsRoutes && (
+                     <div className="print:hidden">
+                        <LogisticsMap routes={department.logisticsRoutes} />
+                     </div>
+                  )}
+
+                  {/* Warehouse Heatmap (Inventory Only) */}
+                  {isInventory && department.inventoryData && (
+                     <div className="print:hidden">
+                        <WarehouseHeatmap products={department.inventoryData.products} />
+                     </div>
+                  )}
+
 
                   {/* Charts Row */}
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 print:block">

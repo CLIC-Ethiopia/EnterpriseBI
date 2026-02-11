@@ -1,3 +1,4 @@
+
 import { DepartmentType, DepartmentData } from './types';
 
 export const DEPARTMENTS: DepartmentData[] = [
@@ -207,6 +208,13 @@ export const DEPARTMENTS: DepartmentData[] = [
       { id: 3, item: "Global Chem", category: "Industrial", status: "Stable", value: "Bir 800k", completion: 80 },
       { id: 4, item: "FastFashion Inc.", category: "Retail", status: "Critical", value: "Bir 200k", completion: 25 },
       { id: 5, item: "BuildIt Group", category: "Construction", status: "Good", value: "Bir 600k", completion: 90 },
+    ],
+    logisticsRoutes: [
+      { id: "R-101", origin: "Shanghai", destination: "Addis Ababa", coordinates: { x1: 75, y1: 35, x2: 55, y2: 52 }, status: "In Transit", type: "Sea", goods: "Raw Textiles", value: "$450k" },
+      { id: "R-102", origin: "Mumbai", destination: "Addis Ababa", coordinates: { x1: 65, y1: 42, x2: 55, y2: 52 }, status: "Customs", type: "Sea", goods: "Chemical Dyes", value: "$120k" },
+      { id: "R-103", origin: "Hamburg", destination: "Addis Ababa", coordinates: { x1: 50, y1: 25, x2: 55, y2: 52 }, status: "Delayed", type: "Air", goods: "Machinery Parts", value: "$80k" },
+      { id: "R-104", origin: "Addis Ababa", destination: "Nairobi", coordinates: { x1: 55, y1: 52, x2: 55, y2: 60 }, status: "Delivered", type: "Land", goods: "Finished Garments", value: "$65k" },
+      { id: "R-105", origin: "Dubai", destination: "Addis Ababa", coordinates: { x1: 58, y1: 40, x2: 55, y2: 52 }, status: "In Transit", type: "Air", goods: "Electronics", value: "$200k" },
     ],
     suggestedPrompts: [
       "Which region is underperforming against sales targets?",

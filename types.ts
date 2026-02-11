@@ -134,6 +134,25 @@ export interface AccountingData {
   upcomingTax: { name: string; amount: number; dueDate: string }[];
 }
 
+// NEW: Logistics Interfaces
+export interface LogisticsRoute {
+  id: string;
+  origin: string;
+  destination: string;
+  coordinates: { x1: number, y1: number, x2: number, y2: number }; // Percentage based coords
+  status: 'In Transit' | 'Customs' | 'Delivered' | 'Delayed';
+  type: 'Air' | 'Sea' | 'Land';
+  goods: string;
+  value: string;
+}
+
+export interface TickerItem {
+  label: string;
+  value: string;
+  change: number;
+  type: 'currency' | 'commodity' | 'alert';
+}
+
 export interface DepartmentData {
   id: DepartmentType;
   name: string;
@@ -153,6 +172,7 @@ export interface DepartmentData {
   systemAdminData?: SystemAdminData; // Optional field for system admin
   accountingData?: AccountingData; // Optional field for accounting
   inventoryData?: InventoryData; // Optional field for warehouse inventory
+  logisticsRoutes?: LogisticsRoute[]; // NEW: For map visualization
 }
 
 export interface AIInsight {
