@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { 
   ArrowLeft, Book, Zap, LayoutGrid, Users, Mail, HelpCircle, 
@@ -213,17 +214,24 @@ const InfoPage: React.FC<InfoPageProps> = ({ onBack }) => {
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900 transition-colors duration-300">
-      <div className="max-w-6xl mx-auto px-6 py-12">
-        <button 
-          onClick={onBack}
-          className="group flex items-center gap-2 text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 mb-10 transition-colors"
-        >
-          <div className="p-1 rounded-full group-hover:bg-indigo-50 dark:group-hover:bg-indigo-900/30 transition-colors">
-             <ArrowLeft className="w-5 h-5" />
-          </div>
-          <span>Return to Application</span>
-        </button>
+      
+      {/* Sticky Header with Return Button */}
+      <div className="sticky top-0 z-50 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md border-b border-gray-100 dark:border-gray-800 shadow-sm transition-colors duration-300">
+        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center">
+          <button 
+            onClick={onBack}
+            className="group flex items-center gap-3 text-lg font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 transition-all transform hover:-translate-x-1"
+          >
+            <div className="p-2 rounded-full bg-indigo-50 dark:bg-indigo-900/30 group-hover:bg-indigo-100 dark:group-hover:bg-indigo-900/50 transition-colors shadow-sm ring-1 ring-indigo-100 dark:ring-indigo-800">
+               <ArrowLeft className="w-6 h-6" />
+            </div>
+            <span>Return to Application</span>
+          </button>
+        </div>
+      </div>
 
+      <div className="max-w-6xl mx-auto px-6 py-12 pt-8">
+        
         <div className="flex flex-col md:flex-row gap-12 mb-16">
           <div className="flex-1">
              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 text-xs font-bold uppercase tracking-wider mb-6">
