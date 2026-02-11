@@ -1,19 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { DepartmentData } from './types';
 import { DEPARTMENTS } from './data';
+import { fetchDepartments } from './services/api';
 import Dashboard from './components/Dashboard';
 import DepartmentCarousel from './components/DepartmentCarousel';
 import AIAnalyst from './components/AIAnalyst';
 import LandingPage from './components/LandingPage';
 import InfoPage from './components/InfoPage';
 import BottomDock from './components/BottomDock';
-import { LayoutGrid, Globe, Moon, Sun, HelpCircle } from 'lucide-react';
+import { LayoutGrid, Globe, Moon, Sun, HelpCircle, Database } from 'lucide-react';
 
 type ViewState = 'LANDING' | 'SELECTION' | 'DASHBOARD' | 'INFO';
 
 const App: React.FC = () => {
   const [viewState, setViewState] = useState<ViewState>('LANDING');
   const [previousViewState, setPreviousViewState] = useState<ViewState>('LANDING');
+  
+  // Data State: Initialize with local fallback, update if API succeeds
+  const [departments, setDepartments] = useState<DepartmentData[]>(DEPARTMENTS);
+  const [isUsingLiveData, setIsUsingLiveData] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
   const [activeDepartment, setActiveDepartment] = useState<DepartmentData | null>(null);
   const [isAIAnalystOpen, setIsAIAnalystOpen] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -21,6 +28,27 @@ const App: React.FC = () => {
   
   // Theme State - Default to Dark Mode
   const [isDarkMode, setIsDarkMode] = useState(true);
+
+  // Fetch Data from Google Sheets on Mount
+  useEffect(() => {
+    const initData = async () => {
+      setIsLoading(true);
+      const remoteData = await fetchDepartments();
+      if (remoteData && remoteData.length > 0) {
+        setDepartments(remoteData);
+        setIsUsingLiveData(true);
+        
+        // If we were already viewing a department (e.g. hot reload), update the reference
+        setActiveDepartment(prev => {
+          if (!prev) return null;
+          return remoteData.find(d => d.id === prev.id) || prev;
+        });
+      }
+      setIsLoading(false);
+    };
+
+    initData();
+  }, []);
 
   useEffect(() => {
     if (isDarkMode) {
@@ -106,7 +134,7 @@ const App: React.FC = () => {
         <>
           <Dashboard 
             department={activeDepartment} 
-            allDepartments={DEPARTMENTS}
+            allDepartments={departments}
             onSwitchDepartment={handleSwitchDepartment}
             onOpenAI={() => setIsAIAnalystOpen(true)}
             onLogout={handleLogout}
@@ -133,6 +161,16 @@ const App: React.FC = () => {
               <span className="text-xl font-bold tracking-tight text-gray-900 dark:text-white">GlobalTrade<span className="text-indigo-600 dark:text-indigo-400">BI</span></span>
             </div>
             <div className="flex items-center gap-4">
+              {/* Data Source Indicator */}
+              <div className={`hidden md:flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${isUsingLiveData ? 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800' : 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700'}`}>
+                {isLoading ? (
+                  <span className="animate-spin rounded-full h-2 w-2 border-2 border-current border-t-transparent"></span>
+                ) : (
+                  <Database className="w-3 h-3" />
+                )}
+                {isLoading ? 'Syncing...' : isUsingLiveData ? 'Live Sheet Data' : 'Local Data'}
+              </div>
+
               <button 
                 onClick={handleShowInfo}
                 className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 transition-colors"
@@ -174,7 +212,7 @@ const App: React.FC = () => {
             </div>
 
             <DepartmentCarousel 
-              departments={DEPARTMENTS} 
+              departments={departments} 
               onSelect={handleDepartmentSelect} 
             />
           </main>
