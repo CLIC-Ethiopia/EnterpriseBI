@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { DepartmentData, LedgerEntry } from '../types';
 import { 
   Calculator, PieChart as PieIcon, TrendingUp, DollarSign, Calendar, Search, 
-  FileText, Sliders, ArrowRight, Plus, Download, RefreshCw, Activity, Layers, Scale, X
+  FileText, Sliders, ArrowRight, Plus, Download, RefreshCw, Activity, Layers, Scale, X, GraduationCap
 } from 'lucide-react';
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
@@ -11,9 +11,10 @@ import {
 
 interface AccountingPortalProps {
   data: DepartmentData;
+  onOpenAI: () => void;
 }
 
-const AccountingPortal: React.FC<AccountingPortalProps> = ({ data }) => {
+const AccountingPortal: React.FC<AccountingPortalProps> = ({ data, onOpenAI }) => {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'ledger' | 'analysis'>('dashboard');
   const [ledgerSearch, setLedgerSearch] = useState('');
   
@@ -134,24 +135,33 @@ const AccountingPortal: React.FC<AccountingPortalProps> = ({ data }) => {
     <div className="space-y-6">
       
       {/* Navigation Tabs */}
-      <div className="flex space-x-1 bg-white dark:bg-gray-800 p-1 rounded-xl w-fit border border-gray-100 dark:border-gray-700">
+      <div className="flex justify-between items-center">
+        <div className="flex space-x-1 bg-white dark:bg-gray-800 p-1 rounded-xl w-fit border border-gray-100 dark:border-gray-700">
+          <button 
+            onClick={() => setActiveTab('dashboard')}
+            className={`px-4 py-2 text-sm font-medium rounded-lg transition-all flex items-center gap-2 ${activeTab === 'dashboard' ? 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300 shadow-sm' : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200'}`}
+          >
+            <PieIcon className="w-4 h-4" /> Dashboard
+          </button>
+          <button 
+            onClick={() => setActiveTab('ledger')}
+            className={`px-4 py-2 text-sm font-medium rounded-lg transition-all flex items-center gap-2 ${activeTab === 'ledger' ? 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300 shadow-sm' : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200'}`}
+          >
+            <FileText className="w-4 h-4" /> General Ledger
+          </button>
+          <button 
+            onClick={() => setActiveTab('analysis')}
+            className={`px-4 py-2 text-sm font-medium rounded-lg transition-all flex items-center gap-2 ${activeTab === 'analysis' ? 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300 shadow-sm' : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200'}`}
+          >
+            <Calculator className="w-4 h-4" /> Ad-hoc Analysis
+          </button>
+        </div>
         <button 
-          onClick={() => setActiveTab('dashboard')}
-          className={`px-4 py-2 text-sm font-medium rounded-lg transition-all flex items-center gap-2 ${activeTab === 'dashboard' ? 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300 shadow-sm' : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200'}`}
+          onClick={onOpenAI}
+          className="px-4 py-2 bg-cyan-600 text-white rounded-lg hover:opacity-90 transition-opacity font-medium text-sm flex items-center gap-2 shadow-sm shadow-cyan-200 dark:shadow-none"
         >
-          <PieIcon className="w-4 h-4" /> Dashboard
-        </button>
-        <button 
-          onClick={() => setActiveTab('ledger')}
-          className={`px-4 py-2 text-sm font-medium rounded-lg transition-all flex items-center gap-2 ${activeTab === 'ledger' ? 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300 shadow-sm' : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200'}`}
-        >
-          <FileText className="w-4 h-4" /> General Ledger
-        </button>
-        <button 
-          onClick={() => setActiveTab('analysis')}
-          className={`px-4 py-2 text-sm font-medium rounded-lg transition-all flex items-center gap-2 ${activeTab === 'analysis' ? 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300 shadow-sm' : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200'}`}
-        >
-          <Calculator className="w-4 h-4" /> Ad-hoc Analysis
+          <GraduationCap className="w-4 h-4 opacity-90" />
+          Ask Prof. Fad
         </button>
       </div>
 
@@ -171,7 +181,7 @@ const AccountingPortal: React.FC<AccountingPortalProps> = ({ data }) => {
               </div>
             ))}
           </div>
-
+          {/* ... Rest of Dashboard Content (No changes needed below) ... */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Payables vs Receivables */}
             <div className="lg:col-span-2 bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">

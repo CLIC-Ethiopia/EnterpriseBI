@@ -8,7 +8,7 @@ import {
   ArrowUpRight, ArrowDownRight, MoreHorizontal, Bell, Search, Menu, Moon, Sun, 
   LayoutDashboard, Users, Database, Globe, Package, BadgeDollarSign, TrendingUp, Settings,
   LogOut, X, Filter, Download, MessageSquare, Check, CheckCircle2, XCircle, Banknote, ShieldAlert, Calculator,
-  Printer, HelpCircle
+  Printer, HelpCircle, GraduationCap
 } from 'lucide-react';
 import CustomerPortal from './CustomerPortal';
 import DataAdminPortal from './DataAdminPortal';
@@ -462,13 +462,13 @@ const Dashboard: React.FC<DashboardProps> = ({
              
              {/* CONDITIONAL RENDERING: CUSTOMER PORTAL vs DATA ADMIN vs SYSTEM ADMIN vs ACCOUNTING vs STANDARD DASHBOARD */}
              {isCustomerView && department.customerData ? (
-               <CustomerPortal data={department.customerData} />
+               <CustomerPortal data={department.customerData} onOpenAI={onOpenAI} />
              ) : isDataAdmin ? (
-               <DataAdminPortal allDepartments={allDepartments} />
+               <DataAdminPortal allDepartments={allDepartments} onOpenAI={onOpenAI} />
              ) : isSystemAdmin && department.systemAdminData ? (
-               <SystemAdminPortal data={department.systemAdminData} />
+               <SystemAdminPortal data={department.systemAdminData} onOpenAI={onOpenAI} />
              ) : isAccounting ? (
-               <AccountingPortal data={department} />
+               <AccountingPortal data={department} onOpenAI={onOpenAI} />
              ) : (
                <>
                   {/* Header Actions */}
@@ -496,8 +496,8 @@ const Dashboard: React.FC<DashboardProps> = ({
                           onClick={onOpenAI}
                           className={`px-4 py-2 bg-${department.themeColor}-600 text-white rounded-lg hover:opacity-90 transition-opacity font-medium text-sm flex items-center gap-2 shadow-sm shadow-${department.themeColor}-200 dark:shadow-none`}
                         >
-                          <img src="https://www.gstatic.com/lamda/images/sparkle_resting_v2_darkmode_2bdb7df2724e450073ede.gif" className="w-4 h-4 opacity-80" alt="AI" />
-                          Ask AI Analyst
+                          <GraduationCap className="w-4 h-4 opacity-90" />
+                          Ask Prof. Fad
                         </button>
                      </div>
                   </div>
@@ -796,7 +796,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         onClick={onOpenAI}
         className={`lg:hidden fixed bottom-6 right-6 w-14 h-14 bg-${department.themeColor}-600 text-white rounded-full shadow-lg flex items-center justify-center z-40 hover:scale-105 transition-transform print:hidden`}
       >
-        <img src="https://www.gstatic.com/lamda/images/sparkle_resting_v2_darkmode_2bdb7df2724e450073ede.gif" className="w-6 h-6" alt="AI" />
+        <GraduationCap className="w-6 h-6" />
       </button>
 
     </div>

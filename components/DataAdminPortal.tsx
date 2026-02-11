@@ -2,14 +2,15 @@ import React, { useState } from 'react';
 import { DepartmentData, DepartmentType } from '../types';
 import { 
   Database, Table, FileJson, Code, RefreshCw, Save, Plus, Trash2, Edit2, 
-  Search, Filter, ChevronDown, Check, X, Clipboard
+  Search, Filter, ChevronDown, Check, X, Clipboard, GraduationCap
 } from 'lucide-react';
 
 interface DataAdminPortalProps {
   allDepartments: DepartmentData[];
+  onOpenAI: () => void;
 }
 
-const DataAdminPortal: React.FC<DataAdminPortalProps> = ({ allDepartments }) => {
+const DataAdminPortal: React.FC<DataAdminPortalProps> = ({ allDepartments, onOpenAI }) => {
   const [selectedDeptId, setSelectedDeptId] = useState<DepartmentType>(DepartmentType.INVENTORY);
   const [dataType, setDataType] = useState<'kpis' | 'mainChartData' | 'summaryTableData' | 'products'>('kpis');
   const [showJson, setShowJson] = useState(false);
@@ -74,6 +75,14 @@ const DataAdminPortal: React.FC<DataAdminPortalProps> = ({ allDepartments }) => 
             <Plus className="w-4 h-4" />
             Add Record
           </button>
+          {/* AI Button */}
+          <button 
+             onClick={onOpenAI}
+             className="px-4 py-2 bg-slate-600 hover:bg-slate-700 text-white rounded-lg text-sm font-medium flex items-center gap-2 transition-colors shadow-lg shadow-slate-200 dark:shadow-none"
+           >
+             <GraduationCap className="w-4 h-4" />
+             Ask Prof. Fad
+           </button>
         </div>
       </div>
 
@@ -149,7 +158,7 @@ const DataAdminPortal: React.FC<DataAdminPortalProps> = ({ allDepartments }) => 
                 />
              </div>
              <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-                <span className="font-mono bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded text-xs">{filteredData.length} records</span>
+                <span className="font-mono bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded-lg text-xs">{filteredData.length} records</span>
                 <button className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded text-gray-600 dark:text-gray-300" title="Refresh">
                    <RefreshCw className="w-4 h-4" />
                 </button>

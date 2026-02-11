@@ -2,11 +2,12 @@ import React, { useState } from 'react';
 import { SystemAdminData, User } from '../types';
 import { 
   Shield, Search, Plus, MoreHorizontal, Lock, Unlock, AlertTriangle, 
-  CheckCircle, UserX, UserCheck, RefreshCw, Eye, Edit, X
+  CheckCircle, UserX, UserCheck, RefreshCw, Eye, Edit, X, GraduationCap
 } from 'lucide-react';
 
 interface SystemAdminPortalProps {
   data: SystemAdminData;
+  onOpenAI: () => void;
 }
 
 const initialNewUser = {
@@ -19,7 +20,7 @@ const initialNewUser = {
   status: 'Active' as const
 };
 
-const SystemAdminPortal: React.FC<SystemAdminPortalProps> = ({ data }) => {
+const SystemAdminPortal: React.FC<SystemAdminPortalProps> = ({ data, onOpenAI }) => {
   const [users, setUsers] = useState<User[]>(data.users);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -84,43 +85,56 @@ const SystemAdminPortal: React.FC<SystemAdminPortalProps> = ({ data }) => {
     <div className="space-y-6">
       
       {/* Top Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 flex items-center gap-4">
-           <div className="p-3 bg-indigo-100 dark:bg-indigo-900/30 rounded-xl">
-             <Shield className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
-           </div>
-           <div>
-             <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Security Score</p>
-             <h3 className="text-2xl font-bold text-gray-900 dark:text-white">98/100</h3>
-           </div>
+      <div className="flex justify-between items-start gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 flex-1">
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 flex items-center gap-4">
+             <div className="p-3 bg-indigo-100 dark:bg-indigo-900/30 rounded-xl">
+               <Shield className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+             </div>
+             <div>
+               <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Security Score</p>
+               <h3 className="text-2xl font-bold text-gray-900 dark:text-white">98/100</h3>
+             </div>
+          </div>
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 flex items-center gap-4">
+             <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-xl">
+               <UserCheck className="w-6 h-6 text-green-600 dark:text-green-400" />
+             </div>
+             <div>
+               <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Active Users</p>
+               <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{users.filter(u => u.status === 'Active').length}</h3>
+             </div>
+          </div>
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 flex items-center gap-4">
+             <div className="p-3 bg-red-100 dark:bg-red-900/30 rounded-xl">
+               <AlertTriangle className="w-6 h-6 text-red-600 dark:text-red-400" />
+             </div>
+             <div>
+               <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Locked Accounts</p>
+               <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{users.filter(u => u.status === 'Locked').length}</h3>
+             </div>
+          </div>
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 flex items-center gap-4">
+             <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-xl">
+               <Lock className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+             </div>
+             <div>
+               <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">2FA Enabled</p>
+               <h3 className="text-2xl font-bold text-gray-900 dark:text-white">85%</h3>
+             </div>
+          </div>
         </div>
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 flex items-center gap-4">
-           <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-xl">
-             <UserCheck className="w-6 h-6 text-green-600 dark:text-green-400" />
+
+        {/* AI Button */}
+        <button 
+           onClick={onOpenAI}
+           className="hidden xl:flex flex-col items-center justify-center gap-2 p-4 bg-gray-700 text-white rounded-2xl hover:bg-gray-600 transition-colors shadow-lg h-full min-w-[120px]"
+         >
+           <div className="bg-white/20 p-2 rounded-full">
+              <GraduationCap className="w-6 h-6" />
            </div>
-           <div>
-             <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Active Users</p>
-             <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{users.filter(u => u.status === 'Active').length}</h3>
-           </div>
-        </div>
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 flex items-center gap-4">
-           <div className="p-3 bg-red-100 dark:bg-red-900/30 rounded-xl">
-             <AlertTriangle className="w-6 h-6 text-red-600 dark:text-red-400" />
-           </div>
-           <div>
-             <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Locked Accounts</p>
-             <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{users.filter(u => u.status === 'Locked').length}</h3>
-           </div>
-        </div>
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 flex items-center gap-4">
-           <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-xl">
-             <Lock className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-           </div>
-           <div>
-             <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">2FA Enabled</p>
-             <h3 className="text-2xl font-bold text-gray-900 dark:text-white">85%</h3>
-           </div>
-        </div>
+           <span className="text-xs font-bold text-center">Ask Prof. Fad</span>
+         </button>
       </div>
 
       {/* Main Content */}
@@ -147,6 +161,14 @@ const SystemAdminPortal: React.FC<SystemAdminPortalProps> = ({ data }) => {
                >
                   <Plus className="w-4 h-4" />
                   Add User
+               </button>
+               {/* Mobile/Tablet AI Button */}
+               <button 
+                 onClick={onOpenAI}
+                 className="xl:hidden flex items-center gap-2 px-4 py-2 bg-gray-700 text-white rounded-lg text-sm font-semibold hover:bg-gray-600 transition-colors"
+               >
+                 <GraduationCap className="w-4 h-4" />
+                 AI
                </button>
             </div>
          </div>

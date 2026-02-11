@@ -2,14 +2,15 @@ import React, { useState } from 'react';
 import { CustomerSpecificData, Product, CartItem, Order } from '../types';
 import { 
   ShoppingBag, CreditCard, Clock, Package, CheckCircle, Truck, 
-  Search, Filter, Plus, Minus, X, ChevronRight, FileText, Info
+  Search, Filter, Plus, Minus, X, ChevronRight, FileText, Info, GraduationCap
 } from 'lucide-react';
 
 interface CustomerPortalProps {
   data: CustomerSpecificData;
+  onOpenAI: () => void;
 }
 
-const CustomerPortal: React.FC<CustomerPortalProps> = ({ data }) => {
+const CustomerPortal: React.FC<CustomerPortalProps> = ({ data, onOpenAI }) => {
   const [activeTab, setActiveTab] = useState<'shop' | 'orders' | 'tracking'>('shop');
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
@@ -67,46 +68,59 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ data }) => {
     <div className="space-y-6 relative">
       
       {/* Top Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-gradient-to-br from-blue-600 to-blue-800 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
-          <div className="relative z-10">
-            <p className="text-blue-200 text-sm font-medium mb-1">Available Credit</p>
-            <h3 className="text-3xl font-bold">Bir {data.availableCredit.toLocaleString()}</h3>
-            <div className="mt-4 flex items-center text-xs text-blue-100 bg-white/10 w-fit px-2 py-1 rounded">
-              <CreditCard className="w-3 h-3 mr-1" />
-              Limit: Bir {data.creditLimit.toLocaleString()}
+      <div className="flex justify-between items-start gap-4">
+         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 flex-1">
+            <div className="bg-gradient-to-br from-blue-600 to-blue-800 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
+              <div className="relative z-10">
+                <p className="text-blue-200 text-sm font-medium mb-1">Available Credit</p>
+                <h3 className="text-3xl font-bold">Bir {data.availableCredit.toLocaleString()}</h3>
+                <div className="mt-4 flex items-center text-xs text-blue-100 bg-white/10 w-fit px-2 py-1 rounded">
+                  <CreditCard className="w-3 h-3 mr-1" />
+                  Limit: Bir {data.creditLimit.toLocaleString()}
+                </div>
+              </div>
+              <div className="absolute right-0 top-0 opacity-10 transform translate-x-4 -translate-y-4">
+                 <CreditCard className="w-32 h-32" />
+              </div>
             </div>
-          </div>
-          <div className="absolute right-0 top-0 opacity-10 transform translate-x-4 -translate-y-4">
-             <CreditCard className="w-32 h-32" />
-          </div>
-        </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-gray-500 dark:text-gray-400 text-sm font-medium mb-1">Outstanding Balance</p>
-              <h3 className="text-3xl font-bold text-gray-900 dark:text-white">Bir {data.outstandingBalance.toLocaleString()}</h3>
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="text-gray-500 dark:text-gray-400 text-sm font-medium mb-1">Outstanding Balance</p>
+                  <h3 className="text-3xl font-bold text-gray-900 dark:text-white">Bir {data.outstandingBalance.toLocaleString()}</h3>
+                </div>
+                <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
+                  <Clock className="w-6 h-6 text-orange-600 dark:text-orange-400" />
+                </div>
+              </div>
+              <p className="text-xs text-gray-400 mt-4">Due within 30 days</p>
             </div>
-            <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
-              <Clock className="w-6 h-6 text-orange-600 dark:text-orange-400" />
-            </div>
-          </div>
-          <p className="text-xs text-gray-400 mt-4">Due within 30 days</p>
-        </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-gray-500 dark:text-gray-400 text-sm font-medium mb-1">Account Status</p>
-              <h3 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-500 to-yellow-600">{data.loyaltyTier}</h3>
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="text-gray-500 dark:text-gray-400 text-sm font-medium mb-1">Account Status</p>
+                  <h3 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-500 to-yellow-600">{data.loyaltyTier}</h3>
+                </div>
+                <div className="p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg">
+                  <CheckCircle className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
+                </div>
+              </div>
+              <p className="text-xs text-green-600 dark:text-green-400 mt-4 font-medium">Eligible for 2% bulk discount</p>
             </div>
-            <div className="p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg">
-              <CheckCircle className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
-            </div>
-          </div>
-          <p className="text-xs text-green-600 dark:text-green-400 mt-4 font-medium">Eligible for 2% bulk discount</p>
-        </div>
+         </div>
+         
+         {/* AI Button for Desktop */}
+         <button 
+           onClick={onOpenAI}
+           className="hidden lg:flex flex-col items-center justify-center gap-2 p-4 bg-blue-600 text-white rounded-2xl hover:bg-blue-700 transition-colors shadow-lg h-full min-w-[120px]"
+         >
+           <div className="bg-white/20 p-2 rounded-full">
+              <GraduationCap className="w-6 h-6" />
+           </div>
+           <span className="text-xs font-bold">Ask Prof. Fad</span>
+         </button>
       </div>
 
       {/* Tabs */}

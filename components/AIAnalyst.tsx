@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { DepartmentData } from '../types';
 import { generateDashboardInsights } from '../services/geminiService';
-import { Sparkles, Send, Loader2, X, MessageSquarePlus, RefreshCw } from 'lucide-react';
+import { Sparkles, Send, Loader2, X, MessageSquarePlus, RefreshCw, GraduationCap } from 'lucide-react';
 
 interface AIAnalystProps {
   department: DepartmentData;
@@ -43,8 +43,8 @@ const AIAnalyst: React.FC<AIAnalystProps> = ({ department, isOpen, onClose }) =>
     <div className="fixed inset-y-0 right-0 w-96 bg-white dark:bg-gray-800 shadow-2xl z-50 transform transition-transform duration-300 ease-in-out border-l border-gray-200 dark:border-gray-700 flex flex-col">
       <div className="p-6 bg-gradient-to-r from-indigo-600 to-purple-600 text-white flex justify-between items-center">
         <div className="flex items-center gap-2">
-          <Sparkles className="w-5 h-5" />
-          <h2 className="font-bold text-lg">AI Analyst</h2>
+          <GraduationCap className="w-6 h-6" />
+          <h2 className="font-bold text-lg">Prof. Fad</h2>
         </div>
         <button onClick={onClose} className="p-1 hover:bg-white/20 rounded-full transition-colors">
           <X className="w-5 h-5" />
@@ -57,9 +57,11 @@ const AIAnalyst: React.FC<AIAnalystProps> = ({ department, isOpen, onClose }) =>
         {!response && !loading && (
           <div className="flex flex-col h-full">
             <div className="text-center text-gray-500 dark:text-gray-400 mt-4 mb-8">
-              <Sparkles className="w-12 h-12 mx-auto mb-4 text-indigo-300 dark:text-indigo-400" />
-              <h3 className="text-gray-900 dark:text-white font-semibold mb-2">How can I help you?</h3>
-              <p className="text-sm">I can analyze current metrics, forecast trends, or identify risks for {department.name}.</p>
+              <div className="w-16 h-16 bg-indigo-100 dark:bg-indigo-900/50 rounded-full flex items-center justify-center mx-auto mb-4">
+                <GraduationCap className="w-8 h-8 text-indigo-600 dark:text-indigo-400" />
+              </div>
+              <h3 className="text-gray-900 dark:text-white font-semibold mb-2">Hello, I'm Prof. Fad</h3>
+              <p className="text-sm">I am your intelligent assistant. I can analyze metrics, forecast trends, or identify risks for {department.name}.</p>
             </div>
 
             {/* Suggested Prompts */}
@@ -86,7 +88,7 @@ const AIAnalyst: React.FC<AIAnalystProps> = ({ department, isOpen, onClose }) =>
         {loading && (
           <div className="flex flex-col items-center justify-center h-full">
             <Loader2 className="w-10 h-10 animate-spin text-indigo-600 dark:text-indigo-400 mb-4" />
-            <p className="text-sm font-medium text-gray-600 dark:text-gray-300 animate-pulse">Analyzing {department.name} data...</p>
+            <p className="text-sm font-medium text-gray-600 dark:text-gray-300 animate-pulse">Prof. Fad is analyzing...</p>
           </div>
         )}
 
@@ -104,9 +106,9 @@ const AIAnalyst: React.FC<AIAnalystProps> = ({ department, isOpen, onClose }) =>
                 <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl rounded-tl-none p-5 shadow-sm max-w-[95%]">
                    <div className="flex items-center gap-2 mb-3">
                       <div className="w-6 h-6 bg-indigo-100 dark:bg-indigo-900/50 rounded-full flex items-center justify-center">
-                         <Sparkles className="w-3 h-3 text-indigo-600 dark:text-indigo-400" />
+                         <GraduationCap className="w-3 h-3 text-indigo-600 dark:text-indigo-400" />
                       </div>
-                      <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase">AI Insight</span>
+                      <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase">Prof. Fad Insight</span>
                    </div>
                    <div className="text-gray-700 dark:text-gray-200 text-sm leading-relaxed whitespace-pre-line">
                       {response}
@@ -133,7 +135,7 @@ const AIAnalyst: React.FC<AIAnalystProps> = ({ department, isOpen, onClose }) =>
           <input
             type="text"
             className="w-full pl-4 pr-12 py-3 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-xl border-none focus:ring-2 focus:ring-indigo-500 text-sm placeholder-gray-500 dark:placeholder-gray-400 transition-shadow"
-            placeholder="Type your question..."
+            placeholder="Ask Prof. Fad a question..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleAnalyze()}
