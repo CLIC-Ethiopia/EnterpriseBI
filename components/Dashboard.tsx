@@ -270,7 +270,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       )}
 
       {/* Sidebar Navigation */}
-      <aside className={`fixed lg:relative inset-y-0 left-0 w-72 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 z-50 transform transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'} flex flex-col print:hidden`}>
+      <aside className={`fixed lg:relative inset-y-0 left-0 w-72 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 z-50 transform transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'} flex flex-col print:hidden pb-32 lg:pb-0`}>
         {/* Logo Area */}
         <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -457,7 +457,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         </header>
 
         {/* Dashboard Content */}
-        <main className="flex-1 overflow-y-auto p-6 lg:p-8 print:overflow-visible print:h-auto print:block">
+        <main className="flex-1 overflow-y-auto p-6 lg:p-8 print:overflow-visible print:h-auto print:block pb-32">
            <div className="max-w-7xl mx-auto space-y-8 pb-12 print:max-w-none">
              
              {/* CONDITIONAL RENDERING: CUSTOMER PORTAL vs DATA ADMIN vs SYSTEM ADMIN vs ACCOUNTING vs STANDARD DASHBOARD */}

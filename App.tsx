@@ -6,6 +6,7 @@ import DepartmentCarousel from './components/DepartmentCarousel';
 import AIAnalyst from './components/AIAnalyst';
 import LandingPage from './components/LandingPage';
 import InfoPage from './components/InfoPage';
+import BottomDock from './components/BottomDock';
 import { LayoutGrid, Globe, Moon, Sun, HelpCircle } from 'lucide-react';
 
 type ViewState = 'LANDING' | 'SELECTION' | 'DASHBOARD' | 'INFO';
@@ -71,6 +72,16 @@ const App: React.FC = () => {
     setViewState(previousViewState);
   };
 
+  const handleHome = () => {
+    if (viewState === 'DASHBOARD') {
+      if (confirm('Return to department selection? You will be logged out.')) {
+        handleLogout();
+      }
+    } else {
+      setViewState('SELECTION');
+    }
+  };
+
   return (
     <div className={`min-h-screen ${viewState === 'LANDING' ? '' : 'bg-gray-50 dark:bg-gray-900'} font-sans text-gray-900 dark:text-gray-100 selection:bg-indigo-100 selection:text-indigo-900 transition-colors duration-300`}>
       
@@ -112,7 +123,7 @@ const App: React.FC = () => {
       )}
 
       {viewState === 'SELECTION' && (
-        <div className="relative z-10 min-h-screen flex flex-col">
+        <div className="relative z-10 min-h-screen flex flex-col pb-32">
           {/* Header */}
           <header className="px-8 py-6 flex justify-between items-center">
             <div className="flex items-center gap-2 cursor-pointer" onClick={() => setViewState('LANDING')}>
@@ -168,7 +179,7 @@ const App: React.FC = () => {
             />
           </main>
           
-          <footer className="py-6 text-center text-sm text-gray-400 dark:text-gray-600">
+          <footer className="py-6 text-center text-sm text-gray-400 dark:text-gray-600 pb-24">
             &copy; 2024 GlobalTrade Logistics Inc. All rights reserved.
           </footer>
         </div>
@@ -222,6 +233,18 @@ const App: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Persistent Bottom Dock (Visible in Selection and Dashboard, hidden in Landing and Info if desired, but nice to have in Info too) */}
+      {viewState !== 'LANDING' && (
+        <BottomDock 
+          isDarkMode={isDarkMode} 
+          toggleTheme={toggleTheme} 
+          onShowInfo={handleShowInfo}
+          onHome={handleHome}
+          onLogout={handleLogout}
+          showLogout={viewState === 'DASHBOARD'}
+        />
       )}
 
     </div>
