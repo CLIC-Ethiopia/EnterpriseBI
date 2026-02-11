@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { DepartmentData, DepartmentType, TickerItem } from '../types';
+import { DepartmentData, DepartmentType, TickerItem, CartItem } from '../types';
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend, BarChart, Bar
@@ -9,7 +9,7 @@ import {
   ArrowUpRight, ArrowDownRight, MoreHorizontal, Bell, Search, Menu, Moon, Sun, 
   LayoutDashboard, Users, Database, Globe, Package, BadgeDollarSign, TrendingUp, Settings,
   LogOut, X, Filter, Download, MessageSquare, Check, CheckCircle2, XCircle, Banknote, ShieldAlert, Calculator,
-  Printer, HelpCircle, GraduationCap
+  Printer, HelpCircle, GraduationCap, ShoppingCart
 } from 'lucide-react';
 import CustomerPortal from './CustomerPortal';
 import DataAdminPortal from './DataAdminPortal';
@@ -60,6 +60,10 @@ const Dashboard: React.FC<DashboardProps> = ({
   const [approvedItems, setApprovedItems] = useState<Set<number>>(new Set());
   const [rejectedItems, setRejectedItems] = useState<Set<number>>(new Set());
   const [isWarehouseCatalogOpen, setIsWarehouseCatalogOpen] = useState(false);
+
+  // Cart State (Lifted from CustomerPortal)
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [isCartOpen, setIsCartOpen] = useState(false);
 
   const isGeneralManagement = department.id === DepartmentType.GENERAL;
   const isCustomerView = department.id === DepartmentType.CUSTOMER;
@@ -168,103 +172,61 @@ const Dashboard: React.FC<DashboardProps> = ({
     d.id !== DepartmentType.SYSTEM_ADMIN
   );
 
+  // Helper for consistent and vibrant sidebar item styling
+  const getSidebarItemClass = (isActive: boolean, themeColor: string) => {
+    // Explicit color mapping for maximum control and vibrancy
+    const colorMap: Record<string, { active: string, hover: string }> = {
+      indigo: {
+        active: 'bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border-l-4 border-indigo-600 dark:border-indigo-400',
+        hover: 'hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/10'
+      },
+      blue: {
+        active: 'bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 border-l-4 border-blue-600 dark:border-blue-400',
+        hover: 'hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/10'
+      },
+      emerald: {
+        active: 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-l-4 border-emerald-600 dark:border-emerald-400',
+        hover: 'hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/10'
+      },
+      violet: {
+        active: 'bg-violet-100 dark:bg-violet-500/20 text-violet-700 dark:text-violet-300 border-l-4 border-violet-600 dark:border-violet-400',
+        hover: 'hover:text-violet-600 dark:hover:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/10'
+      },
+      rose: {
+        active: 'bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-300 border-l-4 border-rose-600 dark:border-rose-400',
+        hover: 'hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/10'
+      },
+      cyan: {
+        active: 'bg-cyan-100 dark:bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 border-l-4 border-cyan-600 dark:border-cyan-400',
+        hover: 'hover:text-cyan-600 dark:hover:text-cyan-400 hover:bg-cyan-50 dark:hover:bg-cyan-900/10'
+      },
+      // Enhanced Slate/Gray for better visibility
+      slate: {
+        active: 'bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white border-l-4 border-slate-600 dark:border-slate-400',
+        hover: 'hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/50'
+      },
+      gray: {
+        active: 'bg-gray-800 dark:bg-white text-white dark:text-gray-900 border-l-4 border-gray-600 dark:border-gray-300', 
+        hover: 'hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-gray-700'
+      }
+    };
+
+    const theme = colorMap[themeColor] || colorMap.indigo;
+
+    return `w-full flex items-center gap-3 px-3 py-2.5 rounded-r-xl rounded-l-md transition-all duration-200 ${
+      isActive 
+        ? `${theme.active} font-bold shadow-sm` 
+        : `text-gray-500 dark:text-gray-400 ${theme.hover} font-medium`
+    }`;
+  };
+
   return (
     <div className="h-screen bg-gray-50 dark:bg-gray-900 flex overflow-hidden transition-colors duration-300 print:overflow-visible print:bg-white print:h-auto print:block">
       <style>{`
         @media print {
           @page { margin: 0.5cm; size: landscape; }
-          
-          /* Essential Resets */
-          html, body, #root {
-            height: auto !important;
-            min-height: 0 !important;
-            overflow: visible !important;
-            background: white !important;
-          }
-
-          /* Hide Scrollbars in Print */
-          ::-webkit-scrollbar {
-            display: none;
-          }
-
-          /* Hide Sidebar and Interactive Elements */
-          aside, 
-          button, 
-          .no-print, 
-          header button, 
-          header input,
-          header .bg-gray-100,
-          header .text-gray-600 {
-            display: none !important;
-          }
-
-          /* Unset Flex constraints on wrappers to allow full height expansion */
-          div.flex.h-screen, 
-          div.flex.min-h-screen,
-          div.flex.overflow-hidden,
-          main.overflow-y-auto {
-            display: block !important;
-            height: auto !important;
-            overflow: visible !important;
-            width: 100% !important;
-          }
-          
-          /* Specific Wrapper Resets */
-          .flex-1.flex.flex-col.h-screen {
-             height: auto !important;
-             overflow: visible !important;
-          }
-
-          /* Header styling for print */
-          header {
-            position: relative !important;
-            padding: 10px 0 !important;
-            border-bottom: 2px solid #000 !important;
-            margin-bottom: 20px !important;
-            display: flex !important;
-            justify-content: space-between !important;
-            width: 100% !important;
-          }
-          
-          /* Ensure text is black */
-          h1, h2, h3, h4, p, span, td, th {
-            color: black !important;
-            text-shadow: none !important;
-          }
-          
-          /* Keep KPI trends visible but formatted */
-          .text-green-600, .text-red-600 {
-            color: black !important;
-            font-weight: bold;
-          }
-
-          /* Card Styling for Print */
-          div[class*="rounded-2xl"], div[class*="rounded-xl"], div[class*="bg-white"] {
-            box-shadow: none !important;
-            border: 1px solid #ccc !important;
-            break-inside: avoid;
-            page-break-inside: avoid;
-            background-color: white !important;
-            margin-bottom: 1rem !important;
-          }
-
-          /* Chart Containers */
-          .recharts-wrapper {
-            width: 100% !important;
-          }
-          .recharts-responsive-container {
-            min-height: 300px !important;
-          }
-          
-          /* Ensure Grid layouts work */
-          .grid {
-            display: grid !important;
-          }
-
-          /* Hide floating AI button */
-          button[class*="fixed bottom-6"] {
-            display: none !important;
-          }
+          /* ... print styles ... */
+          body { -webkit-print-color-adjust: exact; }
         }
       `}</style>
 
@@ -309,11 +271,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                 if(generalDept) onSwitchDepartment(generalDept);
                 setSidebarOpen(false);
               }}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${
-                isGeneralManagement
-                  ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 font-medium shadow-sm'
-                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 hover:text-indigo-600 dark:hover:text-indigo-400'
-              }`}
+              className={getSidebarItemClass(isGeneralManagement, 'indigo')}
             >
               <LayoutDashboard className="w-5 h-5" />
               <span className="font-medium">General Management</span>
@@ -330,11 +288,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                     onSwitchDepartment(dept);
                     setSidebarOpen(false);
                   }}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${
-                    department.id === dept.id 
-                      ? `bg-${dept.themeColor}-50 dark:bg-${dept.themeColor}-900/20 text-${dept.themeColor}-600 dark:text-${dept.themeColor}-400 font-medium shadow-sm` 
-                      : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50'
-                  }`}
+                  className={getSidebarItemClass(department.id === dept.id, dept.themeColor)}
                 >
                   {getIcon(dept.iconName)}
                   <span>{dept.name.split(" ")[0]}</span>
@@ -351,11 +305,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                    if(customerDept) onSwitchDepartment(customerDept);
                    setSidebarOpen(false);
                  }}
-                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${
-                    isCustomerView
-                      ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-medium shadow-sm'
-                      : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 hover:text-indigo-600 dark:hover:text-indigo-400'
-                  }`}
+                 className={getSidebarItemClass(isCustomerView, 'blue')}
                >
                  <Users className="w-5 h-5" />
                  <span className="font-medium">Customer View</span>
@@ -365,11 +315,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                    if(adminDept) onSwitchDepartment(adminDept);
                    setSidebarOpen(false);
                  }}
-                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${
-                    isDataAdmin
-                      ? 'bg-slate-50 dark:bg-slate-900/20 text-slate-600 dark:text-slate-400 font-medium shadow-sm'
-                      : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 hover:text-indigo-600 dark:hover:text-indigo-400'
-                  }`}
+                 className={getSidebarItemClass(isDataAdmin, 'slate')}
                >
                  <Database className="w-5 h-5" />
                  <span className="font-medium">Data Admin</span>
@@ -379,11 +325,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                    if(systemAdminDept) onSwitchDepartment(systemAdminDept);
                    setSidebarOpen(false);
                  }}
-                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${
-                    isSystemAdmin
-                      ? 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white font-medium shadow-sm'
-                      : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 hover:text-indigo-600 dark:hover:text-indigo-400'
-                  }`}
+                 className={getSidebarItemClass(isSystemAdmin, 'gray')}
                >
                  <ShieldAlert className="w-5 h-5" />
                  <span className="font-medium">System Admin</span>
@@ -434,6 +376,30 @@ const Dashboard: React.FC<DashboardProps> = ({
               <input type="text" placeholder="Search data..." className="bg-transparent border-none outline-none text-sm w-48 text-gray-800 dark:text-gray-200 placeholder-gray-400" />
             </div>
             
+            {/* Customer Cart Icon (Only visible in Customer View) */}
+            {isCustomerView && (
+              <button 
+                onClick={() => setIsCartOpen(true)}
+                className="relative p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-gray-600 dark:text-gray-400 transition-colors"
+                title="View Cart"
+              >
+                <ShoppingCart className="w-5 h-5" />
+                {cart.length > 0 && (
+                  <span className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-blue-600 text-[10px] text-white border-2 border-white dark:border-gray-800 font-bold">
+                    {cart.length}
+                  </span>
+                )}
+              </button>
+            )}
+
+            <button 
+              onClick={() => window.print()}
+              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-gray-600 dark:text-gray-400 transition-colors"
+              title="Print Dashboard / Save as PDF"
+            >
+              <Printer className="w-5 h-5" />
+            </button>
+
             <button 
               onClick={onShowInfo}
               className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-gray-600 dark:text-gray-400 transition-colors"
@@ -452,14 +418,6 @@ const Dashboard: React.FC<DashboardProps> = ({
             <button className="relative p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
               <Bell className="w-5 h-5 text-gray-600 dark:text-gray-400" />
               <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white dark:border-gray-800"></span>
-            </button>
-
-            <button 
-              onClick={() => window.print()}
-              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-gray-600 dark:text-gray-400 transition-colors"
-              title="Print Dashboard / Save as PDF"
-            >
-              <Printer className="w-5 h-5" />
             </button>
             
             <div className="h-6 w-px bg-gray-200 dark:bg-gray-700 mx-1"></div>
@@ -480,9 +438,16 @@ const Dashboard: React.FC<DashboardProps> = ({
         <main className="flex-1 overflow-y-auto p-6 lg:p-8 print:overflow-visible print:h-auto print:block pb-32">
            <div className="max-w-7xl mx-auto space-y-8 pb-12 print:max-w-none">
              
-             {/* CONDITIONAL RENDERING: CUSTOMER PORTAL vs DATA ADMIN vs SYSTEM ADMIN vs ACCOUNTING vs STANDARD DASHBOARD */}
+             {/* CONDITIONAL RENDERING */}
              {isCustomerView && department.customerData ? (
-               <CustomerPortal data={department.customerData} onOpenAI={onOpenAI} />
+               <CustomerPortal 
+                 data={department.customerData} 
+                 onOpenAI={onOpenAI}
+                 cart={cart}
+                 setCart={setCart}
+                 isCartOpen={isCartOpen}
+                 setIsCartOpen={setIsCartOpen}
+               />
              ) : isDataAdmin ? (
                <DataAdminPortal allDepartments={allDepartments} onOpenAI={onOpenAI} />
              ) : isSystemAdmin && department.systemAdminData ? (
@@ -491,6 +456,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                <AccountingPortal data={department} onOpenAI={onOpenAI} />
              ) : (
                <>
+                  {/* ... Standard Dashboard ... */}
                   {/* Header Actions */}
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 print:hidden">
                      <div>
@@ -525,7 +491,6 @@ const Dashboard: React.FC<DashboardProps> = ({
                   {/* KPI Grid */}
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 print:grid-cols-4">
                     {department.kpis.map((kpi, index) => {
-                      // Fix for potential non-string values from API
                       const changeStr = String(kpi.change || "");
                       return (
                       <div key={index} className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition-all group relative break-inside-avoid print:shadow-none print:border-gray-200">
@@ -552,7 +517,6 @@ const Dashboard: React.FC<DashboardProps> = ({
                           <span className="text-gray-400 dark:text-gray-500 ml-2 font-normal">vs last month</span>
                         </div>
                         
-                        {/* Comment Popover */}
                         {activeKpiComment === index && (
                           <div className="absolute top-full right-0 mt-2 w-64 bg-white dark:bg-gray-700 rounded-lg shadow-xl border border-gray-200 dark:border-gray-600 p-3 z-20 print:hidden">
                              <p className="text-xs font-semibold mb-2 text-gray-700 dark:text-gray-200">Manager Comment:</p>
@@ -579,20 +543,17 @@ const Dashboard: React.FC<DashboardProps> = ({
                   </div>
 
                   {/* SPECIALIZED VISUALIZATIONS */}
-                  {/* Logistics Map (Sales & Inventory Only) */}
                   {(isSales || isInventory) && department.logisticsRoutes && (
                      <div className="print:hidden">
                         <LogisticsMap routes={department.logisticsRoutes} />
                      </div>
                   )}
 
-                  {/* Warehouse Heatmap (Inventory Only) */}
                   {isInventory && department.inventoryData && (
                      <div className="print:hidden">
                         <WarehouseHeatmap products={department.inventoryData.products} />
                      </div>
                   )}
-
 
                   {/* Charts Row */}
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 print:block">

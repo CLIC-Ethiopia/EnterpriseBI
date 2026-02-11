@@ -1,4 +1,5 @@
 
+// ... existing enums ...
 export enum DepartmentType {
   GENERAL = 'GENERAL',
   FINANCE = 'FINANCE',
@@ -80,6 +81,17 @@ export interface Order {
 
 export interface CartItem extends Product {
   cartQuantity: number;
+  customerName?: string;
+  customerId?: string;
+}
+
+export interface RegisteredCustomer {
+  id: string;
+  name: string;
+  email: string;
+  type: 'Gold' | 'Silver' | 'Bronze' | 'Platinum';
+  totalOrders: number;
+  totalSpent: number;
 }
 
 export interface CustomerSpecificData {
@@ -91,6 +103,7 @@ export interface CustomerSpecificData {
   orders: Order[];
 }
 
+// ... rest of the file ...
 // System Admin Interfaces
 export interface User {
   id: number;
