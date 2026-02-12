@@ -50,6 +50,22 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
   const [regEmail, setRegEmail] = useState('');
   const [regType, setRegType] = useState<RegisteredCustomer['type']>('Bronze');
 
+  // Helper for status colors
+  const getStatusStyle = (status: string) => {
+    switch (status) {
+      case 'Delivered': 
+        return 'bg-emerald-500 text-white shadow-sm shadow-emerald-200 dark:shadow-none border border-emerald-600';
+      case 'Shipped': 
+        return 'bg-violet-500 text-white shadow-sm shadow-violet-200 dark:shadow-none border border-violet-600';
+      case 'Processing': 
+        return 'bg-blue-500 text-white shadow-sm shadow-blue-200 dark:shadow-none border border-blue-600';
+      case 'Pending Approval': 
+        return 'bg-amber-500 text-white shadow-sm shadow-amber-200 dark:shadow-none border border-amber-600';
+      default: 
+        return 'bg-gray-500 text-white border border-gray-600';
+    }
+  };
+
   // Cart Logic
   const initiateAddToCart = (product: Product) => {
     setPendingProduct(product);
@@ -293,12 +309,7 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
                        <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">{order.id}</td>
                        <td className="px-6 py-4 text-gray-500 dark:text-gray-400">{order.date}</td>
                        <td className="px-6 py-4">
-                         <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                           order.status === 'Delivered' ? 'bg-green-100 text-green-700' :
-                           order.status === 'Processing' ? 'bg-blue-100 text-blue-700' :
-                           order.status === 'Shipped' ? 'bg-purple-100 text-purple-700' :
-                           'bg-gray-100 text-gray-700'
-                         }`}>
+                         <span className={`px-2.5 py-1 rounded-full text-xs font-bold tracking-wide ${getStatusStyle(order.status)}`}>
                            {order.status}
                          </span>
                        </td>
@@ -509,9 +520,7 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
                              <span className={`text-sm font-bold ${selectedOrder.id === ord.id ? 'text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'}`}>
                                 {ord.id}
                              </span>
-                             <span className={`text-[10px] px-2 py-0.5 rounded-full ${
-                               ord.status === 'Delivered' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
-                             }`}>
+                             <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${getStatusStyle(ord.status).replace('text-sm', 'text-[10px]').replace('shadow-sm', '')}`}>
                                 {ord.status}
                              </span>
                           </div>
@@ -530,11 +539,7 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
                     <div>
                        <div className="flex items-center gap-3 mb-1">
                           <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{selectedOrder.id}</h2>
-                          <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                             selectedOrder.status === 'Delivered' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
-                             selectedOrder.status === 'Processing' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
-                             'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
-                          }`}>
+                          <span className={`px-4 py-1 rounded-full text-sm font-bold tracking-wide ${getStatusStyle(selectedOrder.status)}`}>
                              {selectedOrder.status}
                           </span>
                        </div>
