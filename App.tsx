@@ -39,14 +39,35 @@ const App: React.FC = () => {
     const initData = async () => {
       setIsLoading(true);
       const remoteData = await fetchDepartments();
+      
       if (remoteData && remoteData.length > 0) {
-        setDepartments(remoteData);
+        // MERGE STRATEGY:
+        // 1. Identify which departments are in the Remote data
+        const remoteIds = new Set(remoteData.map(d => d.id));
+        
+        // 2. Find departments that exist Locally but NOT remotely (e.g. New Features like Import Costing)
+        const localOnlyDepts = DEPARTMENTS.filter(d => !remoteIds.has(d.id));
+        
+        // 3. Combine them
+        const mergedData = [...remoteData, ...localOnlyDepts];
+
+        // 4. Sort to match the order in DEPARTMENTS (Source of Truth for UI Order)
+        mergedData.sort((a, b) => {
+           const indexA = DEPARTMENTS.findIndex(d => d.id === a.id);
+           const indexB = DEPARTMENTS.findIndex(d => d.id === b.id);
+           // If a department is not in the local list (unexpected), put it at the end
+           const valA = indexA === -1 ? 999 : indexA;
+           const valB = indexB === -1 ? 999 : indexB;
+           return valA - valB;
+        });
+
+        setDepartments(mergedData);
         setIsUsingLiveData(true);
         
-        // If we were already viewing a department (e.g. hot reload), update the reference
+        // If we were already viewing a department (e.g. hot reload), update the reference to the new object
         setActiveDepartment(prev => {
           if (!prev) return null;
-          return remoteData.find(d => d.id === prev.id) || prev;
+          return mergedData.find(d => d.id === prev.id) || prev;
         });
       }
       setIsLoading(false);

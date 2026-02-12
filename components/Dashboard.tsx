@@ -55,7 +55,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   onOpenAI, 
   onLogout, 
   isDarkMode, 
-  toggleTheme,
+  toggleTheme, 
   onShowInfo,
   cart,
   setCart,
@@ -171,6 +171,18 @@ const Dashboard: React.FC<DashboardProps> = ({
       case 'Warning': return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400';
       case 'Critical': return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400';
       default: return 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300';
+    }
+  };
+
+  const getSidebarLabel = (dept: DepartmentData) => {
+    switch(dept.id) {
+        case DepartmentType.IMPORT_COSTING: return "Import Logistics";
+        case DepartmentType.FINANCE: return "Finance";
+        case DepartmentType.HR: return "HR & Admin";
+        case DepartmentType.SALES: return "Sales";
+        case DepartmentType.INVENTORY: return "Inventory";
+        case DepartmentType.ACCOUNTING: return "Accounting";
+        default: return dept.name.split(" ")[0]; // Fallback
     }
   };
 
@@ -386,7 +398,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                   className={getSidebarItemClass(department.id === dept.id, dept.themeColor)}
                 >
                   {getIcon(dept.iconName)}
-                  <span>{dept.name.split(" ")[0]}</span>
+                  <span>{getSidebarLabel(dept)}</span>
                 </button>
               ))}
             </div>
