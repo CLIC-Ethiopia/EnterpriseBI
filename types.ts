@@ -9,7 +9,8 @@ export enum DepartmentType {
   SALES = 'SALES',
   CUSTOMER = 'CUSTOMER',
   DATA_ADMIN = 'DATA_ADMIN',
-  SYSTEM_ADMIN = 'SYSTEM_ADMIN'
+  SYSTEM_ADMIN = 'SYSTEM_ADMIN',
+  IMPORT_COSTING = 'IMPORT_COSTING'
 }
 
 export interface KPI {

@@ -1,8 +1,9 @@
+
 import React from 'react';
 import { DepartmentData } from '../types';
 import { 
   Package, BadgeDollarSign, TrendingUp, Users, ArrowRight, Banknote, 
-  ShieldAlert, Database, LayoutDashboard, Activity, Calculator
+  ShieldAlert, Database, LayoutDashboard, Activity, Calculator, Anchor
 } from 'lucide-react';
 
 interface DepartmentCarouselProps {
@@ -24,6 +25,7 @@ const DepartmentCarousel: React.FC<DepartmentCarouselProps> = ({ departments, on
       case 'Database': return <Database {...props} />;
       case 'ShieldAlert': return <ShieldAlert {...props} />;
       case 'Calculator': return <Calculator {...props} />;
+      case 'Anchor': return <Anchor {...props} />;
       default: return <Package {...props} />;
     }
   };

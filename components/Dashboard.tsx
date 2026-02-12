@@ -9,12 +9,13 @@ import {
   ArrowUpRight, ArrowDownRight, MoreHorizontal, Bell, Search, Menu, Moon, Sun, 
   LayoutDashboard, Users, Database, Globe, Package, BadgeDollarSign, TrendingUp, Settings,
   LogOut, X, Filter, Download, MessageSquare, Check, CheckCircle2, XCircle, Banknote, ShieldAlert, Calculator,
-  Printer, HelpCircle, GraduationCap, ShoppingCart, Briefcase, ChevronRight, Save, UserPlus, ShoppingBag, Minus, Plus, CheckCircle
+  Printer, HelpCircle, GraduationCap, ShoppingCart, Briefcase, ChevronRight, Save, UserPlus, ShoppingBag, Minus, Plus, CheckCircle, Anchor
 } from 'lucide-react';
 import { CustomerPortal } from './CustomerPortal';
 import DataAdminPortal from './DataAdminPortal';
 import SystemAdminPortal from './SystemAdminPortal';
 import AccountingPortal from './AccountingPortal';
+import LandedCostEngine from './LandedCostEngine';
 import WarehouseCatalog from './WarehouseCatalog';
 import SmartTicker from './SmartTicker';
 import LogisticsMap from './LogisticsMap';
@@ -96,6 +97,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   const isAccounting = department.id === DepartmentType.ACCOUNTING;
   const isInventory = department.id === DepartmentType.INVENTORY;
   const isSales = department.id === DepartmentType.SALES;
+  const isImportCosting = department.id === DepartmentType.IMPORT_COSTING;
 
   // ... (Helper functions remain same) ...
   const currentUser = (() => {
@@ -109,6 +111,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       case DepartmentType.SYSTEM_ADMIN: return { name: "Abel Girma", role: "Sys Admin" };
       case DepartmentType.DATA_ADMIN: return { name: "Sara Tefera", role: "Data Analyst" };
       case DepartmentType.CUSTOMER: return { name: "Solomon Tesfaye", role: "Partner" };
+      case DepartmentType.IMPORT_COSTING: return { name: "Yonas Abebe", role: "Logistics Mgr" };
       default: return { name: "Frehun Adefris", role: "Director" };
     }
   })();
@@ -156,6 +159,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       case 'Database': return <Database className="w-5 h-5" />;
       case 'ShieldAlert': return <ShieldAlert className="w-5 h-5" />;
       case 'Calculator': return <Calculator className="w-5 h-5" />;
+      case 'Anchor': return <Anchor className="w-5 h-5" />;
       default: return <Package className="w-5 h-5" />;
     }
   };
@@ -552,6 +556,8 @@ const Dashboard: React.FC<DashboardProps> = ({
                <SystemAdminPortal data={department.systemAdminData} onOpenAI={onOpenAI} />
              ) : isAccounting ? (
                <AccountingPortal data={department} onOpenAI={onOpenAI} isDarkMode={isDarkMode} />
+             ) : isImportCosting ? (
+               <LandedCostEngine />
              ) : (
                <>
                   {/* ... Standard Dashboard ... */}
@@ -649,7 +655,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                   </div>
 
                   {/* SPECIALIZED VISUALIZATIONS */}
-                  {(isSales || isInventory) && department.logisticsRoutes && (
+                  {(isSales || isInventory || isImportCosting) && department.logisticsRoutes && (
                      <div className="print:hidden">
                         <LogisticsMap routes={department.logisticsRoutes} />
                      </div>

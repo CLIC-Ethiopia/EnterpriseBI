@@ -1,4 +1,5 @@
 
+
 import { DepartmentType, DepartmentData } from './types';
 
 export const DEPARTMENTS: DepartmentData[] = [
@@ -99,6 +100,53 @@ export const DEPARTMENTS: DepartmentData[] = [
       "Analyze the variance between projected and actual revenue for Q3.",
       "Recommend portfolio adjustments to reduce liquidity risk.",
       "Calculate the impact of a 5% increase in Opex on EBITDA."
+    ]
+  },
+  {
+    id: DepartmentType.IMPORT_COSTING,
+    name: "Import Costing & Logistics",
+    description: "Calculate Landed Cost, analyze duties, and track transport logistics from Djibouti.",
+    themeColor: "emerald", // Using a distinct color
+    iconName: "Banknote", // Or a ship icon if available in your icon set logic
+    kpis: [
+      { label: "Avg Landed Multiplier", value: "2.4x", change: "+0.2", trend: "up" },
+      { label: "Duty Paid (MTD)", value: "Bir 4.2M", change: "+15%", trend: "up" },
+      { label: "Containers in Transit", value: "8", change: "-2", trend: "down" },
+      { label: "Forex Utilization", value: "$120k", change: "Stable", trend: "neutral" }
+    ],
+    mainChartData: [
+      { name: 'Jan', FOB: 100, Taxes: 80, Logistics: 20 },
+      { name: 'Feb', FOB: 120, Taxes: 95, Logistics: 25 },
+      { name: 'Mar', FOB: 110, Taxes: 90, Logistics: 22 },
+      { name: 'Apr', FOB: 140, Taxes: 115, Logistics: 30 },
+      { name: 'May', FOB: 130, Taxes: 105, Logistics: 28 },
+    ],
+    secondaryChartData: [
+      { name: 'Duties & Tax', value: 45 },
+      { name: 'Product FOB', value: 40 },
+      { name: 'Logistics', value: 15 },
+    ],
+    recentActivity: [
+      { id: 1, action: "Costing Approved: Shipment #9921", time: "2 hours ago" },
+      { id: 2, action: "Sur-tax rate updated to 10%", time: "Yesterday" },
+      { id: 3, action: "Container released from Djibouti", time: "3 days ago" }
+    ],
+    barChartTitle: "Landed Cost Components Trend",
+    barChartData: [
+      { name: 'Chemicals', FOB: 45, Landed: 110 },
+      { name: 'Textiles', FOB: 30, Landed: 85 },
+      { name: 'Machinery', FOB: 120, Landed: 200 },
+    ],
+    tableTitle: "Recent Shipment Costings",
+    summaryTableData: [
+      { id: 1, item: "PO-9921 (Solvents)", category: "Chemicals", status: "Good", value: "Bir 2.4M", completion: 100 },
+      { id: 2, item: "PO-9925 (Cotton)", category: "Textiles", status: "Warning", value: "Bir 1.2M", completion: 60 },
+      { id: 3, item: "PO-9928 (Dyes)", category: "Chemicals", status: "Stable", value: "Bir 850k", completion: 80 },
+    ],
+    suggestedPrompts: [
+      "Calculate the impact of a 5% increase in Forex rate on the landed cost of chemicals.",
+      "Compare the duty burden between textile and chemical imports.",
+      "Analyze the logistics cost per unit for the last 3 shipments."
     ]
   },
   {
