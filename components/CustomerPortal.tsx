@@ -4,7 +4,7 @@ import { CustomerSpecificData, Product, CartItem, Order, RegisteredCustomer } fr
 import { 
   CreditCard, Clock, CheckCircle, 
   X, ChevronRight, Info,
-  Users, UserPlus, Trash2, Plus
+  Users, UserPlus, Trash2, Plus, Phone, MapPin, Calendar, FileText, Package
 } from 'lucide-react';
 
 interface CustomerPortalProps {
@@ -26,6 +26,7 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<'shop' | 'orders' | 'customers'>('shop');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
   // Customer Management State
   const [customers, setCustomers] = useState<RegisteredCustomer[]>([
@@ -129,6 +130,31 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
     if (confirm('Are you sure you want to remove this customer?')) {
       setCustomers(customers.filter(c => c.id !== id));
     }
+  };
+
+  // Helper to generate mock order lines since data source is simple
+  const getMockOrderLines = (order: Order) => {
+    // Deterministic random based on order ID string length
+    const count = order.items;
+    const lines = [];
+    const avgPrice = order.total / count;
+    
+    for(let i=0; i<Math.min(count, 5); i++) {
+        lines.push({
+            name: i % 2 === 0 ? "Industrial Chemical Solvent" : "Cotton Yarn Spool Type-A",
+            qty: Math.floor(count / 2) + 1,
+            price: avgPrice,
+            total: avgPrice * (Math.floor(count/2) + 1)
+        });
+    }
+    return lines;
+  };
+
+  // Helper to get a linked customer for the order (mocking the relationship)
+  const getOrderCustomer = (orderId: string) => {
+      // Just picking a customer based on ID length to simulate a relationship
+      const index = orderId.length % customers.length;
+      return customers[index] || customers[0];
   };
 
   return (
@@ -279,7 +305,10 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
                        <td className="px-6 py-4 text-gray-500 dark:text-gray-400">{order.poNumber}</td>
                        <td className="px-6 py-4 text-right font-medium text-gray-900 dark:text-white">Bir {order.total.toLocaleString()}</td>
                        <td className="px-6 py-4 text-right">
-                         <button className="text-blue-600 hover:text-blue-800 dark:text-blue-400 text-xs font-medium flex items-center justify-end gap-1">
+                         <button 
+                           onClick={() => setSelectedOrder(order)}
+                           className="text-blue-600 hover:text-blue-800 dark:text-blue-400 text-xs font-medium flex items-center justify-end gap-1 hover:underline"
+                         >
                            Details <ChevronRight className="w-3 h-3" />
                          </button>
                        </td>
@@ -450,6 +479,156 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
          </div>
       )}
 
+      {/* Order Detail Modal */}
+      {selectedOrder && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 backdrop-blur-sm bg-black/70">
+           <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-5xl h-[85vh] shadow-2xl border border-gray-100 dark:border-gray-700 flex overflow-hidden animate-in zoom-in-95 duration-200">
+              
+              {/* Left Column: Order Selector */}
+              <div className="w-1/3 border-r border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 flex flex-col hidden md:flex">
+                 <div className="p-5 border-b border-gray-200 dark:border-gray-700">
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                       <FileText className="w-5 h-5 text-blue-600" /> All Orders
+                    </h3>
+                    <p className="text-xs text-gray-500 mt-1">Select to view full details</p>
+                 </div>
+                 <div className="flex-1 overflow-y-auto p-2 space-y-1">
+                    {data.orders.map((ord) => (
+                       <button
+                          key={ord.id}
+                          onClick={() => setSelectedOrder(ord)}
+                          className={`w-full text-left p-3 rounded-xl border transition-all group ${
+                             selectedOrder.id === ord.id 
+                             ? 'bg-white dark:bg-gray-800 border-blue-500 shadow-md ring-1 ring-blue-500' 
+                             : 'bg-transparent border-transparent hover:bg-white/50 dark:hover:bg-gray-800/50 hover:border-gray-200 dark:hover:border-gray-700'
+                          }`}
+                       >
+                          <div className="flex justify-between items-center mb-1">
+                             <span className={`text-sm font-bold ${selectedOrder.id === ord.id ? 'text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'}`}>
+                                {ord.id}
+                             </span>
+                             <span className={`text-[10px] px-2 py-0.5 rounded-full ${
+                               ord.status === 'Delivered' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
+                             }`}>
+                                {ord.status}
+                             </span>
+                          </div>
+                          <div className="flex justify-between text-xs text-gray-500">
+                             <span>{ord.date}</span>
+                             <span>Bir {ord.total.toLocaleString()}</span>
+                          </div>
+                       </button>
+                    ))}
+                 </div>
+              </div>
+
+              {/* Right Column: Detail View */}
+              <div className="flex-1 flex flex-col bg-white dark:bg-gray-800 w-full">
+                 <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
+                    <div>
+                       <div className="flex items-center gap-3 mb-1">
+                          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{selectedOrder.id}</h2>
+                          <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                             selectedOrder.status === 'Delivered' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+                             selectedOrder.status === 'Processing' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
+                             'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
+                          }`}>
+                             {selectedOrder.status}
+                          </span>
+                       </div>
+                       <p className="text-sm text-gray-500 flex items-center gap-2">
+                          <Calendar className="w-4 h-4" /> Placed on {selectedOrder.date} • PO: {selectedOrder.poNumber}
+                       </p>
+                    </div>
+                    <button onClick={() => setSelectedOrder(null)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-gray-500 transition-colors">
+                       <X className="w-6 h-6" />
+                    </button>
+                 </div>
+
+                 <div className="flex-1 overflow-y-auto p-8">
+                    {/* Customer Info Section */}
+                    <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-5 border border-gray-100 dark:border-gray-700 mb-8 flex flex-col md:flex-row gap-6">
+                       <div className="flex-1">
+                          <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Customer Details</h4>
+                          <div className="flex items-start gap-3">
+                             <div className="bg-indigo-100 dark:bg-indigo-900/30 p-2 rounded-lg">
+                                <Users className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                             </div>
+                             <div>
+                                <p className="font-bold text-gray-900 dark:text-white text-lg">{getOrderCustomer(selectedOrder.id).name}</p>
+                                <p className="text-sm text-gray-500">{getOrderCustomer(selectedOrder.id).type} Partner</p>
+                             </div>
+                          </div>
+                       </div>
+                       <div className="flex-1 space-y-3">
+                          <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300">
+                             <Phone className="w-4 h-4 text-gray-400" />
+                             <span>+251 91 123 4567</span>
+                          </div>
+                          <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300">
+                             <MapPin className="w-4 h-4 text-gray-400" />
+                             <span>Bole Sub City, Addis Ababa, ET</span>
+                          </div>
+                          <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300">
+                             <div className="w-4 h-4 flex items-center justify-center font-bold text-xs text-gray-400">@</div>
+                             <span>{getOrderCustomer(selectedOrder.id).email}</span>
+                          </div>
+                       </div>
+                    </div>
+
+                    {/* Order Items Table */}
+                    <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Order Items</h4>
+                    <div className="border rounded-xl border-gray-200 dark:border-gray-700 overflow-hidden mb-8">
+                       <table className="w-full text-sm text-left">
+                          <thead className="bg-gray-50 dark:bg-gray-700/50 text-gray-500 dark:text-gray-400 font-medium border-b border-gray-200 dark:border-gray-700">
+                             <tr>
+                                <th className="px-6 py-3">Product</th>
+                                <th className="px-6 py-3 text-center">Qty</th>
+                                <th className="px-6 py-3 text-right">Unit Price</th>
+                                <th className="px-6 py-3 text-right">Total</th>
+                             </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                             {getMockOrderLines(selectedOrder).map((line, i) => (
+                                <tr key={i} className="bg-white dark:bg-gray-800">
+                                   <td className="px-6 py-4 font-medium text-gray-900 dark:text-white flex items-center gap-3">
+                                      <div className="w-8 h-8 rounded bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                                         <Package className="w-4 h-4 text-gray-400" />
+                                      </div>
+                                      {line.name}
+                                   </td>
+                                   <td className="px-6 py-4 text-center text-gray-600 dark:text-gray-300">{line.qty}</td>
+                                   <td className="px-6 py-4 text-right text-gray-600 dark:text-gray-300">{line.price.toLocaleString()}</td>
+                                   <td className="px-6 py-4 text-right font-bold text-gray-900 dark:text-white">{line.total.toLocaleString()}</td>
+                                </tr>
+                             ))}
+                          </tbody>
+                       </table>
+                    </div>
+
+                    {/* Financials */}
+                    <div className="flex justify-end">
+                       <div className="w-64 space-y-3">
+                          <div className="flex justify-between text-gray-500 dark:text-gray-400">
+                             <span>Subtotal</span>
+                             <span>Bir {(selectedOrder.total * 0.85).toLocaleString(undefined, {maximumFractionDigits: 0})}</span>
+                          </div>
+                          <div className="flex justify-between text-gray-500 dark:text-gray-400">
+                             <span>Tax (15%)</span>
+                             <span>Bir {(selectedOrder.total * 0.15).toLocaleString(undefined, {maximumFractionDigits: 0})}</span>
+                          </div>
+                          <div className="border-t border-gray-200 dark:border-gray-700 pt-3 flex justify-between items-center">
+                             <span className="font-bold text-gray-900 dark:text-white">Total Amount</span>
+                             <span className="text-xl font-bold text-blue-600 dark:text-blue-400">Bir {selectedOrder.total.toLocaleString()}</span>
+                          </div>
+                       </div>
+                    </div>
+                 </div>
+              </div>
+           </div>
+        </div>
+      )}
+
       {/* Product Details Modal - Z-index elevated */}
       {selectedProduct && (
         <div className="fixed inset-0 bg-black/60 z-[200] flex items-center justify-center p-4 backdrop-blur-sm">
@@ -552,7 +731,6 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
         </div>
       )}
 
-    </div>
     </div>
   );
 };
