@@ -1,15 +1,16 @@
 
 import React, { useState, useEffect } from 'react';
-import { DepartmentData, LedgerEntry, SupplierTaxCategory, TransactionType, TaxCalculationResult } from '../types';
+import { DepartmentData, LedgerEntry, SupplierTaxCategory, TransactionType, TaxCalculationResult, ReportMetric, ReportRequest } from '../types';
 import { 
   Calculator, PieChart as PieIcon, TrendingUp, DollarSign, Calendar, Search, 
   FileText, Sliders, ArrowRight, Plus, Download, RefreshCw, Activity, Layers, Scale, X, GraduationCap,
-  Stamp, Printer, AlertCircle, FileCheck, CheckCircle2
+  Stamp, Printer, AlertCircle, FileCheck, CheckCircle2, FileBarChart
 } from 'lucide-react';
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
   BarChart, Bar, Legend, Cell, PieChart, Pie
 } from 'recharts';
+import ExecutiveReporting from './ExecutiveReporting';
 
 interface AccountingPortalProps {
   data: DepartmentData;
@@ -17,8 +18,22 @@ interface AccountingPortalProps {
   isDarkMode: boolean;
 }
 
+const ACCOUNTING_METRICS: ReportMetric[] = [
+  { id: 'acc1', name: 'General Ledger Bal.', category: 'Finance', type: 'currency' },
+  { id: 'acc2', name: 'Accounts Payable', category: 'Finance', type: 'currency' },
+  { id: 'acc3', name: 'Accounts Receivable', category: 'Finance', type: 'currency' },
+  { id: 'acc4', name: 'Tax Liability', category: 'Finance', type: 'currency' },
+  { id: 'acc5', name: 'Op. Expenses', category: 'Finance', type: 'currency' },
+  { id: 'acc6', name: 'Payroll Cost', category: 'HR', type: 'currency' },
+];
+
+const ACCOUNTING_REQUESTS: ReportRequest[] = [
+  { id: 'REQ-201', title: 'Q3 Vendor Payment Summary', submittedBy: 'Belete Chala', department: 'Finance', dateSubmitted: '2024-10-25', priority: 'Normal', status: 'Pending', description: 'Consolidated report of all payments made to chemical suppliers in Q3.' },
+  { id: 'REQ-202', title: 'Expense Audit: Marketing', submittedBy: 'Tigist Bekele', department: 'Sales', dateSubmitted: '2024-10-24', priority: 'High', status: 'Approved', description: 'Review of travel and event expenses against budget.' },
+];
+
 const AccountingPortal: React.FC<AccountingPortalProps> = ({ data, onOpenAI, isDarkMode }) => {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'ledger' | 'analysis' | 'compliance'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'ledger' | 'analysis' | 'compliance' | 'reports'>('dashboard');
   const [ledgerSearch, setLedgerSearch] = useState('');
   
   // Local state for ledger to allow adding new entries
@@ -237,6 +252,12 @@ const AccountingPortal: React.FC<AccountingPortalProps> = ({ data, onOpenAI, isD
             className={`px-4 py-2 text-sm font-medium rounded-lg transition-all flex items-center gap-2 ${activeTab === 'compliance' ? 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300 shadow-sm' : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200'}`}
           >
             <Stamp className="w-4 h-4" /> Tax Compliance (ERCA)
+          </button>
+          <button 
+            onClick={() => setActiveTab('reports')}
+            className={`px-4 py-2 text-sm font-medium rounded-lg transition-all flex items-center gap-2 ${activeTab === 'reports' ? 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300 shadow-sm' : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200'}`}
+          >
+            <FileBarChart className="w-4 h-4" /> Report Builder
           </button>
         </div>
         <button 
@@ -956,6 +977,14 @@ const AccountingPortal: React.FC<AccountingPortalProps> = ({ data, onOpenAI, isD
                </div>
             </div>
          </div>
+      )}
+
+      {/* Report Builder Tab */}
+      {activeTab === 'reports' && (
+        <ExecutiveReporting 
+          metrics={ACCOUNTING_METRICS} 
+          initialRequests={ACCOUNTING_REQUESTS} 
+        />
       )}
 
       {/* Manual Entry Modal */}

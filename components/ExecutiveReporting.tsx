@@ -9,7 +9,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line 
 } from 'recharts';
 
-const AVAILABLE_METRICS: ReportMetric[] = [
+const DEFAULT_METRICS: ReportMetric[] = [
   { id: 'm1', name: 'Total Revenue', category: 'Finance', type: 'currency' },
   { id: 'm2', name: 'Cost of Goods Sold', category: 'Finance', type: 'currency' },
   { id: 'm3', name: 'Gross Margin %', category: 'Finance', type: 'percentage' },
@@ -20,14 +20,22 @@ const AVAILABLE_METRICS: ReportMetric[] = [
   { id: 'm8', name: 'Headcount', category: 'HR', type: 'number' },
 ];
 
-const MOCK_REPORT_REQUESTS: ReportRequest[] = [
+const DEFAULT_REQUESTS: ReportRequest[] = [
   { id: 'REQ-101', title: 'Q3 Regional Sales Performance', submittedBy: 'Tigist Bekele', department: 'Sales', dateSubmitted: '2024-10-24', priority: 'High', status: 'Pending', description: 'Detailed breakdown of sales by region including discount analysis.' },
   { id: 'REQ-102', title: 'Warehouse Capacity Forecast', submittedBy: 'Dawit Kebede', department: 'Inventory', dateSubmitted: '2024-10-23', priority: 'Normal', status: 'Pending', description: 'Projection of storage needs for upcoming holiday imports.' },
   { id: 'REQ-103', title: 'Audit Trail: Sep 2024', submittedBy: 'Anteneh Aseres', department: 'Accounting', dateSubmitted: '2024-10-20', priority: 'High', status: 'Approved', description: 'Monthly ledger audit for compliance review.' },
   { id: 'REQ-104', title: 'Employee Churn Rate', submittedBy: 'Hanna Alemu', department: 'HR', dateSubmitted: '2024-10-22', priority: 'Low', status: 'Rejected', description: 'Analysis of exit interviews and retention statistics.' },
 ];
 
-const ExecutiveReporting: React.FC = () => {
+interface ExecutiveReportingProps {
+  metrics?: ReportMetric[];
+  initialRequests?: ReportRequest[];
+}
+
+const ExecutiveReporting: React.FC<ExecutiveReportingProps> = ({ 
+  metrics = DEFAULT_METRICS, 
+  initialRequests = DEFAULT_REQUESTS 
+}) => {
   const [activeTab, setActiveTab] = useState<'builder' | 'approvals'>('builder');
   
   // Builder State
@@ -36,7 +44,7 @@ const ExecutiveReporting: React.FC = () => {
   const [isExporting, setIsExporting] = useState(false);
 
   // Approval State
-  const [requests, setRequests] = useState<ReportRequest[]>(MOCK_REPORT_REQUESTS);
+  const [requests, setRequests] = useState<ReportRequest[]>(initialRequests);
   const [selectedRequest, setSelectedRequest] = useState<ReportRequest | null>(null);
 
   // Drag and Drop Handlers
@@ -47,7 +55,7 @@ const ExecutiveReporting: React.FC = () => {
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     const metricId = e.dataTransfer.getData('metricId');
-    const metric = AVAILABLE_METRICS.find(m => m.id === metricId);
+    const metric = metrics.find(m => m.id === metricId);
     if (metric && !selectedMetrics.find(m => m.id === metric.id)) {
       setSelectedMetrics([...selectedMetrics, metric]);
     }
@@ -130,7 +138,7 @@ const ExecutiveReporting: React.FC = () => {
           <div className="lg:col-span-3 bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-5 flex flex-col">
             <h3 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4">Available Metrics</h3>
             <div className="flex-1 overflow-y-auto space-y-2 pr-2">
-              {AVAILABLE_METRICS.map(metric => (
+              {metrics.map(metric => (
                 <div 
                   key={metric.id}
                   draggable
