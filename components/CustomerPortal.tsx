@@ -553,5 +553,6 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
       )}
 
     </div>
+    </div>
   );
 };
