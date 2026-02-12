@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
-import { DepartmentData } from './types';
+import { DepartmentData, CartItem } from './types';
 import { DEPARTMENTS } from './data';
 import { fetchDepartments } from './services/api';
 import Dashboard from './components/Dashboard';
@@ -25,6 +26,10 @@ const App: React.FC = () => {
   const [isAIAnalystOpen, setIsAIAnalystOpen] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [selectedDeptForLogin, setSelectedDeptForLogin] = useState<DepartmentData | null>(null);
+  
+  // Global Cart State
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [isCartOpen, setIsCartOpen] = useState(false);
   
   // Theme State - Default to Dark Mode
   const [isDarkMode, setIsDarkMode] = useState(true);
@@ -141,6 +146,10 @@ const App: React.FC = () => {
             isDarkMode={isDarkMode}
             toggleTheme={toggleTheme}
             onShowInfo={handleShowInfo}
+            cart={cart}
+            setCart={setCart}
+            isCartOpen={isCartOpen}
+            setIsCartOpen={setIsCartOpen}
           />
           <AIAnalyst 
             department={activeDepartment} 
@@ -273,7 +282,7 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {/* Persistent Bottom Dock (Visible in Selection and Dashboard, hidden in Landing and Info if desired, but nice to have in Info too) */}
+      {/* Persistent Bottom Dock */}
       {viewState !== 'LANDING' && (
         <BottomDock 
           isDarkMode={isDarkMode} 
@@ -282,6 +291,8 @@ const App: React.FC = () => {
           onHome={handleHome}
           onLogout={handleLogout}
           showLogout={viewState === 'DASHBOARD'}
+          onOpenCart={() => setIsCartOpen(true)}
+          cartCount={cart.length}
         />
       )}
 

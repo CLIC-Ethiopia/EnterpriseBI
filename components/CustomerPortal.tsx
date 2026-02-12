@@ -2,9 +2,9 @@
 import React, { useState } from 'react';
 import { CustomerSpecificData, Product, CartItem, Order, RegisteredCustomer } from '../types';
 import { 
-  ShoppingBag, CreditCard, Clock, Package, CheckCircle, Truck, 
-  Search, Filter, Plus, Minus, X, ChevronRight, FileText, Info, GraduationCap,
-  Users, UserPlus, Trash2, ShoppingCart
+  CreditCard, Clock, CheckCircle, 
+  X, ChevronRight, Info,
+  Users, UserPlus, Trash2, Plus
 } from 'lucide-react';
 
 interface CustomerPortalProps {
@@ -16,7 +16,7 @@ interface CustomerPortalProps {
   setIsCartOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
-const CustomerPortal: React.FC<CustomerPortalProps> = ({ 
+export const CustomerPortal: React.FC<CustomerPortalProps> = ({ 
   data, 
   onOpenAI,
   cart,
@@ -26,8 +26,6 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<'shop' | 'orders' | 'customers'>('shop');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
-  const [orderSuccess, setOrderSuccess] = useState(false);
 
   // Customer Management State
   const [customers, setCustomers] = useState<RegisteredCustomer[]>([
@@ -127,44 +125,10 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({
     setRegType('Bronze');
   };
 
-  const removeFromCart = (itemId: string, custId?: string) => {
-    setCart(prev => prev.filter(item => !(item.id === itemId && item.customerId === custId)));
-  };
-
-  const updateQuantity = (itemId: string, custId: string | undefined, delta: number) => {
-    setCart(prev => prev.map(item => {
-      if (item.id === itemId && item.customerId === custId) {
-        const newQty = Math.max(1, item.cartQuantity + delta);
-        return {...item, cartQuantity: newQty};
-      }
-      return item;
-    }));
-  };
-
   const handleDeleteCustomer = (id: string) => {
     if (confirm('Are you sure you want to remove this customer?')) {
       setCustomers(customers.filter(c => c.id !== id));
     }
-  };
-
-  const cartTotal = cart.reduce((sum, item) => sum + (item.price * item.cartQuantity), 0);
-
-  const handleCheckout = () => {
-    setIsOrderModalOpen(true);
-    setIsCartOpen(false);
-  };
-
-  const submitOrder = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Simulate API call
-    setTimeout(() => {
-      setOrderSuccess(true);
-      setCart([]);
-      setTimeout(() => {
-        setIsOrderModalOpen(false);
-        setOrderSuccess(false);
-      }, 2000);
-    }, 1000);
   };
 
   return (
@@ -392,71 +356,6 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({
              </table>
           </div>
         )}
-      </div>
-
-      {/* Cart Drawer - Z-index elevated to 200 to clear BottomDock */}
-      <div className={`fixed inset-y-0 right-0 w-96 bg-white dark:bg-gray-800 shadow-2xl transform transition-transform duration-300 z-[200] flex flex-col border-l border-gray-200 dark:border-gray-700 ${isCartOpen ? 'translate-x-0' : 'translate-x-full'}`}>
-         <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-900">
-            <div className="flex items-center gap-2">
-               <ShoppingBag className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-               <h3 className="font-bold text-gray-900 dark:text-white">Active Order Queue</h3>
-            </div>
-            <button onClick={() => setIsCartOpen(false)} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
-         </div>
-         
-         <div className="flex-1 overflow-y-auto p-6 space-y-4">
-            {cart.length === 0 ? (
-               <div className="text-center py-10 text-gray-400">
-                  <Package className="w-12 h-12 mx-auto mb-3 opacity-20" />
-                  <p>Order queue is empty.</p>
-               </div>
-            ) : (
-               cart.map((item, idx) => (
-                 <div key={`${item.id}-${item.customerId}-${idx}`} className="flex gap-4 border-b border-gray-100 dark:border-gray-700 pb-4 last:border-0 last:pb-0">
-                    <img src={item.image} className="w-16 h-16 rounded-lg object-cover bg-gray-100 flex-shrink-0" alt="" />
-                    <div className="flex-1 min-w-0">
-                       <div className="flex justify-between items-start mb-1">
-                          <h4 className="text-sm font-medium text-gray-900 dark:text-white line-clamp-1">{item.name}</h4>
-                          <button onClick={() => removeFromCart(item.id, item.customerId)} className="text-gray-400 hover:text-red-500"><X className="w-4 h-4" /></button>
-                       </div>
-                       
-                       {/* Customer Badge */}
-                       <div className="flex items-center gap-1 mb-2">
-                          <Users className="w-3 h-3 text-gray-400" />
-                          <span className="text-xs text-blue-600 dark:text-blue-400 truncate font-medium">{item.customerName || 'Unknown Customer'}</span>
-                       </div>
-
-                       <div className="flex justify-between items-center">
-                          <div className="flex items-center border border-gray-200 dark:border-gray-600 rounded">
-                             <button onClick={() => updateQuantity(item.id, item.customerId, -1)} className="px-2 py-1 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700"><Minus className="w-3 h-3" /></button>
-                             <span className="px-2 text-sm text-gray-900 dark:text-white">{item.cartQuantity}</span>
-                             <button onClick={() => updateQuantity(item.id, item.customerId, 1)} className="px-2 py-1 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700"><Plus className="w-3 h-3" /></button>
-                          </div>
-                          <div className="text-right">
-                             <span className="block text-sm font-bold text-gray-900 dark:text-white">Bir {(item.price * item.cartQuantity).toLocaleString()}</span>
-                             <span className="text-[10px] text-gray-400">{item.unit}</span>
-                          </div>
-                       </div>
-                    </div>
-                 </div>
-               ))
-            )}
-         </div>
-
-         <div className="p-6 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
-            <div className="flex justify-between items-center mb-4">
-               <span className="text-gray-500">Total Value</span>
-               <span className="text-xl font-bold text-gray-900 dark:text-white">Bir {cartTotal.toLocaleString()}</span>
-            </div>
-            <button 
-              onClick={handleCheckout}
-              disabled={cart.length === 0}
-              className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-200 dark:shadow-none"
-            >
-               Process Orders
-            </button>
-         </div>
-      </div>
 
       {/* Customer Selection Modal (Add to Cart Flow) - Z-index elevated */}
       {isCustomerSelectModalOpen && (
@@ -589,54 +488,6 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({
         </div>
       )}
 
-      {/* Checkout Modal - Z-index elevated */}
-      {isOrderModalOpen && (
-        <div className="fixed inset-0 bg-black/60 z-[200] flex items-center justify-center p-4 backdrop-blur-sm">
-           <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-lg w-full p-8 relative">
-              {orderSuccess ? (
-                 <div className="text-center py-8">
-                    <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                       <CheckCircle className="w-8 h-8" />
-                    </div>
-                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Order Request Sent!</h2>
-                    <p className="text-gray-500">Your account manager will review and confirm your PO shortly.</p>
-                 </div>
-              ) : (
-                 <>
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Submit Order Request</h2>
-                  <form onSubmit={submitOrder} className="space-y-4">
-                     <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Purchase Order (PO) Number</label>
-                        <input type="text" required className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g. PO-9923" />
-                     </div>
-                     <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Shipping Address</label>
-                        <select className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent text-gray-900 dark:text-white outline-none">
-                           <option>Main Warehouse - New York, NY</option>
-                           <option>Distribution Center - Chicago, IL</option>
-                        </select>
-                     </div>
-                     <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Additional Notes</label>
-                        <textarea className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none" rows={3}></textarea>
-                     </div>
-                     
-                     <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg flex justify-between items-center">
-                        <span className="font-medium text-gray-700 dark:text-gray-300">Total Amount</span>
-                        <span className="text-xl font-bold text-blue-600 dark:text-blue-400">Bir {cartTotal.toLocaleString()}</span>
-                     </div>
-
-                     <div className="flex gap-3 pt-4">
-                        <button type="button" onClick={() => setIsOrderModalOpen(false)} className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-gray-700">Cancel</button>
-                        <button type="submit" className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 shadow-lg shadow-blue-200 dark:shadow-none">Submit Request</button>
-                     </div>
-                  </form>
-                 </>
-              )}
-           </div>
-        </div>
-      )}
-
       {/* Customer Registration Modal (Registry Tab) - Z-index elevated */}
       {isRegisterModalOpen && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 backdrop-blur-sm bg-black/60">
@@ -704,5 +555,3 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({
     </div>
   );
 };
-
-export default CustomerPortal;

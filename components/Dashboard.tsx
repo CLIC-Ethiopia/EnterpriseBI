@@ -1,6 +1,6 @@
 
-import React, { useState } from 'react';
-import { DepartmentData, DepartmentType, TickerItem, CartItem } from '../types';
+import React, { useState, useEffect } from 'react';
+import { DepartmentData, DepartmentType, TickerItem, CartItem, SummaryRow } from '../types';
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend, BarChart, Bar
@@ -9,9 +9,9 @@ import {
   ArrowUpRight, ArrowDownRight, MoreHorizontal, Bell, Search, Menu, Moon, Sun, 
   LayoutDashboard, Users, Database, Globe, Package, BadgeDollarSign, TrendingUp, Settings,
   LogOut, X, Filter, Download, MessageSquare, Check, CheckCircle2, XCircle, Banknote, ShieldAlert, Calculator,
-  Printer, HelpCircle, GraduationCap, ShoppingCart
+  Printer, HelpCircle, GraduationCap, ShoppingCart, Briefcase, ChevronRight, Save, UserPlus, ShoppingBag, Minus, Plus, CheckCircle
 } from 'lucide-react';
-import CustomerPortal from './CustomerPortal';
+import { CustomerPortal } from './CustomerPortal';
 import DataAdminPortal from './DataAdminPortal';
 import SystemAdminPortal from './SystemAdminPortal';
 import AccountingPortal from './AccountingPortal';
@@ -29,6 +29,10 @@ interface DashboardProps {
   isDarkMode: boolean;
   toggleTheme: () => void;
   onShowInfo: () => void;
+  cart: CartItem[];
+  setCart: React.Dispatch<React.SetStateAction<CartItem[]>>;
+  isCartOpen: boolean;
+  setIsCartOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 const COLORS = ['#4f46e5', '#10b981', '#f59e0b', '#ef4444'];
@@ -51,7 +55,11 @@ const Dashboard: React.FC<DashboardProps> = ({
   onLogout, 
   isDarkMode, 
   toggleTheme,
-  onShowInfo
+  onShowInfo,
+  cart,
+  setCart,
+  isCartOpen,
+  setIsCartOpen
 }) => {
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const [activeKpiComment, setActiveKpiComment] = useState<number | null>(null);
@@ -61,9 +69,25 @@ const Dashboard: React.FC<DashboardProps> = ({
   const [rejectedItems, setRejectedItems] = useState<Set<number>>(new Set());
   const [isWarehouseCatalogOpen, setIsWarehouseCatalogOpen] = useState(false);
 
-  // Cart State (Lifted from CustomerPortal)
-  const [cart, setCart] = useState<CartItem[]>([]);
-  const [isCartOpen, setIsCartOpen] = useState(false);
+  // Sales Processing State
+  const [isSalesProcessingOpen, setIsSalesProcessingOpen] = useState(false);
+  const [localTableData, setLocalTableData] = useState<SummaryRow[]>([]);
+  const [salesForm, setSalesForm] = useState({
+    item: '',
+    category: 'Retail',
+    value: '',
+    status: 'Good',
+    completion: 50
+  });
+
+  // Global Checkout Modal State
+  const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
+  const [orderSuccess, setOrderSuccess] = useState(false);
+
+  // Sync local table data when department changes
+  useEffect(() => {
+    setLocalTableData(department.summaryTableData);
+  }, [department]);
 
   const isGeneralManagement = department.id === DepartmentType.GENERAL;
   const isCustomerView = department.id === DepartmentType.CUSTOMER;
@@ -73,7 +97,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   const isInventory = department.id === DepartmentType.INVENTORY;
   const isSales = department.id === DepartmentType.SALES;
 
-  // Determine current user based on department for display purposes
+  // ... (Helper functions remain same) ...
   const currentUser = (() => {
     switch(department.id) {
       case DepartmentType.GENERAL: return { name: "Frehun Adefris", role: "Director" };
@@ -89,7 +113,6 @@ const Dashboard: React.FC<DashboardProps> = ({
     }
   })();
 
-  // Dynamic color selection based on department theme
   const getThemeColor = (opacity = 1) => {
     const colors: Record<string, string> = {
       emerald: `rgba(16, 185, 129, ${opacity})`,
@@ -105,12 +128,9 @@ const Dashboard: React.FC<DashboardProps> = ({
   };
 
   const strokeColor = getThemeColor(1);
-  
-  // Chart configuration for Dark Mode
   const gridColor = isDarkMode ? '#374151' : '#f1f5f9';
   const axisColor = '#94a3b8';
   
-  // Updated Tooltip Style for Better Contrast
   const tooltipStyle = {
     backgroundColor: isDarkMode ? '#1f2937' : '#ffffff',
     borderColor: isDarkMode ? '#374151' : '#e2e8f0',
@@ -150,6 +170,41 @@ const Dashboard: React.FC<DashboardProps> = ({
     }
   };
 
+  // Cart Functions (Moved from CustomerPortal)
+  const removeFromCart = (itemId: string, custId?: string) => {
+    setCart(prev => prev.filter(item => !(item.id === itemId && item.customerId === custId)));
+  };
+
+  const updateQuantity = (itemId: string, custId: string | undefined, delta: number) => {
+    setCart(prev => prev.map(item => {
+      if (item.id === itemId && item.customerId === custId) {
+        const newQty = Math.max(1, item.cartQuantity + delta);
+        return {...item, cartQuantity: newQty};
+      }
+      return item;
+    }));
+  };
+
+  const cartTotal = cart.reduce((sum, item) => sum + (item.price * item.cartQuantity), 0);
+
+  const handleCheckout = () => {
+    setIsOrderModalOpen(true);
+    setIsCartOpen(false);
+  };
+
+  const submitOrder = (e: React.FormEvent) => {
+    e.preventDefault();
+    setTimeout(() => {
+      setOrderSuccess(true);
+      setCart([]);
+      setTimeout(() => {
+        setIsOrderModalOpen(false);
+        setOrderSuccess(false);
+      }, 2000);
+    }, 1000);
+  };
+
+  // ... (Other handlers remain same) ...
   const handleSaveComment = (index: number) => {
     if (tempComment.trim()) {
       setKpiComments(prev => ({...prev, [index]: tempComment}));
@@ -166,12 +221,44 @@ const Dashboard: React.FC<DashboardProps> = ({
     setRejectedItems(prev => new Set(prev).add(id));
   };
 
+  const handleProcessSale = (e: React.FormEvent) => {
+    e.preventDefault();
+    const newId = Math.max(...localTableData.map(r => r.id), 0) + 1;
+    const newRow: SummaryRow = {
+      id: newId,
+      item: salesForm.item,
+      category: salesForm.category,
+      status: salesForm.status as any,
+      value: salesForm.value.includes('Bir') ? salesForm.value : `Bir ${Number(salesForm.value).toLocaleString()}`,
+      completion: Number(salesForm.completion)
+    };
+
+    setLocalTableData(prev => [newRow, ...prev]);
+    setIsSalesProcessingOpen(false);
+    setSalesForm({
+      item: '',
+      category: 'Retail',
+      value: '',
+      status: 'Good',
+      completion: 50
+    });
+  };
+
+  const fillFormFromCart = (item: CartItem) => {
+    setSalesForm({
+      item: item.customerName || 'New Client',
+      category: 'Wholesale',
+      value: (item.price * item.cartQuantity).toString(),
+      status: 'Stable',
+      completion: 20
+    });
+  };
+
   const generalDept = allDepartments.find(d => d.id === DepartmentType.GENERAL);
   const customerDept = allDepartments.find(d => d.id === DepartmentType.CUSTOMER);
   const adminDept = allDepartments.find(d => d.id === DepartmentType.DATA_ADMIN);
   const systemAdminDept = allDepartments.find(d => d.id === DepartmentType.SYSTEM_ADMIN);
 
-  // Helper to filter out special departments for the main list
   const standardDepartments = allDepartments.filter(d => 
     d.id !== DepartmentType.GENERAL && 
     d.id !== DepartmentType.CUSTOMER && 
@@ -179,9 +266,7 @@ const Dashboard: React.FC<DashboardProps> = ({
     d.id !== DepartmentType.SYSTEM_ADMIN
   );
 
-  // Helper for consistent and vibrant sidebar item styling
   const getSidebarItemClass = (isActive: boolean, themeColor: string) => {
-    // Explicit color mapping for maximum control and vibrancy
     const colorMap: Record<string, { active: string, hover: string }> = {
       indigo: {
         active: 'bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border-l-4 border-indigo-600 dark:border-indigo-400',
@@ -207,7 +292,6 @@ const Dashboard: React.FC<DashboardProps> = ({
         active: 'bg-cyan-100 dark:bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 border-l-4 border-cyan-600 dark:border-cyan-400',
         hover: 'hover:text-cyan-600 dark:hover:text-cyan-400 hover:bg-cyan-50 dark:hover:bg-cyan-900/10'
       },
-      // Enhanced Slate/Gray for better visibility
       slate: {
         active: 'bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white border-l-4 border-slate-600 dark:border-slate-400',
         hover: 'hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/50'
@@ -341,7 +425,7 @@ const Dashboard: React.FC<DashboardProps> = ({
           </div>
         </nav>
 
-          {/* Sidebar Footer - Updated with System Architect Info */}
+          {/* Sidebar Footer */}
           <div className="p-4 border-t border-gray-100 dark:border-gray-700 flex-shrink-0">
              <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-3 border border-gray-100 dark:border-gray-600">
                 <div className="flex items-center justify-between mb-2">
@@ -369,6 +453,7 @@ const Dashboard: React.FC<DashboardProps> = ({
 
         {/* Top Navigation Header */}
         <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex justify-between items-center z-10 print:border-none flex-shrink-0">
+          {/* ... Header Content ... */}
           <div className="flex items-center gap-4">
             <button 
               onClick={() => setSidebarOpen(true)}
@@ -484,6 +569,14 @@ const Dashboard: React.FC<DashboardProps> = ({
                            >
                               <Package className="w-4 h-4" />
                               Product Catalogue
+                           </button>
+                        ) : isSales ? (
+                           <button 
+                              onClick={() => setIsSalesProcessingOpen(true)}
+                              className="px-4 py-2 bg-violet-600 text-white rounded-lg text-sm font-medium hover:bg-violet-700 transition-colors flex items-center gap-2 shadow-sm shadow-violet-200 dark:shadow-none"
+                           >
+                              <ShoppingCart className="w-4 h-4" />
+                              Sales Processing
                            </button>
                         ) : (
                            <button className="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-2">
@@ -702,7 +795,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                                </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-                               {department.summaryTableData.map((row) => (
+                               {localTableData.map((row) => (
                                   <tr key={row.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
                                      <td className="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">{row.item}</td>
                                      <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{row.category}</td>
@@ -810,6 +903,206 @@ const Dashboard: React.FC<DashboardProps> = ({
       >
         <GraduationCap className="w-6 h-6" />
       </button>
+
+      {/* Sales Processing Modal */}
+      {isSalesProcessingOpen && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 backdrop-blur-sm bg-black/60">
+           {/* ... (Existing Sales Processing Modal Content) ... */}
+           <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-5xl h-[80vh] shadow-2xl border border-gray-100 dark:border-gray-700 flex overflow-hidden animate-in zoom-in-95 duration-200">
+              <div className="w-1/3 border-r border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 flex flex-col">
+                 <div className="p-5 border-b border-gray-200 dark:border-gray-700">
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                       <ShoppingCart className="w-5 h-5 text-violet-600" /> Incoming Queue
+                    </h3>
+                    <p className="text-xs text-gray-500 mt-1">Pending orders from web & email</p>
+                 </div>
+                 <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                    {[...cart, 
+                      { id: 'MOCK-1', name: 'Bulk Chemical Solvent', price: 12000, cartQuantity: 10, unit: 'L', customerName: 'EcoClean Ltd', category: 'Industrial', image: 'https://images.unsplash.com/photo-1605333144182-4e45d625d886?auto=format&fit=crop&q=80&w=100' },
+                      { id: 'MOCK-2', name: 'Cotton Yarn Spools', price: 450, cartQuantity: 500, unit: 'Units', customerName: 'TextilePro Inc', category: 'Manufacturing', image: 'https://images.unsplash.com/photo-1520188741372-a4282361d15c?auto=format&fit=crop&q=80&w=100' }
+                    ].map((item: any, idx) => (
+                       <div key={idx} onClick={() => fillFormFromCart(item)} className="bg-white dark:bg-gray-800 p-3 rounded-xl border border-gray-200 dark:border-gray-700 cursor-pointer hover:border-violet-500 hover:shadow-md transition-all group">
+                          <div className="flex justify-between items-start mb-2">
+                             <span className="text-xs font-bold text-gray-400">ORDER #{1000 + idx}</span>
+                             <span className="bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 text-[10px] px-2 py-0.5 rounded-full font-bold">New</span>
+                          </div>
+                          <div className="flex gap-3">
+                             <img src={item.image} alt="" className="w-12 h-12 rounded-lg object-cover bg-gray-100" />
+                             <div>
+                                <h4 className="font-bold text-gray-900 dark:text-white text-sm line-clamp-1">{item.customerName || 'Guest User'}</h4>
+                                <p className="text-xs text-gray-500 line-clamp-1">{item.name}</p>
+                                <p className="text-xs font-bold text-gray-900 dark:text-white mt-1">Bir {(item.price * item.cartQuantity).toLocaleString()}</p>
+                             </div>
+                             <div className="ml-auto self-center opacity-0 group-hover:opacity-100 transition-opacity"><ChevronRight className="w-4 h-4 text-gray-400" /></div>
+                          </div>
+                       </div>
+                    ))}
+                 </div>
+              </div>
+              <div className="w-2/3 flex flex-col bg-white dark:bg-gray-800">
+                 <div className="p-5 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                    <div><h3 className="text-xl font-bold text-gray-900 dark:text-white">Process Sales Entry</h3><p className="text-sm text-gray-500">Convert incoming orders to Key Account status.</p></div>
+                    <button onClick={() => setIsSalesProcessingOpen(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"><X className="w-6 h-6" /></button>
+                 </div>
+                 <div className="flex-1 p-8 overflow-y-auto">
+                    <form onSubmit={handleProcessSale} className="space-y-6 max-w-lg mx-auto">
+                       {/* ... Form Fields (Same as before) ... */}
+                       <div className="grid grid-cols-2 gap-6">
+                          <div>
+                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Client / Company Name</label>
+                             <div className="relative">
+                                <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                <input type="text" required className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-violet-500 outline-none transition-all dark:text-white" placeholder="e.g. Acme Corp" value={salesForm.item} onChange={e => setSalesForm({...salesForm, item: e.target.value})} />
+                             </div>
+                          </div>
+                          <div>
+                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Industry Category</label>
+                             <select className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-violet-500 outline-none transition-all dark:text-white" value={salesForm.category} onChange={e => setSalesForm({...salesForm, category: e.target.value})}>
+                                <option>Retail</option><option>Manufacturing</option><option>Industrial</option><option>Construction</option><option>Wholesale</option>
+                             </select>
+                          </div>
+                       </div>
+                       <div className="grid grid-cols-2 gap-6">
+                          <div>
+                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Deal Value</label>
+                             <div className="relative">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm font-bold">Bir</span>
+                                <input type="text" required className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-violet-500 outline-none transition-all dark:text-white" placeholder="0.00" value={salesForm.value.replace(/[^0-9.]/g, '')} onChange={e => setSalesForm({...salesForm, value: e.target.value})} />
+                             </div>
+                          </div>
+                          <div>
+                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Account Status</label>
+                             <select className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-violet-500 outline-none transition-all dark:text-white" value={salesForm.status} onChange={e => setSalesForm({...salesForm, status: e.target.value})}>
+                                <option value="Good">Good Standing</option><option value="Stable">Stable</option><option value="Warning">Warning</option><option value="Critical">Critical</option>
+                             </select>
+                          </div>
+                       </div>
+                       <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex justify-between"><span>Conversion Probability / Completion</span><span className="font-bold text-violet-600">{salesForm.completion}%</span></label>
+                          <input type="range" min="0" max="100" className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-violet-600" value={salesForm.completion} onChange={e => setSalesForm({...salesForm, completion: Number(e.target.value)})} />
+                       </div>
+                       <div className="pt-4 flex gap-4">
+                          <button type="button" onClick={() => setIsSalesProcessingOpen(false)} className="flex-1 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-bold rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">Cancel</button>
+                          <button type="submit" className="flex-1 py-3 bg-violet-600 text-white font-bold rounded-xl hover:bg-violet-700 shadow-lg shadow-violet-200 dark:shadow-none transition-colors flex items-center justify-center gap-2"><Save className="w-5 h-5" /> Process & Add to Ledger</button>
+                       </div>
+                    </form>
+                 </div>
+              </div>
+           </div>
+        </div>
+      )}
+
+      {/* Global Cart Drawer */}
+      <div className={`fixed inset-y-0 right-0 w-96 bg-white dark:bg-gray-800 shadow-2xl transform transition-transform duration-300 z-[200] flex flex-col border-l border-gray-200 dark:border-gray-700 ${isCartOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+         <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-900">
+            <div className="flex items-center gap-2">
+               <ShoppingBag className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+               <h3 className="font-bold text-gray-900 dark:text-white">Active Order Queue</h3>
+            </div>
+            <button onClick={() => setIsCartOpen(false)} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+         </div>
+         
+         <div className="flex-1 overflow-y-auto p-6 space-y-4">
+            {cart.length === 0 ? (
+               <div className="text-center py-10 text-gray-400">
+                  <Package className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                  <p>Order queue is empty.</p>
+               </div>
+            ) : (
+               cart.map((item, idx) => (
+                 <div key={`${item.id}-${item.customerId}-${idx}`} className="flex gap-4 border-b border-gray-100 dark:border-gray-700 pb-4 last:border-0 last:pb-0">
+                    <img src={item.image} className="w-16 h-16 rounded-lg object-cover bg-gray-100 flex-shrink-0" alt="" />
+                    <div className="flex-1 min-w-0">
+                       <div className="flex justify-between items-start mb-1">
+                          <h4 className="text-sm font-medium text-gray-900 dark:text-white line-clamp-1">{item.name}</h4>
+                          <button onClick={() => removeFromCart(item.id, item.customerId)} className="text-gray-400 hover:text-red-500"><X className="w-4 h-4" /></button>
+                       </div>
+                       
+                       {/* Customer Badge */}
+                       <div className="flex items-center gap-1 mb-2">
+                          <Users className="w-3 h-3 text-gray-400" />
+                          <span className="text-xs text-blue-600 dark:text-blue-400 truncate font-medium">{item.customerName || 'Unknown Customer'}</span>
+                       </div>
+
+                       <div className="flex justify-between items-center">
+                          <div className="flex items-center border border-gray-200 dark:border-gray-600 rounded">
+                             <button onClick={() => updateQuantity(item.id, item.customerId, -1)} className="px-2 py-1 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700"><Minus className="w-3 h-3" /></button>
+                             <span className="px-2 text-sm text-gray-900 dark:text-white">{item.cartQuantity}</span>
+                             <button onClick={() => updateQuantity(item.id, item.customerId, 1)} className="px-2 py-1 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700"><Plus className="w-3 h-3" /></button>
+                          </div>
+                          <div className="text-right">
+                             <span className="block text-sm font-bold text-gray-900 dark:text-white">Bir {(item.price * item.cartQuantity).toLocaleString()}</span>
+                             <span className="text-[10px] text-gray-400">{item.unit}</span>
+                          </div>
+                       </div>
+                    </div>
+                 </div>
+               ))
+            )}
+         </div>
+
+         <div className="p-6 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+            <div className="flex justify-between items-center mb-4">
+               <span className="text-gray-500">Total Value</span>
+               <span className="text-xl font-bold text-gray-900 dark:text-white">Bir {cartTotal.toLocaleString()}</span>
+            </div>
+            <button 
+              onClick={handleCheckout}
+              disabled={cart.length === 0}
+              className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-200 dark:shadow-none"
+            >
+               Process Orders
+            </button>
+         </div>
+      </div>
+
+      {/* Global Checkout Modal */}
+      {isOrderModalOpen && (
+        <div className="fixed inset-0 bg-black/60 z-[200] flex items-center justify-center p-4 backdrop-blur-sm">
+           <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-lg w-full p-8 relative">
+              {orderSuccess ? (
+                 <div className="text-center py-8">
+                    <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                       <CheckCircle2 className="w-8 h-8" />
+                    </div>
+                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Order Request Sent!</h2>
+                    <p className="text-gray-500">Your account manager will review and confirm your PO shortly.</p>
+                 </div>
+              ) : (
+                 <>
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Submit Order Request</h2>
+                  <form onSubmit={submitOrder} className="space-y-4">
+                     <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Purchase Order (PO) Number</label>
+                        <input type="text" required className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g. PO-9923" />
+                     </div>
+                     <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Shipping Address</label>
+                        <select className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent text-gray-900 dark:text-white outline-none">
+                           <option>Main Warehouse - New York, NY</option>
+                           <option>Distribution Center - Chicago, IL</option>
+                        </select>
+                     </div>
+                     <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Additional Notes</label>
+                        <textarea className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none" rows={3}></textarea>
+                     </div>
+                     
+                     <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg flex justify-between items-center">
+                        <span className="font-medium text-gray-700 dark:text-gray-300">Total Amount</span>
+                        <span className="text-xl font-bold text-blue-600 dark:text-blue-400">Bir {cartTotal.toLocaleString()}</span>
+                     </div>
+
+                     <div className="flex gap-3 pt-4">
+                        <button type="button" onClick={() => setIsOrderModalOpen(false)} className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-gray-700">Cancel</button>
+                        <button type="submit" className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 shadow-lg shadow-blue-200 dark:shadow-none">Submit Request</button>
+                     </div>
+                  </form>
+                 </>
+              )}
+           </div>
+        </div>
+      )}
 
     </div>
   );

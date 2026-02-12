@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { 
-  Globe, Printer, Info, Sun, Moon, Home, LogOut 
+  Globe, Printer, Info, Sun, Moon, Home, LogOut, ShoppingCart
 } from 'lucide-react';
 
 interface BottomDockProps {
@@ -11,6 +11,8 @@ interface BottomDockProps {
   onHome: () => void;
   onLogout?: () => void;
   showLogout: boolean;
+  onOpenCart?: () => void;
+  cartCount?: number;
 }
 
 const BottomDock: React.FC<BottomDockProps> = ({ 
@@ -19,10 +21,18 @@ const BottomDock: React.FC<BottomDockProps> = ({
   onShowInfo, 
   onHome,
   onLogout,
-  showLogout
+  showLogout,
+  onOpenCart,
+  cartCount
 }) => {
   const dockItems = [
     { icon: Home, label: 'Home', onClick: onHome },
+    ...(onOpenCart ? [{ 
+      icon: ShoppingCart, 
+      label: 'Cart', 
+      onClick: onOpenCart, 
+      badge: cartCount 
+    }] : []),
     { icon: Info, label: 'Documentation', onClick: onShowInfo },
     { icon: Printer, label: 'Print View', onClick: () => window.print() },
     { 
@@ -48,6 +58,13 @@ const BottomDock: React.FC<BottomDockProps> = ({
                  onClick={item.onClick}
                  className="group relative flex flex-col items-center gap-1 transition-all duration-300 hover:-translate-y-2 focus:outline-none"
                >
+                 {/* Badge */}
+                 {item.badge !== undefined && item.badge > 0 && (
+                   <span className="absolute -top-2 -right-2 w-5 h-5 flex items-center justify-center bg-red-600 text-white text-[10px] font-bold rounded-full border-2 border-white dark:border-gray-800 z-20 shadow-sm animate-in zoom-in">
+                     {item.badge}
+                   </span>
+                 )}
+
                  {/* Tooltip */}
                  <span className="absolute -top-12 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-xs font-bold px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-all transform scale-90 group-hover:scale-100 whitespace-nowrap pointer-events-none shadow-xl">
                    {item.label}
