@@ -1,9 +1,10 @@
 
-import React, { useState } from 'react';
-import { DepartmentData, LedgerEntry } from '../types';
+import React, { useState, useEffect } from 'react';
+import { DepartmentData, LedgerEntry, SupplierTaxCategory, TransactionType, TaxCalculationResult } from '../types';
 import { 
   Calculator, PieChart as PieIcon, TrendingUp, DollarSign, Calendar, Search, 
-  FileText, Sliders, ArrowRight, Plus, Download, RefreshCw, Activity, Layers, Scale, X, GraduationCap
+  FileText, Sliders, ArrowRight, Plus, Download, RefreshCw, Activity, Layers, Scale, X, GraduationCap,
+  Stamp, Printer, AlertCircle, FileCheck, CheckCircle2
 } from 'lucide-react';
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
@@ -17,7 +18,7 @@ interface AccountingPortalProps {
 }
 
 const AccountingPortal: React.FC<AccountingPortalProps> = ({ data, onOpenAI, isDarkMode }) => {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'ledger' | 'analysis'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'ledger' | 'analysis' | 'compliance'>('dashboard');
   const [ledgerSearch, setLedgerSearch] = useState('');
   
   // Local state for ledger to allow adding new entries
@@ -31,6 +32,65 @@ const AccountingPortal: React.FC<AccountingPortalProps> = ({ data, onOpenAI, isD
     amount: 0,
     status: 'Pending'
   });
+
+  // --- ETHIOPIAN TAX COMPLIANCE STATE ---
+  const [taxInput, setTaxInput] = useState({
+    amount: 5000,
+    supplierCategory: 'VAT_Reg' as SupplierTaxCategory,
+    transactionType: 'Goods' as TransactionType,
+    supplierName: 'ABC Trading PLC',
+    tinNumber: '0012345678'
+  });
+  const [taxResult, setTaxResult] = useState<TaxCalculationResult | null>(null);
+
+  // Auto-calculate tax when inputs change
+  useEffect(() => {
+    calculateEthiopianTax();
+  }, [taxInput]);
+
+  const calculateEthiopianTax = () => {
+    const { amount, supplierCategory, transactionType } = taxInput;
+    let vatAmount = 0;
+    let totAmount = 0;
+    let whtAmount = 0;
+    const baseAmount = Number(amount);
+    const notes: string[] = [];
+
+    // 1. VAT / TOT Logic
+    if (supplierCategory === 'VAT_Reg') {
+      vatAmount = baseAmount * 0.15;
+      notes.push('VAT (15%) applied.');
+    } else if (supplierCategory === 'TOT_Reg') {
+      // TOT is 2% for Goods, 10% for Services usually, but simplified here as per user prompt logic requests
+      const totRate = transactionType === 'Goods' ? 0.02 : 0.10;
+      totAmount = baseAmount * totRate;
+      notes.push(`TOT (${totRate * 100}%) applied for ${transactionType}.`);
+    }
+
+    // 2. Withholding Tax Logic
+    // Threshold > 3,000 ETB
+    const isWhtApplicable = baseAmount >= 3000;
+    if (isWhtApplicable) {
+      const whtRate = transactionType === 'Goods' ? 0.02 : 0.05;
+      whtAmount = baseAmount * whtRate;
+      notes.push(`Withholding Tax (${whtRate * 100}%) deducted (Amount > 3,000 ETB).`);
+    } else {
+      notes.push('No Withholding Tax (Amount < 3,000 ETB).');
+    }
+
+    // Net Payable = Base + VAT/TOT - WHT
+    const netPayable = baseAmount + vatAmount + totAmount - whtAmount;
+
+    setTaxResult({
+      baseAmount,
+      vatAmount,
+      totAmount,
+      whtAmount,
+      netPayable,
+      isWhtApplicable,
+      notes
+    });
+  };
 
   // Analysis Tool States
   const [ratioInputs, setRatioInputs] = useState({
@@ -152,8 +212,8 @@ const AccountingPortal: React.FC<AccountingPortalProps> = ({ data, onOpenAI, isD
     <div className="space-y-6">
       
       {/* Navigation Tabs */}
-      <div className="flex justify-between items-center">
-        <div className="flex space-x-1 bg-white dark:bg-gray-800 p-1 rounded-xl w-fit border border-gray-100 dark:border-gray-700">
+      <div className="flex justify-between items-center overflow-x-auto pb-2 md:pb-0">
+        <div className="flex space-x-1 bg-white dark:bg-gray-800 p-1 rounded-xl w-fit border border-gray-100 dark:border-gray-700 whitespace-nowrap">
           <button 
             onClick={() => setActiveTab('dashboard')}
             className={`px-4 py-2 text-sm font-medium rounded-lg transition-all flex items-center gap-2 ${activeTab === 'dashboard' ? 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300 shadow-sm' : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200'}`}
@@ -172,10 +232,16 @@ const AccountingPortal: React.FC<AccountingPortalProps> = ({ data, onOpenAI, isD
           >
             <Calculator className="w-4 h-4" /> Ad-hoc Analysis
           </button>
+          <button 
+            onClick={() => setActiveTab('compliance')}
+            className={`px-4 py-2 text-sm font-medium rounded-lg transition-all flex items-center gap-2 ${activeTab === 'compliance' ? 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300 shadow-sm' : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200'}`}
+          >
+            <Stamp className="w-4 h-4" /> Tax Compliance (ERCA)
+          </button>
         </div>
         <button 
           onClick={onOpenAI}
-          className="px-4 py-2 bg-cyan-600 text-white rounded-lg hover:opacity-90 transition-opacity font-medium text-sm flex items-center gap-2 shadow-sm shadow-cyan-200 dark:shadow-none"
+          className="ml-4 px-4 py-2 bg-cyan-600 text-white rounded-lg hover:opacity-90 transition-opacity font-medium text-sm flex items-center gap-2 shadow-sm shadow-cyan-200 dark:shadow-none whitespace-nowrap"
         >
           <GraduationCap className="w-4 h-4 opacity-90" />
           Ask Prof. Fad
@@ -248,7 +314,10 @@ const AccountingPortal: React.FC<AccountingPortalProps> = ({ data, onOpenAI, isD
                    </div>
                 ))}
               </div>
-              <button className="w-full mt-6 py-2 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+              <button 
+                onClick={() => setActiveTab('compliance')}
+                className="w-full mt-6 py-2 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              >
                  View Tax Calendar
               </button>
             </div>
@@ -311,6 +380,274 @@ const AccountingPortal: React.FC<AccountingPortalProps> = ({ data, onOpenAI, isD
              </div>
           </div>
         </>
+      )}
+
+      {activeTab === 'compliance' && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          
+          {/* Tax Engine Input */}
+          <div className="space-y-6">
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
+               <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+                  <Calculator className="w-6 h-6 text-emerald-600" /> Ethiopian Tax Engine
+               </h3>
+               
+               <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                     <div>
+                        <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Transaction Amount (ETB)</label>
+                        <input 
+                           type="number" 
+                           value={taxInput.amount} 
+                           onChange={e => setTaxInput({...taxInput, amount: Number(e.target.value)})} 
+                           className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-600 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-white"
+                        />
+                     </div>
+                     <div>
+                        <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Transaction Type</label>
+                        <select 
+                           value={taxInput.transactionType} 
+                           onChange={e => setTaxInput({...taxInput, transactionType: e.target.value as TransactionType})}
+                           className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-600 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-white"
+                        >
+                           <option value="Goods">Goods (2% WHT)</option>
+                           <option value="Services">Services (5% WHT)</option>
+                        </select>
+                     </div>
+                  </div>
+
+                  <div>
+                     <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Supplier Tax Category</label>
+                     <div className="flex gap-2">
+                        {['VAT_Reg', 'TOT_Reg', 'None'].map((cat) => (
+                           <button
+                              key={cat}
+                              onClick={() => setTaxInput({...taxInput, supplierCategory: cat as SupplierTaxCategory})}
+                              className={`flex-1 py-2 text-xs font-bold rounded-lg border transition-colors ${
+                                 taxInput.supplierCategory === cat 
+                                 ? 'bg-emerald-100 border-emerald-500 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' 
+                                 : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300'
+                              }`}
+                           >
+                              {cat === 'VAT_Reg' ? 'VAT Registered' : cat === 'TOT_Reg' ? 'TOT Registered' : 'Unregistered'}
+                           </button>
+                        ))}
+                     </div>
+                  </div>
+
+                  <div className="h-px bg-gray-100 dark:bg-gray-700 my-4"></div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                     <div>
+                        <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Supplier Name</label>
+                        <input 
+                           type="text" 
+                           value={taxInput.supplierName} 
+                           onChange={e => setTaxInput({...taxInput, supplierName: e.target.value})}
+                           className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-600 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-white"
+                        />
+                     </div>
+                     <div>
+                        <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">TIN Number</label>
+                        <input 
+                           type="text" 
+                           value={taxInput.tinNumber} 
+                           onChange={e => setTaxInput({...taxInput, tinNumber: e.target.value})}
+                           className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-600 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-white"
+                        />
+                     </div>
+                  </div>
+               </div>
+            </div>
+
+            {/* Breakdown Card */}
+            {taxResult && (
+               <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
+                  <h4 className="text-sm font-bold text-gray-500 uppercase mb-4">Calculated Breakdown</h4>
+                  <div className="space-y-3">
+                     <div className="flex justify-between items-center text-sm">
+                        <span className="text-gray-600 dark:text-gray-300">Taxable Amount</span>
+                        <span className="font-medium text-gray-900 dark:text-white">{taxResult.baseAmount.toLocaleString()} ETB</span>
+                     </div>
+                     <div className="flex justify-between items-center text-sm">
+                        <span className="text-gray-600 dark:text-gray-300">
+                           {taxInput.supplierCategory === 'VAT_Reg' ? 'VAT (15%)' : 'TOT (2%/10%)'}
+                        </span>
+                        <span className="font-medium text-blue-600">
+                           + {(taxResult.vatAmount || taxResult.totAmount).toLocaleString()} ETB
+                        </span>
+                     </div>
+                     <div className="flex justify-between items-center text-sm">
+                        <span className="text-gray-600 dark:text-gray-300">Withholding Tax</span>
+                        <span className={`font-medium ${taxResult.whtAmount > 0 ? 'text-red-500' : 'text-gray-400'}`}>
+                           - {taxResult.whtAmount.toLocaleString()} ETB
+                        </span>
+                     </div>
+                     <div className="border-t border-gray-100 dark:border-gray-700 pt-3 flex justify-between items-center">
+                        <span className="font-bold text-gray-900 dark:text-white">Net Payment</span>
+                        <span className="text-xl font-bold text-emerald-600">{taxResult.netPayable.toLocaleString()} ETB</span>
+                     </div>
+                  </div>
+                  <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg text-xs text-gray-500 space-y-1">
+                     {taxResult.notes.map((note, idx) => (
+                        <p key={idx} className="flex items-center gap-2"><CheckCircle2 className="w-3 h-3 text-emerald-500" /> {note}</p>
+                     ))}
+                  </div>
+               </div>
+            )}
+          </div>
+
+          {/* Right Column: Documents & Reports */}
+          <div className="space-y-6">
+             
+             {/* WHT Letter Preview */}
+             <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
+                <div className="flex justify-between items-center mb-6">
+                   <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                      <FileCheck className="w-5 h-5 text-indigo-600" /> Withholding Receipt
+                   </h3>
+                   <button 
+                     onClick={() => window.print()}
+                     disabled={!taxResult?.isWhtApplicable}
+                     className="px-3 py-1.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg text-xs font-bold text-gray-700 dark:text-gray-300 flex items-center gap-2 disabled:opacity-50"
+                   >
+                      <Printer className="w-3 h-3" /> Print
+                   </button>
+                </div>
+
+                {taxResult?.isWhtApplicable ? (
+                   <div className="border border-gray-200 dark:border-gray-600 p-6 rounded-sm bg-white text-black font-serif text-sm relative overflow-hidden">
+                      {/* Watermark */}
+                      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-gray-100 text-6xl font-bold -rotate-45 pointer-events-none">
+                         COPY
+                      </div>
+                      
+                      <div className="text-center border-b border-gray-300 pb-4 mb-4">
+                         <h2 className="font-bold text-lg uppercase">Official Withholding Tax Receipt</h2>
+                         <p className="text-xs text-gray-500">Federal Democratic Republic of Ethiopia</p>
+                         <p className="text-xs text-gray-500">Ministry of Revenues</p>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4 mb-4">
+                         <div>
+                            <p className="text-[10px] text-gray-500 uppercase">Withholding Agent</p>
+                            <p className="font-bold">GlobalTrade Logistics Inc.</p>
+                            <p className="text-xs">TIN: 0098765432</p>
+                         </div>
+                         <div className="text-right">
+                            <p className="text-[10px] text-gray-500 uppercase">Receipt No</p>
+                            <p className="font-bold text-red-600">WH-{Math.floor(Math.random()*10000)}</p>
+                            <p className="text-xs">Date: {new Date().toLocaleDateString()}</p>
+                         </div>
+                      </div>
+
+                      <div className="mb-4">
+                         <p className="text-[10px] text-gray-500 uppercase">Supplier Details</p>
+                         <p className="font-bold">{taxInput.supplierName}</p>
+                         <p className="text-xs">TIN: {taxInput.tinNumber}</p>
+                      </div>
+
+                      <table className="w-full border-collapse border border-gray-300 text-xs mb-6">
+                         <thead>
+                            <tr className="bg-gray-100">
+                               <th className="border border-gray-300 p-2 text-left">Description</th>
+                               <th className="border border-gray-300 p-2 text-right">Amount</th>
+                            </tr>
+                         </thead>
+                         <tbody>
+                            <tr>
+                               <td className="border border-gray-300 p-2">Gross Payment Amount</td>
+                               <td className="border border-gray-300 p-2 text-right">{taxResult.baseAmount.toLocaleString()}</td>
+                            </tr>
+                            <tr>
+                               <td className="border border-gray-300 p-2">Taxable Amount</td>
+                               <td className="border border-gray-300 p-2 text-right">{taxResult.baseAmount.toLocaleString()}</td>
+                            </tr>
+                            <tr>
+                               <td className="border border-gray-300 p-2 font-bold">Withholding Tax ({taxInput.transactionType === 'Goods' ? '2%' : '5%'})</td>
+                               <td className="border border-gray-300 p-2 text-right font-bold">{taxResult.whtAmount.toLocaleString()}</td>
+                            </tr>
+                         </tbody>
+                      </table>
+
+                      <div className="flex justify-between items-end mt-8">
+                         <div className="text-center">
+                            <div className="border-b border-black w-32 mb-1"></div>
+                            <p className="text-[10px]">Prepared By</p>
+                         </div>
+                         <div className="text-center">
+                            <div className="border-b border-black w-32 mb-1"></div>
+                            <p className="text-[10px]">Approved By</p>
+                         </div>
+                      </div>
+                   </div>
+                ) : (
+                   <div className="h-64 flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-900/50 rounded-lg border-2 border-dashed border-gray-200 dark:border-gray-700 text-gray-400">
+                      <AlertCircle className="w-8 h-8 mb-2 opacity-50" />
+                      <p>No Withholding Tax applicable for this transaction.</p>
+                      <p className="text-xs opacity-75">Amount must be &ge; 3,000 ETB</p>
+                   </div>
+                )}
+             </div>
+
+             {/* ERCA Reporting Table */}
+             <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
+                <div className="flex justify-between items-center mb-4">
+                   <h3 className="text-lg font-bold text-gray-900 dark:text-white">Monthly Declaration (ERCA)</h3>
+                   <span className="text-xs font-mono bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">Period: Oct 2024</span>
+                </div>
+                <div className="overflow-x-auto">
+                   <table className="w-full text-xs text-left">
+                      <thead className="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
+                         <tr>
+                            <th className="p-2 rounded-tl-lg">Description</th>
+                            <th className="p-2 text-right">Taxable Value</th>
+                            <th className="p-2 text-right rounded-tr-lg">VAT/Tax</th>
+                         </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                         <tr>
+                            <td className="p-2">Standard Rated Sales</td>
+                            <td className="p-2 text-right font-mono">1,250,000</td>
+                            <td className="p-2 text-right font-mono">187,500</td>
+                         </tr>
+                         <tr>
+                            <td className="p-2">Zero Rated / Exempt</td>
+                            <td className="p-2 text-right font-mono">450,000</td>
+                            <td className="p-2 text-right font-mono">0</td>
+                         </tr>
+                         <tr className="bg-gray-5 dark:bg-gray-900/30 font-bold">
+                            <td className="p-2">Total Output VAT (A)</td>
+                            <td className="p-2 text-right"></td>
+                            <td className="p-2 text-right text-red-500">187,500</td>
+                         </tr>
+                         <tr>
+                            <td className="p-2">Domestic Purchases</td>
+                            <td className="p-2 text-right font-mono">820,000</td>
+                            <td className="p-2 text-right font-mono">123,000</td>
+                         </tr>
+                         <tr>
+                            <td className="p-2">Import VAT Paid</td>
+                            <td className="p-2 text-right font-mono">--</td>
+                            <td className="p-2 text-right font-mono">45,000</td>
+                         </tr>
+                         <tr className="bg-gray-50 dark:bg-gray-900/30 font-bold">
+                            <td className="p-2">Total Input VAT (B)</td>
+                            <td className="p-2 text-right"></td>
+                            <td className="p-2 text-right text-green-500">168,000</td>
+                         </tr>
+                         <tr className="border-t-2 border-gray-200 dark:border-gray-600 font-extrabold text-sm">
+                            <td className="p-2">Net VAT Payable (A-B)</td>
+                            <td className="p-2 text-right"></td>
+                            <td className="p-2 text-right text-indigo-600">19,500</td>
+                         </tr>
+                      </tbody>
+                   </table>
+                </div>
+             </div>
+
+          </div>
+        </div>
       )}
 
       {activeTab === 'ledger' && (

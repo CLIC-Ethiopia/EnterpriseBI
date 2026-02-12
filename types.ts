@@ -148,6 +148,20 @@ export interface AccountingData {
   upcomingTax: { name: string; amount: number; dueDate: string }[];
 }
 
+// NEW: Ethiopian Compliance Types
+export type SupplierTaxCategory = 'VAT_Reg' | 'TOT_Reg' | 'None';
+export type TransactionType = 'Goods' | 'Services';
+
+export interface TaxCalculationResult {
+  baseAmount: number;
+  vatAmount: number;
+  totAmount: number;
+  whtAmount: number;
+  netPayable: number;
+  isWhtApplicable: boolean;
+  notes: string[];
+}
+
 // NEW: Logistics Interfaces
 export interface LogisticsRoute {
   id: string;
