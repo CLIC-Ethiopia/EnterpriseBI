@@ -176,7 +176,7 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   const getSidebarLabel = (dept: DepartmentData) => {
     switch(dept.id) {
-        case DepartmentType.IMPORT_COSTING: return "Import Logistics";
+        case DepartmentType.IMPORT_COSTING: return "Cost Estimation";
         case DepartmentType.FINANCE: return "Finance";
         case DepartmentType.HR: return "HR & Admin";
         case DepartmentType.SALES: return "Sales";

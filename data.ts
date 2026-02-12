@@ -1,5 +1,4 @@
 
-
 import { DepartmentType, DepartmentData } from './types';
 
 export const DEPARTMENTS: DepartmentData[] = [
@@ -104,7 +103,7 @@ export const DEPARTMENTS: DepartmentData[] = [
   },
   {
     id: DepartmentType.IMPORT_COSTING,
-    name: "Import Costing & Logistics",
+    name: "Cost Estimation",
     description: "Calculate Landed Cost, analyze duties, and track transport logistics from Djibouti.",
     themeColor: "emerald", // Using a distinct color
     iconName: "Banknote", // Or a ship icon if available in your icon set logic
@@ -457,10 +456,10 @@ export const DEPARTMENTS: DepartmentData[] = [
           stockStatus: "In Stock",
           description: "Unfinished plain weave cotton fabric ready for dyeing or printing.",
           specs: [{label: "Construction", value: "60x60 / 20x20"}, {label: "Width", value: "63 inch"}, {label: "GSM", value: "140"}],
-          quantity: 35,
-          location: "Zone F-10",
-          supplier: "WeaveMasters",
-          lastRestock: "2024-10-18",
+          quantity: 40,
+          location: "Zone F-12",
+          supplier: "Bahir Dar Textile",
+          lastRestock: "2024-10-01",
           incoming: 10
         },
         {
@@ -473,11 +472,11 @@ export const DEPARTMENTS: DepartmentData[] = [
           stockStatus: "In Stock",
           description: "Durable 14oz raw indigo denim suitable for jeans and heavy-duty apparel.",
           specs: [{label: "Weight", value: "14oz"}, {label: "Width", value: "60 inch"}, {label: "Weave", value: "Twill"}],
-          quantity: 22,
-          location: "Zone F-12",
-          supplier: "Denim Co.",
-          lastRestock: "2024-09-25",
-          incoming: 8
+          quantity: 25,
+          location: "Zone D-05",
+          supplier: "Kanoria Africa",
+          lastRestock: "2024-09-15",
+          incoming: 0
         },
         {
           id: "TEX-ROLL-CNV",
@@ -490,9 +489,9 @@ export const DEPARTMENTS: DepartmentData[] = [
           description: "Heavy-duty waxed canvas, water-resistant finish for outdoor gear.",
           specs: [{label: "GSM", value: "340"}, {label: "Width", value: "58 inch"}, {label: "Finish", value: "Waxed"}],
           quantity: 8,
-          location: "Zone F-15",
-          supplier: "TechFabrics",
-          lastRestock: "2024-08-10",
+          location: "Zone E-02",
+          supplier: "Imported",
+          lastRestock: "2024-08-20",
           incoming: 20
         },
         {
@@ -507,8 +506,8 @@ export const DEPARTMENTS: DepartmentData[] = [
           specs: [{label: "Momme", value: "19mm"}, {label: "Width", value: "44 inch"}, {label: "Grade", value: "6A"}],
           quantity: 12,
           location: "Zone S-01",
-          supplier: "Silk Road Imports",
-          lastRestock: "2024-10-01",
+          supplier: "Imported",
+          lastRestock: "2024-10-10",
           incoming: 5
         },
         {
