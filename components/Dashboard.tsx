@@ -9,7 +9,8 @@ import {
   ArrowUpRight, ArrowDownRight, MoreHorizontal, Bell, Search, Menu, Moon, Sun, 
   LayoutDashboard, Users, Database, Globe, Package, BadgeDollarSign, TrendingUp, Settings,
   LogOut, X, Filter, Download, MessageSquare, Check, CheckCircle2, XCircle, Banknote, ShieldAlert, Calculator,
-  Printer, HelpCircle, GraduationCap, ShoppingCart, Briefcase, ChevronRight, Save, UserPlus, ShoppingBag, Minus, Plus, CheckCircle, Anchor
+  Printer, HelpCircle, GraduationCap, ShoppingCart, Briefcase, ChevronRight, Save, UserPlus, ShoppingBag, Minus, Plus, CheckCircle, Anchor,
+  FileBarChart
 } from 'lucide-react';
 import { CustomerPortal } from './CustomerPortal';
 import DataAdminPortal from './DataAdminPortal';
@@ -20,6 +21,7 @@ import WarehouseCatalog from './WarehouseCatalog';
 import SmartTicker from './SmartTicker';
 import LogisticsMap from './LogisticsMap';
 import WarehouseHeatmap from './WarehouseHeatmap';
+import ExecutiveReporting from './ExecutiveReporting';
 
 interface DashboardProps {
   department: DepartmentData;
@@ -70,6 +72,9 @@ const Dashboard: React.FC<DashboardProps> = ({
   const [rejectedItems, setRejectedItems] = useState<Set<number>>(new Set());
   const [isWarehouseCatalogOpen, setIsWarehouseCatalogOpen] = useState(false);
 
+  // General Management - Specific Views
+  const [executiveView, setExecutiveView] = useState<'overview' | 'reporting'>('overview');
+
   // Sales Processing State
   const [isSalesProcessingOpen, setIsSalesProcessingOpen] = useState(false);
   const [localTableData, setLocalTableData] = useState<SummaryRow[]>([]);
@@ -88,6 +93,10 @@ const Dashboard: React.FC<DashboardProps> = ({
   // Sync local table data when department changes
   useEffect(() => {
     setLocalTableData(department.summaryTableData);
+    // Reset executive view when switching depts
+    if (department.id !== DepartmentType.GENERAL) {
+      setExecutiveView('overview');
+    }
   }, [department]);
 
   const isGeneralManagement = department.id === DepartmentType.GENERAL;
@@ -572,341 +581,376 @@ const Dashboard: React.FC<DashboardProps> = ({
                <LandedCostEngine />
              ) : (
                <>
-                  {/* ... Standard Dashboard ... */}
-                  {/* Header Actions */}
-                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 print:hidden">
-                     <div>
-                       <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Overview</h2>
-                       <p className="text-gray-500 dark:text-gray-400">Track key performance indicators and department metrics.</p>
-                     </div>
-                     <div className="flex gap-3">
-                        {isInventory ? (
-                           <button 
-                              onClick={() => setIsWarehouseCatalogOpen(true)}
-                              className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700 transition-colors flex items-center gap-2 shadow-sm shadow-emerald-200 dark:shadow-none"
-                           >
-                              <Package className="w-4 h-4" />
-                              Product Catalogue
-                           </button>
-                        ) : isSales ? (
-                           <button 
-                              onClick={() => setIsSalesProcessingOpen(true)}
-                              className="px-4 py-2 bg-violet-600 text-white rounded-lg text-sm font-medium hover:bg-violet-700 transition-colors flex items-center gap-2 shadow-sm shadow-violet-200 dark:shadow-none"
-                           >
-                              <ShoppingCart className="w-4 h-4" />
-                              Sales Processing
-                           </button>
-                        ) : (
-                           <button className="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-2">
-                              <Settings className="w-4 h-4" />
-                              Settings
-                           </button>
-                        )}
-                        <button 
-                          onClick={onOpenAI}
-                          className={`px-4 py-2 bg-${department.themeColor}-600 text-white rounded-lg hover:opacity-90 transition-opacity font-medium text-sm flex items-center gap-2 shadow-sm shadow-${department.themeColor}-200 dark:shadow-none`}
+                  {/* Executive View Toggle Switch (Only for General Management) */}
+                  {isGeneralManagement && (
+                    <div className="flex justify-center -mt-2 mb-6">
+                      <div className="bg-white dark:bg-gray-800 p-1 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm inline-flex">
+                        <button
+                          onClick={() => setExecutiveView('overview')}
+                          className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                            executiveView === 'overview' 
+                              ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300' 
+                              : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
+                          }`}
                         >
-                          <GraduationCap className="w-4 h-4 opacity-90" />
-                          Ask Prof. Fad
+                          Dashboard Overview
                         </button>
-                     </div>
-                  </div>
+                        <button
+                          onClick={() => setExecutiveView('reporting')}
+                          className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${
+                            executiveView === 'reporting' 
+                              ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300' 
+                              : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
+                          }`}
+                        >
+                          <FileBarChart className="w-4 h-4" /> BI & Reporting
+                        </button>
+                      </div>
+                    </div>
+                  )}
 
-                  {/* KPI Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 print:grid-cols-4">
-                    {department.kpis.map((kpi, index) => {
-                      const changeStr = String(kpi.change || "");
-                      return (
-                      <div key={index} className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition-all group relative break-inside-avoid print:shadow-none print:border-gray-200">
-                        <div className="flex justify-between items-start mb-4">
-                          <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">{kpi.label}</h3>
-                          <div className="flex gap-1 print:hidden">
-                            {isGeneralManagement && (
+                  {/* Standard Dashboard vs Executive Reporting */}
+                  {isGeneralManagement && executiveView === 'reporting' ? (
+                    <ExecutiveReporting />
+                  ) : (
+                    <>
+                      {/* ... Standard Dashboard ... */}
+                      {/* Header Actions */}
+                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 print:hidden">
+                        <div>
+                          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Overview</h2>
+                          <p className="text-gray-500 dark:text-gray-400">Track key performance indicators and department metrics.</p>
+                        </div>
+                        <div className="flex gap-3">
+                            {isInventory ? (
                               <button 
-                                onClick={() => setActiveKpiComment(activeKpiComment === index ? null : index)}
-                                className={`text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors ${kpiComments[index] ? 'text-indigo-600 dark:text-indigo-400' : ''}`}
+                                  onClick={() => setIsWarehouseCatalogOpen(true)}
+                                  className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700 transition-colors flex items-center gap-2 shadow-sm shadow-emerald-200 dark:shadow-none"
                               >
-                                <MessageSquare className="w-4 h-4" />
+                                  <Package className="w-4 h-4" />
+                                  Product Catalogue
+                              </button>
+                            ) : isSales ? (
+                              <button 
+                                  onClick={() => setIsSalesProcessingOpen(true)}
+                                  className="px-4 py-2 bg-violet-600 text-white rounded-lg text-sm font-medium hover:bg-violet-700 transition-colors flex items-center gap-2 shadow-sm shadow-violet-200 dark:shadow-none"
+                              >
+                                  <ShoppingCart className="w-4 h-4" />
+                                  Sales Processing
+                              </button>
+                            ) : (
+                              <button className="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-2">
+                                  <Settings className="w-4 h-4" />
+                                  Settings
                               </button>
                             )}
-                            <button className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 opacity-0 group-hover:opacity-100 transition-opacity"><MoreHorizontal className="w-4 h-4" /></button>
+                            <button 
+                              onClick={onOpenAI}
+                              className={`px-4 py-2 bg-${department.themeColor}-600 text-white rounded-lg hover:opacity-90 transition-opacity font-medium text-sm flex items-center gap-2 shadow-sm shadow-${department.themeColor}-200 dark:shadow-none`}
+                            >
+                              <GraduationCap className="w-4 h-4 opacity-90" />
+                              Ask Prof. Fad
+                            </button>
+                        </div>
+                      </div>
+
+                      {/* KPI Grid */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 print:grid-cols-4">
+                        {department.kpis.map((kpi, index) => {
+                          const changeStr = String(kpi.change || "");
+                          return (
+                          <div key={index} className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition-all group relative break-inside-avoid print:shadow-none print:border-gray-200">
+                            <div className="flex justify-between items-start mb-4">
+                              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">{kpi.label}</h3>
+                              <div className="flex gap-1 print:hidden">
+                                {isGeneralManagement && (
+                                  <button 
+                                    onClick={() => setActiveKpiComment(activeKpiComment === index ? null : index)}
+                                    className={`text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors ${kpiComments[index] ? 'text-indigo-600 dark:text-indigo-400' : ''}`}
+                                  >
+                                    <MessageSquare className="w-4 h-4" />
+                                  </button>
+                                )}
+                                <button className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 opacity-0 group-hover:opacity-100 transition-opacity"><MoreHorizontal className="w-4 h-4" /></button>
+                              </div>
+                            </div>
+                            <div className="flex items-baseline gap-2 mb-2">
+                              <span className="text-3xl font-bold text-gray-900 dark:text-white">{kpi.value}</span>
+                            </div>
+                            <div className={`flex items-center text-sm ${kpi.trend === 'up' && changeStr.startsWith('+') ? 'text-green-600 dark:text-green-400' : kpi.trend === 'neutral' ? 'text-gray-500 dark:text-gray-400' : 'text-red-600 dark:text-red-400'}`}>
+                              {changeStr.startsWith('+') ? <ArrowUpRight className="w-4 h-4 mr-1" /> : changeStr === '0%' ? null : <ArrowDownRight className="w-4 h-4 mr-1" />}
+                              <span className="font-medium">{changeStr}</span>
+                              <span className="text-gray-400 dark:text-gray-500 ml-2 font-normal">vs last month</span>
+                            </div>
+                            
+                            {activeKpiComment === index && (
+                              <div className="absolute top-full right-0 mt-2 w-64 bg-white dark:bg-gray-700 rounded-lg shadow-xl border border-gray-200 dark:border-gray-600 p-3 z-20 print:hidden">
+                                <p className="text-xs font-semibold mb-2 text-gray-700 dark:text-gray-200">Manager Comment:</p>
+                                <textarea 
+                                    className="w-full text-sm p-2 border border-gray-300 dark:border-gray-500 rounded bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white mb-2 focus:ring-1 focus:ring-indigo-500 outline-none"
+                                    rows={3}
+                                    placeholder="Add a note regarding this KPI..."
+                                    value={tempComment || kpiComments[index] || ""}
+                                    onChange={(e) => setTempComment(e.target.value)}
+                                />
+                                <div className="flex justify-end gap-2">
+                                    <button onClick={() => setActiveKpiComment(null)} className="text-xs px-2 py-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">Cancel</button>
+                                    <button onClick={() => handleSaveComment(index)} className="text-xs px-2 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700">Save</button>
+                                </div>
+                              </div>
+                            )}
+                            {kpiComments[index] && !activeKpiComment && (
+                              <div className="mt-3 p-2 bg-indigo-50 dark:bg-indigo-900/20 rounded border border-indigo-100 dark:border-indigo-800 text-xs text-indigo-800 dark:text-indigo-300 italic">
+                                  "{kpiComments[index]}"
+                              </div>
+                            )}
                           </div>
+                        )})}
+                      </div>
+
+                      {/* SPECIALIZED VISUALIZATIONS */}
+                      {(isSales || isInventory || isImportCosting) && department.logisticsRoutes && (
+                        <div className="print:hidden">
+                            <LogisticsMap routes={department.logisticsRoutes} />
                         </div>
-                        <div className="flex items-baseline gap-2 mb-2">
-                          <span className="text-3xl font-bold text-gray-900 dark:text-white">{kpi.value}</span>
+                      )}
+
+                      {isInventory && department.inventoryData && (
+                        <div className="print:hidden">
+                            <WarehouseHeatmap products={department.inventoryData.products} />
                         </div>
-                        <div className={`flex items-center text-sm ${kpi.trend === 'up' && changeStr.startsWith('+') ? 'text-green-600 dark:text-green-400' : kpi.trend === 'neutral' ? 'text-gray-500 dark:text-gray-400' : 'text-red-600 dark:text-red-400'}`}>
-                          {changeStr.startsWith('+') ? <ArrowUpRight className="w-4 h-4 mr-1" /> : changeStr === '0%' ? null : <ArrowDownRight className="w-4 h-4 mr-1" />}
-                          <span className="font-medium">{changeStr}</span>
-                          <span className="text-gray-400 dark:text-gray-500 ml-2 font-normal">vs last month</span>
-                        </div>
-                        
-                        {activeKpiComment === index && (
-                          <div className="absolute top-full right-0 mt-2 w-64 bg-white dark:bg-gray-700 rounded-lg shadow-xl border border-gray-200 dark:border-gray-600 p-3 z-20 print:hidden">
-                             <p className="text-xs font-semibold mb-2 text-gray-700 dark:text-gray-200">Manager Comment:</p>
-                             <textarea 
-                                className="w-full text-sm p-2 border border-gray-300 dark:border-gray-500 rounded bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white mb-2 focus:ring-1 focus:ring-indigo-500 outline-none"
-                                rows={3}
-                                placeholder="Add a note regarding this KPI..."
-                                value={tempComment || kpiComments[index] || ""}
-                                onChange={(e) => setTempComment(e.target.value)}
-                             />
-                             <div className="flex justify-end gap-2">
-                                <button onClick={() => setActiveKpiComment(null)} className="text-xs px-2 py-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">Cancel</button>
-                                <button onClick={() => handleSaveComment(index)} className="text-xs px-2 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700">Save</button>
-                             </div>
+                      )}
+
+                      {/* Charts Row */}
+                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 print:block">
+                        {/* Main Chart */}
+                        <div className="lg:col-span-2 bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors break-inside-avoid print:mb-6 print:shadow-none print:border-gray-200">
+                          <div className="flex justify-between items-center mb-6">
+                            <h3 className="text-lg font-bold text-gray-800 dark:text-white">
+                              {isGeneralManagement ? "Company-Wide Performance" : "Performance Trends"}
+                            </h3>
+                            <select className="bg-gray-50 dark:bg-gray-700 border-none text-sm rounded-lg px-3 py-1 text-gray-600 dark:text-gray-300 focus:ring-0 print:hidden">
+                              <option>Last 6 Months</option>
+                              <option>This Year</option>
+                            </select>
                           </div>
-                        )}
-                        {kpiComments[index] && !activeKpiComment && (
-                           <div className="mt-3 p-2 bg-indigo-50 dark:bg-indigo-900/20 rounded border border-indigo-100 dark:border-indigo-800 text-xs text-indigo-800 dark:text-indigo-300 italic">
-                              "{kpiComments[index]}"
-                           </div>
-                        )}
-                      </div>
-                    )})}
-                  </div>
-
-                  {/* SPECIALIZED VISUALIZATIONS */}
-                  {(isSales || isInventory || isImportCosting) && department.logisticsRoutes && (
-                     <div className="print:hidden">
-                        <LogisticsMap routes={department.logisticsRoutes} />
-                     </div>
-                  )}
-
-                  {isInventory && department.inventoryData && (
-                     <div className="print:hidden">
-                        <WarehouseHeatmap products={department.inventoryData.products} />
-                     </div>
-                  )}
-
-                  {/* Charts Row */}
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 print:block">
-                    {/* Main Chart */}
-                    <div className="lg:col-span-2 bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors break-inside-avoid print:mb-6 print:shadow-none print:border-gray-200">
-                      <div className="flex justify-between items-center mb-6">
-                        <h3 className="text-lg font-bold text-gray-800 dark:text-white">
-                          {isGeneralManagement ? "Company-Wide Performance" : "Performance Trends"}
-                        </h3>
-                        <select className="bg-gray-50 dark:bg-gray-700 border-none text-sm rounded-lg px-3 py-1 text-gray-600 dark:text-gray-300 focus:ring-0 print:hidden">
-                          <option>Last 6 Months</option>
-                          <option>This Year</option>
-                        </select>
-                      </div>
-                      <div className="h-80 w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <AreaChart data={department.mainChartData}>
-                            <defs>
-                              <linearGradient id="colorMain" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor={strokeColor} stopOpacity={0.1}/>
-                                <stop offset="95%" stopColor={strokeColor} stopOpacity={0}/>
-                              </linearGradient>
-                            </defs>
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={gridColor} />
-                            <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: axisColor, fontSize: 12}} dy={10} />
-                            <YAxis axisLine={false} tickLine={false} tick={{fill: axisColor, fontSize: 12}} />
-                            <RechartsTooltip 
-                              contentStyle={tooltipStyle}
-                              itemStyle={itemStyle}
-                              cursor={{stroke: '#cbd5e1', strokeWidth: 1, strokeDasharray: '4 4'}}
-                            />
-                            {Object.keys(department.mainChartData[0] || {}).filter(k => k !== 'name').map((key, i) => (
-                                 <Area 
-                                    key={key}
-                                    type="monotone" 
-                                    dataKey={key} 
-                                    stroke={i === 0 ? strokeColor : COLORS[i % COLORS.length]} 
-                                    fill={i === 0 ? "url(#colorMain)" : "none"} 
-                                    strokeWidth={3}
-                                  />
-                            ))}
-                          </AreaChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </div>
-
-                    {/* Secondary Chart */}
-                    <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col transition-colors break-inside-avoid print:mb-6 print:shadow-none print:border-gray-200">
-                      <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-6">
-                         {isGeneralManagement ? "Departmental Contribution" : "Distribution"}
-                      </h3>
-                      <div className="flex-1 min-h-[250px] relative">
-                         <ResponsiveContainer width="100%" height="100%">
-                            <PieChart>
-                              <Pie
-                                data={department.secondaryChartData}
-                                cx="50%"
-                                cy="50%"
-                                innerRadius={60}
-                                outerRadius={80}
-                                paddingAngle={5}
-                                dataKey="value"
-                              >
-                                {department.secondaryChartData.map((entry, index) => (
-                                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke={isDarkMode ? '#1f2937' : '#fff'} strokeWidth={2} />
+                          <div className="h-80 w-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <AreaChart data={department.mainChartData}>
+                                <defs>
+                                  <linearGradient id="colorMain" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="5%" stopColor={strokeColor} stopOpacity={0.1}/>
+                                    <stop offset="95%" stopColor={strokeColor} stopOpacity={0}/>
+                                  </linearGradient>
+                                </defs>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={gridColor} />
+                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: axisColor, fontSize: 12}} dy={10} />
+                                <YAxis axisLine={false} tickLine={false} tick={{fill: axisColor, fontSize: 12}} />
+                                <RechartsTooltip 
+                                  contentStyle={tooltipStyle}
+                                  itemStyle={itemStyle}
+                                  cursor={{stroke: '#cbd5e1', strokeWidth: 1, strokeDasharray: '4 4'}}
+                                />
+                                {Object.keys(department.mainChartData[0] || {}).filter(k => k !== 'name').map((key, i) => (
+                                    <Area 
+                                        key={key}
+                                        type="monotone" 
+                                        dataKey={key} 
+                                        stroke={i === 0 ? strokeColor : COLORS[i % COLORS.length]} 
+                                        fill={i === 0 ? "url(#colorMain)" : "none"} 
+                                        strokeWidth={3}
+                                      />
                                 ))}
-                              </Pie>
-                              <RechartsTooltip contentStyle={tooltipStyle} itemStyle={itemStyle} />
-                              <Legend verticalAlign="bottom" height={36} formatter={(value) => <span style={{ color: isDarkMode ? '#e5e7eb' : '#374151' }}>{value}</span>} />
-                            </PieChart>
-                         </ResponsiveContainer>
-                         {/* Center Text for Donut */}
-                         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                            <span className="text-sm font-semibold text-gray-400 dark:text-gray-500 pb-8">Total</span>
-                         </div>
+                              </AreaChart>
+                            </ResponsiveContainer>
+                          </div>
+                        </div>
+
+                        {/* Secondary Chart */}
+                        <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col transition-colors break-inside-avoid print:mb-6 print:shadow-none print:border-gray-200">
+                          <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-6">
+                            {isGeneralManagement ? "Departmental Contribution" : "Distribution"}
+                          </h3>
+                          <div className="flex-1 min-h-[250px] relative">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <PieChart>
+                                  <Pie
+                                    data={department.secondaryChartData}
+                                    cx="50%"
+                                    cy="50%"
+                                    innerRadius={60}
+                                    outerRadius={80}
+                                    paddingAngle={5}
+                                    dataKey="value"
+                                  >
+                                    {department.secondaryChartData.map((entry, index) => (
+                                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke={isDarkMode ? '#1f2937' : '#fff'} strokeWidth={2} />
+                                    ))}
+                                  </Pie>
+                                  <RechartsTooltip contentStyle={tooltipStyle} itemStyle={itemStyle} />
+                                  <Legend verticalAlign="bottom" height={36} formatter={(value) => <span style={{ color: isDarkMode ? '#e5e7eb' : '#374151' }}>{value}</span>} />
+                                </PieChart>
+                            </ResponsiveContainer>
+                            {/* Center Text for Donut */}
+                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                <span className="text-sm font-semibold text-gray-400 dark:text-gray-500 pb-8">Total</span>
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
 
-                  {/* Advanced Analytics Row (Bar Chart & Table) */}
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 print:block">
-                    {/* Comparison Bar Chart */}
-                    <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors break-inside-avoid print:mb-6 print:shadow-none print:border-gray-200">
-                       <div className="flex justify-between items-center mb-6">
-                          <h3 className="text-lg font-bold text-gray-800 dark:text-white">{department.barChartTitle}</h3>
-                          <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-gray-500 print:hidden">
-                             <Download className="w-4 h-4" />
-                          </button>
-                       </div>
-                       <div className="h-80 w-full">
-                         <ResponsiveContainer width="100%" height="100%">
-                           <BarChart data={department.barChartData} barSize={20}>
-                              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={gridColor} />
-                              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: axisColor, fontSize: 12}} dy={10} />
-                              <YAxis axisLine={false} tickLine={false} tick={{fill: axisColor, fontSize: 12}} />
-                              <RechartsTooltip 
-                                 contentStyle={tooltipStyle}
-                                 itemStyle={itemStyle}
-                                 cursor={{fill: isDarkMode ? '#374151' : '#f1f5f9'}}
-                              />
-                              <Legend wrapperStyle={{paddingTop: '20px'}} formatter={(value) => <span style={{ color: isDarkMode ? '#e5e7eb' : '#374151' }}>{value}</span>}/>
-                              {Object.keys(department.barChartData[0] || {}).filter(k => k !== 'name').map((key, i) => (
-                                  <Bar 
-                                    key={key} 
-                                    dataKey={key} 
-                                    fill={i === 0 ? strokeColor : COLORS[i % COLORS.length]} 
-                                    radius={[4, 4, 0, 0]}
+                      {/* Advanced Analytics Row (Bar Chart & Table) */}
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 print:block">
+                        {/* Comparison Bar Chart */}
+                        <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors break-inside-avoid print:mb-6 print:shadow-none print:border-gray-200">
+                          <div className="flex justify-between items-center mb-6">
+                              <h3 className="text-lg font-bold text-gray-800 dark:text-white">{department.barChartTitle}</h3>
+                              <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-gray-500 print:hidden">
+                                <Download className="w-4 h-4" />
+                              </button>
+                          </div>
+                          <div className="h-80 w-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <BarChart data={department.barChartData} barSize={20}>
+                                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={gridColor} />
+                                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: axisColor, fontSize: 12}} dy={10} />
+                                  <YAxis axisLine={false} tickLine={false} tick={{fill: axisColor, fontSize: 12}} />
+                                  <RechartsTooltip 
+                                    contentStyle={tooltipStyle}
+                                    itemStyle={itemStyle}
+                                    cursor={{fill: isDarkMode ? '#374151' : '#f1f5f9'}}
                                   />
-                              ))}
-                           </BarChart>
-                         </ResponsiveContainer>
-                       </div>
-                    </div>
+                                  <Legend wrapperStyle={{paddingTop: '20px'}} formatter={(value) => <span style={{ color: isDarkMode ? '#e5e7eb' : '#374151' }}>{value}</span>}/>
+                                  {Object.keys(department.barChartData[0] || {}).filter(k => k !== 'name').map((key, i) => (
+                                      <Bar 
+                                        key={key} 
+                                        dataKey={key} 
+                                        fill={i === 0 ? strokeColor : COLORS[i % COLORS.length]} 
+                                        radius={[4, 4, 0, 0]}
+                                      />
+                                  ))}
+                              </BarChart>
+                            </ResponsiveContainer>
+                          </div>
+                        </div>
 
-                    {/* Summary Table */}
-                    <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors flex flex-col break-inside-avoid print:mb-6 print:shadow-none print:border-gray-200">
-                       <div className="flex justify-between items-center mb-6">
-                          <h3 className="text-lg font-bold text-gray-800 dark:text-white">{department.tableTitle}</h3>
-                          <button className="flex items-center gap-2 text-sm text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400 print:hidden">
-                             <Filter className="w-4 h-4" />
-                             Filter
-                          </button>
-                       </div>
-                       <div className="overflow-x-auto">
-                         <table className="w-full text-sm text-left">
-                            <thead className="text-xs text-gray-500 dark:text-gray-400 uppercase bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                               <tr>
-                                  <th className="px-4 py-3 rounded-l-lg">Item</th>
-                                  <th className="px-4 py-3">Category</th>
-                                  <th className="px-4 py-3">Status</th>
-                                  <th className="px-4 py-3">Value</th>
-                                  <th className="px-4 py-3 rounded-r-lg">{isGeneralManagement ? "Action" : "Completion"}</th>
-                               </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-                               {localTableData.map((row) => (
-                                  <tr key={row.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
-                                     <td className="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">{row.item}</td>
-                                     <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{row.category}</td>
-                                     <td className="px-4 py-3">
-                                        <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getStatusColor(row.status)}`}>
-                                           {row.status}
-                                        </span>
-                                     </td>
-                                     <td className="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">{row.value}</td>
-                                     <td className="px-4 py-3">
-                                        {isGeneralManagement ? (
-                                          <div className="flex items-center gap-2 print:hidden">
-                                            {approvedItems.has(row.id) ? (
-                                              <span className="text-xs font-bold text-green-600 dark:text-green-400 flex items-center gap-1">
-                                                <CheckCircle2 className="w-4 h-4" /> Approved
-                                              </span>
-                                            ) : rejectedItems.has(row.id) ? (
-                                              <span className="text-xs font-bold text-red-600 dark:text-red-400 flex items-center gap-1">
-                                                <XCircle className="w-4 h-4" /> Rejected
-                                              </span>
+                        {/* Summary Table */}
+                        <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors flex flex-col break-inside-avoid print:mb-6 print:shadow-none print:border-gray-200">
+                          <div className="flex justify-between items-center mb-6">
+                              <h3 className="text-lg font-bold text-gray-800 dark:text-white">{department.tableTitle}</h3>
+                              <button className="flex items-center gap-2 text-sm text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400 print:hidden">
+                                <Filter className="w-4 h-4" />
+                                Filter
+                              </button>
+                          </div>
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-sm text-left">
+                                <thead className="text-xs text-gray-500 dark:text-gray-400 uppercase bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                                  <tr>
+                                      <th className="px-4 py-3 rounded-l-lg">Item</th>
+                                      <th className="px-4 py-3">Category</th>
+                                      <th className="px-4 py-3">Status</th>
+                                      <th className="px-4 py-3">Value</th>
+                                      <th className="px-4 py-3 rounded-r-lg">{isGeneralManagement ? "Action" : "Completion"}</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                                  {localTableData.map((row) => (
+                                      <tr key={row.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
+                                        <td className="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">{row.item}</td>
+                                        <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{row.category}</td>
+                                        <td className="px-4 py-3">
+                                            <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getStatusColor(row.status)}`}>
+                                              {row.status}
+                                            </span>
+                                        </td>
+                                        <td className="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">{row.value}</td>
+                                        <td className="px-4 py-3">
+                                            {isGeneralManagement ? (
+                                              <div className="flex items-center gap-2 print:hidden">
+                                                {approvedItems.has(row.id) ? (
+                                                  <span className="text-xs font-bold text-green-600 dark:text-green-400 flex items-center gap-1">
+                                                    <CheckCircle2 className="w-4 h-4" /> Approved
+                                                  </span>
+                                                ) : rejectedItems.has(row.id) ? (
+                                                  <span className="text-xs font-bold text-red-600 dark:text-red-400 flex items-center gap-1">
+                                                    <XCircle className="w-4 h-4" /> Rejected
+                                                  </span>
+                                                ) : (
+                                                  <>
+                                                    <button 
+                                                      onClick={() => handleApprove(row.id)}
+                                                      className="p-1 text-green-600 hover:bg-green-100 dark:hover:bg-green-900/30 rounded transition-colors" title="Approve"
+                                                    >
+                                                      <Check className="w-4 h-4" />
+                                                    </button>
+                                                    <button 
+                                                      onClick={() => handleReject(row.id)}
+                                                      className="p-1 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/30 rounded transition-colors" title="Reject"
+                                                    >
+                                                      <X className="w-4 h-4" />
+                                                    </button>
+                                                  </>
+                                                )}
+                                              </div>
                                             ) : (
                                               <>
-                                                <button 
-                                                  onClick={() => handleApprove(row.id)}
-                                                  className="p-1 text-green-600 hover:bg-green-100 dark:hover:bg-green-900/30 rounded transition-colors" title="Approve"
-                                                >
-                                                  <Check className="w-4 h-4" />
-                                                </button>
-                                                <button 
-                                                  onClick={() => handleReject(row.id)}
-                                                  className="p-1 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/30 rounded transition-colors" title="Reject"
-                                                >
-                                                  <X className="w-4 h-4" />
-                                                </button>
+                                                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
+                                                  <div 
+                                                      className={`h-1.5 rounded-full ${row.completion === 100 ? 'bg-green-500' : 'bg-indigo-600'}`} 
+                                                      style={{ width: `${row.completion}%` }}
+                                                  ></div>
+                                                </div>
+                                                <span className="text-xs text-gray-400 mt-1">{row.completion}%</span>
                                               </>
                                             )}
-                                          </div>
-                                        ) : (
-                                          <>
-                                            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
-                                               <div 
-                                                  className={`h-1.5 rounded-full ${row.completion === 100 ? 'bg-green-500' : 'bg-indigo-600'}`} 
-                                                  style={{ width: `${row.completion}%` }}
-                                               ></div>
-                                            </div>
-                                            <span className="text-xs text-gray-400 mt-1">{row.completion}%</span>
-                                          </>
-                                        )}
-                                     </td>
-                                  </tr>
-                               ))}
-                            </tbody>
-                         </table>
-                       </div>
-                       <div className="mt-auto pt-4 text-center print:hidden">
-                          <button className="text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:underline">View All Records</button>
-                       </div>
-                    </div>
-                  </div>
+                                        </td>
+                                      </tr>
+                                  ))}
+                                </tbody>
+                            </table>
+                          </div>
+                          <div className="mt-auto pt-4 text-center print:hidden">
+                              <button className="text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:underline">View All Records</button>
+                          </div>
+                        </div>
+                      </div>
 
-                  {/* Bottom Section */}
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 print:block">
-                     <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors break-inside-avoid print:mb-6 print:shadow-none print:border-gray-200">
-                        <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-4">Recent Activity</h3>
-                        <div className="space-y-4">
-                          {department.recentActivity.map((activity) => (
-                            <div key={activity.id} className="flex items-center gap-4 p-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-xl transition-colors">
-                              <div className={`w-10 h-10 rounded-full bg-${department.themeColor}-50 dark:bg-${department.themeColor}-900/30 flex items-center justify-center flex-shrink-0`}>
-                                <div className={`w-2 h-2 rounded-full bg-${department.themeColor}-500`}></div>
-                              </div>
-                              <div className="flex-1">
-                                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{activity.action}</p>
-                                <p className="text-xs text-gray-500 dark:text-gray-400">{activity.time}</p>
-                              </div>
-                              <button className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 print:hidden">View</button>
+                      {/* Bottom Section */}
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 print:block">
+                        <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors break-inside-avoid print:mb-6 print:shadow-none print:border-gray-200">
+                            <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-4">Recent Activity</h3>
+                            <div className="space-y-4">
+                              {department.recentActivity.map((activity) => (
+                                <div key={activity.id} className="flex items-center gap-4 p-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-xl transition-colors">
+                                  <div className={`w-10 h-10 rounded-full bg-${department.themeColor}-50 dark:bg-${department.themeColor}-900/30 flex items-center justify-center flex-shrink-0`}>
+                                    <div className={`w-2 h-2 rounded-full bg-${department.themeColor}-500`}></div>
+                                  </div>
+                                  <div className="flex-1">
+                                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{activity.action}</p>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">{activity.time}</p>
+                                  </div>
+                                  <button className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 print:hidden">View</button>
+                                </div>
+                              ))}
                             </div>
-                          ))}
                         </div>
-                     </div>
 
-                     <div className={`bg-gradient-to-br from-${department.themeColor}-600 to-${department.themeColor}-800 p-6 rounded-2xl shadow-lg text-white relative overflow-hidden break-inside-avoid print:hidden`}>
-                        <div className="relative z-10">
-                          <h3 className="text-xl font-bold mb-2">Quarterly Report Ready</h3>
-                          <p className="text-white/80 mb-6 text-sm max-w-xs">The automated Q3 report for {department.name} has been generated and is ready for review.</p>
-                          <button className="bg-white text-gray-900 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-gray-50 transition-colors">
-                            Download PDF
-                          </button>
+                        <div className={`bg-gradient-to-br from-${department.themeColor}-600 to-${department.themeColor}-800 p-6 rounded-2xl shadow-lg text-white relative overflow-hidden break-inside-avoid print:hidden`}>
+                            <div className="relative z-10">
+                              <h3 className="text-xl font-bold mb-2">Quarterly Report Ready</h3>
+                              <p className="text-white/80 mb-6 text-sm max-w-xs">The automated Q3 report for {department.name} has been generated and is ready for review.</p>
+                              <button className="bg-white text-gray-900 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-gray-50 transition-colors">
+                                Download PDF
+                              </button>
+                            </div>
+                            {/* Decorative circles */}
+                            <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 rounded-full bg-white/10 blur-3xl"></div>
+                            <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-40 h-40 rounded-full bg-white/10 blur-2xl"></div>
                         </div>
-                        {/* Decorative circles */}
-                        <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 rounded-full bg-white/10 blur-3xl"></div>
-                        <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-40 h-40 rounded-full bg-white/10 blur-2xl"></div>
-                     </div>
-                  </div>
+                      </div>
+                    </>
+                  )}
                </>
              )}
              

@@ -174,6 +174,25 @@ export interface LogisticsRoute {
   value: string;
 }
 
+// NEW: Executive Reporting Types
+export interface ReportMetric {
+  id: string;
+  name: string;
+  category: 'Finance' | 'Sales' | 'Inventory' | 'HR';
+  type: 'currency' | 'number' | 'percentage';
+}
+
+export interface ReportRequest {
+  id: string;
+  title: string;
+  submittedBy: string;
+  department: string;
+  dateSubmitted: string;
+  priority: 'High' | 'Normal' | 'Low';
+  status: 'Pending' | 'Approved' | 'Rejected';
+  description: string;
+}
+
 export interface TickerItem {
   label: string;
   value: string;
