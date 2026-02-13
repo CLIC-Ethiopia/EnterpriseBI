@@ -3,7 +3,8 @@ import React, { useState } from 'react';
 import { ReportMetric, ReportRequest } from '../types';
 import { 
   FileBarChart, CheckSquare, GripVertical, Download, X, Plus, 
-  Filter, Calendar, ArrowRight, Eye, Check, XCircle, FileText
+  Filter, Calendar, ArrowRight, Eye, Check, XCircle, FileText,
+  Table as TableIcon, TrendingUp, BarChart3
 } from 'lucide-react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line 
@@ -42,6 +43,7 @@ const ExecutiveReporting: React.FC<ExecutiveReportingProps> = ({
   const [selectedMetrics, setSelectedMetrics] = useState<ReportMetric[]>([]);
   const [reportTitle, setReportTitle] = useState('New Ad-hoc Report');
   const [isExporting, setIsExporting] = useState(false);
+  const [vizType, setVizType] = useState<'bar' | 'line' | 'table'>('bar');
 
   // Approval State
   const [requests, setRequests] = useState<ReportRequest[]>(initialRequests);
@@ -88,13 +90,20 @@ const ExecutiveReporting: React.FC<ExecutiveReportingProps> = ({
   };
 
   // Mock Data for Preview Chart based on selected metrics
+  // In a real app, val1/val2/val3 would be dynamically mapped to the metric IDs
   const previewData = [
-    { name: 'Jan', val1: 4000, val2: 2400, val3: 2400 },
-    { name: 'Feb', val1: 3000, val2: 1398, val3: 2210 },
-    { name: 'Mar', val1: 2000, val2: 9800, val3: 2290 },
-    { name: 'Apr', val1: 2780, val2: 3908, val3: 2000 },
-    { name: 'May', val1: 1890, val2: 4800, val3: 2181 },
+    { name: 'Jan', val1: 4000, val2: 2400, val3: 15 },
+    { name: 'Feb', val1: 3000, val2: 1398, val3: 12 },
+    { name: 'Mar', val1: 2000, val2: 9800, val3: 8 },
+    { name: 'Apr', val1: 2780, val2: 3908, val3: 10 },
+    { name: 'May', val1: 1890, val2: 4800, val3: 18 },
   ];
+
+  const formatValue = (val: number, type: string) => {
+    if (type === 'currency') return `Bir ${val.toLocaleString()}`;
+    if (type === 'percentage') return `${val}%`;
+    return val.toLocaleString();
+  };
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
@@ -168,12 +177,37 @@ const ExecutiveReporting: React.FC<ExecutiveReportingProps> = ({
             >
               {/* Report Header Config */}
               <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 mb-6">
-                <input 
-                  type="text" 
-                  value={reportTitle} 
-                  onChange={(e) => setReportTitle(e.target.value)}
-                  className="w-full text-xl font-bold bg-transparent border-none outline-none text-gray-900 dark:text-white placeholder-gray-400 mb-2"
-                />
+                <div className="flex justify-between items-start mb-2">
+                  <input 
+                    type="text" 
+                    value={reportTitle} 
+                    onChange={(e) => setReportTitle(e.target.value)}
+                    className="flex-1 text-xl font-bold bg-transparent border-none outline-none text-gray-900 dark:text-white placeholder-gray-400"
+                  />
+                  <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1 ml-4">
+                    <button 
+                      onClick={() => setVizType('bar')} 
+                      className={`p-2 rounded-md transition-all ${vizType === 'bar' ? 'bg-white dark:bg-gray-600 shadow-sm text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}
+                      title="Bar Chart"
+                    >
+                      <BarChart3 className="w-4 h-4" />
+                    </button>
+                    <button 
+                      onClick={() => setVizType('line')} 
+                      className={`p-2 rounded-md transition-all ${vizType === 'line' ? 'bg-white dark:bg-gray-600 shadow-sm text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}
+                      title="Line Chart"
+                    >
+                      <TrendingUp className="w-4 h-4" />
+                    </button>
+                    <button 
+                      onClick={() => setVizType('table')} 
+                      className={`p-2 rounded-md transition-all ${vizType === 'table' ? 'bg-white dark:bg-gray-600 shadow-sm text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}
+                      title="Summary Table"
+                    >
+                      <TableIcon className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
                 <div className="flex gap-4">
                   <div className="relative">
                     <Calendar className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -205,7 +239,7 @@ const ExecutiveReporting: React.FC<ExecutiveReportingProps> = ({
                 ) : (
                   <div className="space-y-3">
                     <div className="flex justify-between items-center px-4 text-xs font-bold text-gray-400 uppercase tracking-wider">
-                      <span>Column</span>
+                      <span>Column Configuration</span>
                       <span>Format</span>
                     </div>
                     {selectedMetrics.map((metric, idx) => (
@@ -241,19 +275,68 @@ const ExecutiveReporting: React.FC<ExecutiveReportingProps> = ({
 
           {/* Right: Live Preview */}
           <div className="lg:col-span-3 bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-5 flex flex-col">
-            <h3 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4">Live Preview</h3>
-            <div className="flex-1 bg-gray-50 dark:bg-gray-900/50 rounded-xl p-2 border border-gray-100 dark:border-gray-700 relative overflow-hidden">
+            <h3 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4 flex justify-between items-center">
+              <span>Live Preview</span>
+              <span className="text-[10px] bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 px-2 py-0.5 rounded capitalize">{vizType} View</span>
+            </h3>
+            <div className="flex-1 bg-gray-50 dark:bg-gray-900/50 rounded-xl p-2 border border-gray-100 dark:border-gray-700 relative overflow-hidden flex flex-col">
               {selectedMetrics.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={previewData} margin={{top: 20, right: 10, left: -20, bottom: 0}}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
-                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize: 10}} />
-                    <YAxis axisLine={false} tickLine={false} tick={{fontSize: 10}} />
-                    <Tooltip cursor={{fill: 'transparent'}} contentStyle={{fontSize: '12px'}} />
-                    <Bar dataKey="val1" fill="#4f46e5" radius={[4, 4, 0, 0]} />
-                    {selectedMetrics.length > 1 && <Bar dataKey="val2" fill="#10b981" radius={[4, 4, 0, 0]} />}
-                  </BarChart>
-                </ResponsiveContainer>
+                <>
+                  {vizType === 'bar' && (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={previewData} margin={{top: 20, right: 10, left: -20, bottom: 0}}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize: 10}} />
+                        <YAxis axisLine={false} tickLine={false} tick={{fontSize: 10}} />
+                        <Tooltip cursor={{fill: 'transparent'}} contentStyle={{fontSize: '12px', borderRadius: '8px'}} />
+                        <Bar dataKey="val1" fill="#4f46e5" radius={[4, 4, 0, 0]} name={selectedMetrics[0]?.name || 'Metric 1'} />
+                        {selectedMetrics.length > 1 && <Bar dataKey="val2" fill="#10b981" radius={[4, 4, 0, 0]} name={selectedMetrics[1]?.name || 'Metric 2'} />}
+                      </BarChart>
+                    </ResponsiveContainer>
+                  )}
+                  {vizType === 'line' && (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={previewData} margin={{top: 20, right: 10, left: -20, bottom: 0}}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize: 10}} />
+                        <YAxis axisLine={false} tickLine={false} tick={{fontSize: 10}} />
+                        <Tooltip contentStyle={{fontSize: '12px', borderRadius: '8px'}} />
+                        <Line type="monotone" dataKey="val1" stroke="#4f46e5" strokeWidth={2} dot={false} name={selectedMetrics[0]?.name || 'Metric 1'} />
+                        {selectedMetrics.length > 1 && <Line type="monotone" dataKey="val2" stroke="#10b981" strokeWidth={2} dot={false} name={selectedMetrics[1]?.name || 'Metric 2'} />}
+                      </LineChart>
+                    </ResponsiveContainer>
+                  )}
+                  {vizType === 'table' && (
+                    <div className="overflow-auto h-full w-full">
+                      <table className="w-full text-xs text-left">
+                        <thead className="text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800">
+                          <tr>
+                            <th className="p-2 whitespace-nowrap">Period</th>
+                            {selectedMetrics.map(m => (
+                              <th key={m.id} className="p-2 whitespace-nowrap">{m.name}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                          {previewData.map((row, i) => (
+                            <tr key={i}>
+                              <td className="p-2 font-medium text-gray-900 dark:text-white">{row.name}</td>
+                              {selectedMetrics.map((m, idx) => {
+                                // Dynamically map val1, val2, etc based on index
+                                const valKey = idx === 0 ? 'val1' : idx === 1 ? 'val2' : 'val3';
+                                return (
+                                  <td key={m.id} className="p-2 text-gray-600 dark:text-gray-300">
+                                    {formatValue((row as any)[valKey], m.type)}
+                                  </td>
+                                );
+                              })}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </>
               ) : (
                 <div className="absolute inset-0 flex items-center justify-center opacity-30">
                   <span className="text-xs font-medium">Add metrics to view</span>
