@@ -4,7 +4,8 @@ import {
   ArrowLeft, Book, Zap, LayoutGrid, Users, Mail, HelpCircle, 
   Server, Shield, Monitor, Smartphone, Lock, Database, Wifi, Laptop,
   Layers, Key, Network, Cpu, Box, X, Terminal, Code, Globe, 
-  ChevronRight, CheckCircle2, FileJson, Settings, Table, LayoutTemplate, MousePointerClick
+  ChevronRight, CheckCircle2, FileJson, Settings, Table, LayoutTemplate, MousePointerClick,
+  Printer, PieChart, Building2
 } from 'lucide-react';
 
 interface InfoPageProps {
@@ -568,10 +569,42 @@ const InfoPage: React.FC<InfoPageProps> = ({ onBack }) => {
         </div>
 
         {/* FAQ Section */}
-        <div className="border-t border-gray-200 dark:border-gray-800 pt-12">
+        <div className="border-t border-gray-200 dark:border-gray-800 pt-12 mb-16">
            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-8">Frequently Asked Questions</h2>
            <div className="space-y-4">
-              {/* Existing FAQs */}
+              <details className="group bg-gray-50 dark:bg-gray-800/50 rounded-xl overflow-hidden">
+                 <summary className="flex justify-between items-center font-medium cursor-pointer list-none p-5 text-gray-900 dark:text-white">
+                    <span>What is the underlying architecture?</span>
+                    <span className="transition group-open:rotate-180">
+                       <ArrowLeft className="w-5 h-5 transform -rotate-90" />
+                    </span>
+                 </summary>
+                 <div className="text-gray-500 dark:text-gray-400 px-5 pb-5">
+                    We utilize a Local Cloud architecture powered by Docker containers, ensuring data sovereignty and zero-trust security without external cloud dependencies.
+                 </div>
+              </details>
+              <details className="group bg-gray-50 dark:bg-gray-800/50 rounded-xl overflow-hidden">
+                 <summary className="flex justify-between items-center font-medium cursor-pointer list-none p-5 text-gray-900 dark:text-white">
+                    <span>How do I perform ad-hoc analysis?</span>
+                    <span className="transition group-open:rotate-180">
+                       <ArrowLeft className="w-5 h-5 transform -rotate-90" />
+                    </span>
+                 </summary>
+                 <div className="text-gray-500 dark:text-gray-400 px-5 pb-5">
+                    Navigate to the Accounting portal's "Ad-hoc Analysis" tab for financial modeling, or use the "Report Builder" in the General Management dashboard to mix and match metrics.
+                 </div>
+              </details>
+              <details className="group bg-gray-50 dark:bg-gray-800/50 rounded-xl overflow-hidden">
+                 <summary className="flex justify-between items-center font-medium cursor-pointer list-none p-5 text-gray-900 dark:text-white">
+                    <span>Can I print these dashboards for meetings?</span>
+                    <span className="transition group-open:rotate-180">
+                       <ArrowLeft className="w-5 h-5 transform -rotate-90" />
+                    </span>
+                 </summary>
+                 <div className="text-gray-500 dark:text-gray-400 px-5 pb-5">
+                    Yes, use the printer icon in the top toolbar to print the current view. Specific modules like Tax Compliance generate formatted, official PDF layouts automatically.
+                 </div>
+              </details>
               <details className="group bg-gray-50 dark:bg-gray-800/50 rounded-xl overflow-hidden">
                  <summary className="flex justify-between items-center font-medium cursor-pointer list-none p-5 text-gray-900 dark:text-white">
                     <span>How often is the data updated?</span>
@@ -596,6 +629,76 @@ const InfoPage: React.FC<InfoPageProps> = ({ onBack }) => {
               </details>
            </div>
         </div>
+
+        {/* Bottom Hero Banner */}
+        <div className="mt-20 bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 rounded-3xl p-8 md:p-12 shadow-2xl relative overflow-hidden border border-indigo-900/50">
+          {/* Decorators */}
+          <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl -mr-16 -mt-16"></div>
+          <div className="absolute bottom-0 left-0 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl -ml-16 -mb-16"></div>
+
+          <div className="relative z-10 grid grid-cols-1 lg:grid-cols-3 gap-12 items-center">
+            {/* Company Info */}
+            <div className="space-y-4 text-center lg:text-left border-b lg:border-b-0 lg:border-r border-indigo-800/50 pb-8 lg:pb-0 lg:pr-8">
+               <div className="inline-flex p-3 bg-indigo-500/20 rounded-xl mb-2">
+                  <Globe className="w-8 h-8 text-indigo-400" />
+               </div>
+               <h3 className="text-2xl font-bold text-white">GlobalTrade Logistics</h3>
+               <p className="text-indigo-200 text-sm leading-relaxed">
+                 Pioneering the future of import/export via data-driven decisions. Establishing a seamless trade corridor between the Horn of Africa and the World since 2010.
+               </p>
+               <div className="text-xs font-mono text-indigo-400 pt-2 flex items-center justify-center lg:justify-start gap-2">
+                 <Building2 className="w-3 h-3" /> HQ: Addis Ababa, Ethiopia
+               </div>
+            </div>
+
+            {/* BI Infographics (Middle) */}
+            <div className="flex flex-col gap-6 items-center justify-center">
+                <h4 className="text-sm font-bold text-indigo-300 uppercase tracking-widest mb-2">System Vitality</h4>
+                <div className="grid grid-cols-2 gap-4 w-full">
+                   <div className="bg-slate-800/50 p-4 rounded-2xl border border-slate-700 backdrop-blur-sm text-center">
+                      <div className="text-2xl font-bold text-white mb-1">99.9%</div>
+                      <div className="text-xs text-slate-400">Local Uptime</div>
+                   </div>
+                   <div className="bg-slate-800/50 p-4 rounded-2xl border border-slate-700 backdrop-blur-sm text-center">
+                      <div className="text-2xl font-bold text-emerald-400 mb-1">1.2 TB</div>
+                      <div className="text-xs text-slate-400">Secure Data</div>
+                   </div>
+                   <div className="bg-slate-800/50 p-4 rounded-2xl border border-slate-700 backdrop-blur-sm text-center">
+                      <div className="text-2xl font-bold text-blue-400 mb-1">10+</div>
+                      <div className="text-xs text-slate-400">Modules</div>
+                   </div>
+                   <div className="bg-slate-800/50 p-4 rounded-2xl border border-slate-700 backdrop-blur-sm text-center">
+                      <div className="text-2xl font-bold text-purple-400 mb-1">AI</div>
+                      <div className="text-xs text-slate-400">Gemini Integrated</div>
+                   </div>
+                </div>
+            </div>
+
+            {/* Developer Info */}
+            <div className="space-y-4 text-center lg:text-right border-t lg:border-t-0 lg:border-l border-indigo-800/50 pt-8 lg:pt-0 lg:pl-8">
+               <div className="flex justify-center lg:justify-end">
+                 <div className="inline-flex p-1 bg-gradient-to-tr from-indigo-500 to-purple-500 rounded-full mb-2">
+                    <div className="bg-slate-900 p-2 rounded-full">
+                       <Code className="w-6 h-6 text-white" />
+                    </div>
+                 </div>
+               </div>
+               <div>
+                 <h3 className="text-xl font-bold text-white">Prof. Frehun A. Demissie</h3>
+                 <p className="text-indigo-400 text-sm font-medium">Lead System Architect</p>
+               </div>
+               <p className="text-indigo-200 text-sm leading-relaxed italic">
+                 "Crafting resilient digital infrastructures that empower local enterprises to compete on a global scale."
+               </p>
+               <div className="flex justify-center lg:justify-end gap-3 pt-2">
+                  <span className="px-3 py-1 bg-indigo-900/50 rounded-full text-xs text-indigo-300 border border-indigo-800">React</span>
+                  <span className="px-3 py-1 bg-indigo-900/50 rounded-full text-xs text-indigo-300 border border-indigo-800">Node.js</span>
+                  <span className="px-3 py-1 bg-indigo-900/50 rounded-full text-xs text-indigo-300 border border-indigo-800">AI</span>
+               </div>
+            </div>
+          </div>
+        </div>
+
       </div>
 
       {/* Manual Modal */}
