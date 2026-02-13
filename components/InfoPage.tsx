@@ -4,7 +4,7 @@ import {
   ArrowLeft, Book, Zap, LayoutGrid, Users, Mail, HelpCircle, 
   Server, Shield, Monitor, Smartphone, Lock, Database, Wifi, Laptop,
   Layers, Key, Network, Cpu, Box, X, Terminal, Code, Globe, 
-  ChevronRight, CheckCircle2, FileJson, Settings
+  ChevronRight, CheckCircle2, FileJson, Settings, Table, LayoutTemplate, MousePointerClick
 } from 'lucide-react';
 
 interface InfoPageProps {
@@ -91,6 +91,64 @@ const InfoPage: React.FC<InfoPageProps> = ({ onBack }) => {
         ],
         integration: 'Manages the lifecycle of Keycloak, Postgres, Nginx, and the Custom App containers.',
         configTips: ['Use Docker Compose for defining multi-container stacks.', 'Limit container resources (CPU/RAM) to prevent crashes.', 'Prune unused images regularly.']
+      }
+    },
+    {
+      id: 'nocodb',
+      title: 'Spreadsheet Interface',
+      tool: 'NocoDB / Baserow',
+      desc: 'Turns the database into a smart spreadsheet for easy data entry (Airtable alternative).',
+      icon: Table,
+      color: 'emerald',
+      details: {
+        role: 'Transforms your PostgreSQL database into a user-friendly "Smart Spreadsheet". Allows non-technical staff to sort, filter, add, and edit rows just like in Excel, but data is saved directly to the DB.',
+        requirements: ['Existing PostgreSQL database', 'Docker container environment'],
+        installation: [
+          'Run: docker run -d --name nocodb -p 8080:8080 nocodb/nocodb:latest',
+          'Access dashboard at localhost:8080',
+          'Connect to Postgres using host/user/pass credentials.'
+        ],
+        integration: 'Mirrors your DB schema instantly. Best used for "Data Entry" screens (e.g. inventory lists, customer directories) to avoid building custom forms.',
+        configTips: ['Set up "Views" for specific departments to filter irrelevant data.', 'Use Kanban views for tracking order status.', 'Enable audit logs to track changes by user.']
+      }
+    },
+    {
+      id: 'directus',
+      title: 'Instant Admin Panel',
+      tool: 'Directus / Forest Admin',
+      desc: 'Headless CMS that auto-generates a professional dashboard for operations.',
+      icon: LayoutTemplate,
+      color: 'violet',
+      details: {
+        role: 'A powerhouse Headless CMS. It inspects your database schema and auto-generates a professional Admin App for content management and operational workflows.',
+        requirements: ['Node.js environment or Docker', 'PostgreSQL database'],
+        installation: [
+          'Run: docker run -p 8055:8055 directus/directus',
+          'Configure env vars: DB_CLIENT=pg, DB_HOST=..., DB_USER=...',
+          'Start container and login to admin UI.'
+        ],
+        integration: 'Treats the DB as the single source of truth. Ideal for "Customer Support" views (finding users, issuing refunds, changing status) with strict permission controls.',
+        configTips: ['Configure Role-Based Access Control (RBAC) to restrict column access.', 'Use the auto-generated REST API to feed data to the frontend.', 'Customize item views with colors and icons.']
+      }
+    },
+    {
+      id: 'retool',
+      title: 'Low-Code Tool Builder',
+      tool: 'Retool / Appsmith',
+      desc: 'Drag-and-drop builder for custom internal apps and complex approval logic.',
+      icon: MousePointerClick,
+      color: 'pink',
+      details: {
+        role: 'Rapidly builds specific internal tools (e.g. "Order Approver", "Refund Wizard") using a drag-and-drop canvas. Connects UI buttons directly to SQL queries.',
+        requirements: ['Self-hosted Docker container (Appsmith/ToolJet) or Cloud Account (Retool)'],
+        installation: [
+          'Appsmith: docker-compose up -d',
+          'Connect PostgreSQL datasource in the builder UI.',
+          'Drag "Table", "Form", and "Button" widgets onto the canvas.',
+          'Bind widgets to SQL queries (SELECT/UPDATE).'
+        ],
+        integration: 'Best for specific business processes requiring buttons and logic (e.g. "If > $10k, require approval"). Fills the gap between spreadsheets and full custom code.',
+        configTips: ['Use JavaScript transformers for complex data logic.', 'Create separate "Apps" for distinct workflows to keep UIs clean.', 'Implement "Guards" on buttons to prevent accidental clicks.']
       }
     },
     {
