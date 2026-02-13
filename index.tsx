@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom/client';
 import App from './App';
 
 interface Props {
-  children: ReactNode;
+  children?: ReactNode;
 }
 
 interface State {
@@ -12,20 +12,20 @@ interface State {
 }
 
 class ErrorBoundary extends Component<Props, State> {
-  constructor(props: Props) {
-    super(props);
-    this.state = { hasError: false, error: null };
-  }
+  public state: State = {
+    hasError: false,
+    error: null
+  };
 
-  static getDerivedStateFromError(error: Error): State {
+  public static getDerivedStateFromError(error: Error): State {
     return { hasError: true, error };
   }
 
-  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+  public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error("Uncaught error:", error, errorInfo);
   }
 
-  render() {
+  public render() {
     if (this.state.hasError) {
       return (
         <div style={{ padding: '40px', fontFamily: 'sans-serif', textAlign: 'center', backgroundColor: '#f9fafb', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
