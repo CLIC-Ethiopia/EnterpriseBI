@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  # 1. Database
+  db:
+    image: postgres:15-alpine
+    container_name: globaltrade_db
+    restart: always
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: secure_client_password_2024
+      POSTGRES_DB: globaltrade_bi
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      # Map the initialization script to run automatically on first boot
+      - ./db_init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  # 2. Backend API
+  api:
+    image: node:18-alpine
+    container_name: globaltrade_api
+    restart: always
+    working_dir: /app
+    # Build context points to the simple-api folder
+    build: ./simple-api
+    environment:
+      DB_HOST: db
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: secure_client_password_2024
+      POSTGRES_DB: globaltrade_bi
+    ports:
+      - "3000:3000"
+    depends_on:
+      - db
+
+  # 3. Frontend UI
+  web:
+    image: node:18-alpine
+    container_name: globaltrade_web
+    restart: always
+    working_dir: /app
+    # Mount the current directory to build the React app
+    volumes:
+      - ./:/app
+      - /app/node_modules
+    ports:
+      - "80:5173"
+    # We use a simple command to run Vite in preview mode for simplicity.
+    # In strict enterprise scenarios, Nginx would be preferred.
+    # We define the API URL here so the frontend knows where to look.
+    command: sh -c "npm install && npm run build && npm run preview -- --host 0.0.0.0 --port 5173"
+    environment:
+      - VITE_API_URL=http://localhost:3000
+
+volumes:
+  db_data:

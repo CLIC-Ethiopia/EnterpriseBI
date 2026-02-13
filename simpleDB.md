@@ -410,3 +410,129 @@ const GAS_API_URL = 'http://localhost:3000/api/departments';
 
 4.  **Restart your React App** (`npm run dev`).
 5.  You are now pulling live data from your local PostgreSQL database!
+
+---
+
+## 🚀 Phase 6: Production Deployment via Docker & Google Drive
+
+This section guides you on how to package your entire app (Frontend + Backend + Database) from your laptop and deploy it to the client's PC using **Docker** and **Google Drive** for file transfer.
+
+### 📋 A. Preparation on Laptop
+
+1.  **Update API Logic:** We need the backend to be flexible. Open `simple-api/server.js` and modify the `pool` configuration to look like this:
+    ```javascript
+    const pool = new Pool({
+      user: process.env.POSTGRES_USER || 'postgres',
+      host: process.env.DB_HOST || 'localhost',
+      database: process.env.POSTGRES_DB || 'globaltrade_bi',
+      password: process.env.POSTGRES_PASSWORD || 'your_password_here',
+      port: 5432,
+    });
+    ```
+
+2.  **Create Docker Configuration Files:**
+    Create a file named `docker-compose.prod.yml` in the root of your project folder:
+
+    ```yaml
+    version: '3.8'
+
+    services:
+      # 1. Database
+      db:
+        image: postgres:15-alpine
+        container_name: globaltrade_db
+        restart: always
+        environment:
+          POSTGRES_USER: admin
+          POSTGRES_PASSWORD: secure_client_password_2024
+          POSTGRES_DB: globaltrade_bi
+        volumes:
+          - db_data:/var/lib/postgresql/data
+          # Map the initialization script to run automatically on first boot
+          - ./db_init.sql:/docker-entrypoint-initdb.d/init.sql
+
+      # 2. Backend API
+      api:
+        image: node:18-alpine
+        container_name: globaltrade_api
+        restart: always
+        working_dir: /app
+        # Build context points to the simple-api folder
+        build: ./simple-api
+        environment:
+          DB_HOST: db
+          POSTGRES_USER: admin
+          POSTGRES_PASSWORD: secure_client_password_2024
+          POSTGRES_DB: globaltrade_bi
+        ports:
+          - "3000:3000"
+        depends_on:
+          - db
+
+      # 3. Frontend UI
+      web:
+        image: node:18-alpine
+        container_name: globaltrade_web
+        restart: always
+        working_dir: /app
+        # Mount the current directory to build the React app
+        volumes:
+          - ./:/app
+          - /app/node_modules
+        ports:
+          - "80:5173"
+        # We use a simple command to run Vite in preview mode for simplicity
+        # In a strict enterprise scenario, we would use Nginx, but this works for a PC deployment.
+        command: sh -c "npm install && npm run build && npm run preview -- --host 0.0.0.0 --port 5173"
+        environment:
+          - VITE_API_URL=http://localhost:3000
+    
+    volumes:
+      db_data:
+    ```
+
+3.  **Create Backend Dockerfile:**
+    Create a file named `Dockerfile` **inside the `simple-api` folder**:
+    ```dockerfile
+    FROM node:18-alpine
+    WORKDIR /app
+    COPY package*.json ./
+    RUN npm install
+    COPY . .
+    CMD ["node", "server.js"]
+    ```
+
+4.  **Export Database Script:**
+    Save the large SQL script from **Step 3** into a file named `db_init.sql` in your project root. Docker will use this to automatically create tables on the client's PC.
+
+### 📦 B. Packaging & Transfer (Google Drive)
+
+1.  **Clean Up:** Delete the `node_modules` folders in your root directory and inside `simple-api` to make the zip file smaller. (They will be re-installed by Docker).
+2.  **Zip It:** Compress your entire project folder into `GlobalTradeBI_App.zip`.
+3.  **Upload:** Upload this zip file to your Google Drive.
+
+### 🖥️ C. Deployment on Client PC
+
+1.  **Install Docker:**
+    *   Download and install **Docker Desktop** for Windows/Mac on the client's PC.
+    *   Ensure Docker is running.
+
+2.  **Download App:**
+    *   Open Google Drive on the client PC.
+    *   Download `GlobalTradeBI_App.zip`.
+    *   Extract it to a folder (e.g., `C:\GlobalTradeBI`).
+
+3.  **Launch:**
+    *   Open Terminal (Command Prompt or PowerShell) and navigate to the folder:
+        ```bash
+        cd C:\GlobalTradeBI
+        ```
+    *   Run the application:
+        ```bash
+        docker-compose -f docker-compose.prod.yml up -d --build
+        ```
+
+4.  **Access:**
+    *   Open the browser on the client PC.
+    *   Go to: `http://localhost`
+    *   The app is now live, connected to a local Dockerized database!
