@@ -10,7 +10,7 @@ import {
   LayoutDashboard, Users, Database, Globe, Package, BadgeDollarSign, TrendingUp, Settings,
   LogOut, X, Filter, Download, MessageSquare, Check, CheckCircle2, XCircle, Banknote, ShieldAlert, Calculator,
   Printer, HelpCircle, GraduationCap, ShoppingCart, Briefcase, ChevronRight, Save, UserPlus, ShoppingBag, Minus, Plus, CheckCircle, Anchor,
-  FileBarChart
+  FileBarChart, FileText, Hash
 } from 'lucide-react';
 import { CustomerPortal } from './CustomerPortal';
 import DataAdminPortal from './DataAdminPortal';
@@ -78,12 +78,18 @@ const Dashboard: React.FC<DashboardProps> = ({
   // Sales Processing State
   const [isSalesProcessingOpen, setIsSalesProcessingOpen] = useState(false);
   const [localTableData, setLocalTableData] = useState<SummaryRow[]>([]);
+  // salesQueue holds items transferred from the Cart after checkout
+  const [salesQueue, setSalesQueue] = useState<any[]>([]);
+  const [selectedSalesItem, setSelectedSalesItem] = useState<any | null>(null);
+  
   const [salesForm, setSalesForm] = useState({
     item: '',
     category: 'Retail',
     value: '',
     status: 'Good',
-    completion: 50
+    completion: 50,
+    poNumber: '',
+    quantity: 0
   });
 
   // Global Checkout Modal State
@@ -219,6 +225,28 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   const submitOrder = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // 1. Extract Form Data
+    const formData = new FormData(e.target as HTMLFormElement);
+    const poNumber = formData.get('poNumber') as string;
+    const shippingAddress = formData.get('shippingAddress') as string;
+    const notes = formData.get('notes') as string;
+
+    // 2. Prepare Data for Sales Department
+    const newSalesItems = cart.map(item => ({
+        ...item,
+        poNumber: poNumber,
+        orderDate: new Date().toLocaleDateString(),
+        totalPrice: item.price * item.cartQuantity,
+        shippingAddress: shippingAddress,
+        notes: notes,
+        status: 'New'
+    }));
+
+    // 3. Send to Sales Department (Update Sales Queue)
+    setSalesQueue(prev => [...prev, ...newSalesItems]);
+
+    // 4. UI Feedback & Cleanup
     setTimeout(() => {
       setOrderSuccess(true);
       setCart([]);
@@ -226,7 +254,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         setIsOrderModalOpen(false);
         setOrderSuccess(false);
       }, 2000);
-    }, 1000);
+    }, 500);
   };
 
   // ... (Other handlers remain same) ...
@@ -259,23 +287,35 @@ const Dashboard: React.FC<DashboardProps> = ({
     };
 
     setLocalTableData(prev => [newRow, ...prev]);
+    
+    // Remove processed item from queue if it exists
+    if (selectedSalesItem && selectedSalesItem.poNumber) {
+        setSalesQueue(prev => prev.filter(item => item.poNumber !== selectedSalesItem.poNumber));
+    }
+
     setIsSalesProcessingOpen(false);
+    setSelectedSalesItem(null);
     setSalesForm({
       item: '',
       category: 'Retail',
       value: '',
       status: 'Good',
-      completion: 50
+      completion: 50,
+      poNumber: '',
+      quantity: 0
     });
   };
 
-  const fillFormFromCart = (item: CartItem) => {
+  const fillFormFromQueue = (item: any) => {
+    setSelectedSalesItem(item);
     setSalesForm({
       item: item.customerName || 'New Client',
       category: 'Wholesale',
       value: (item.price * item.cartQuantity).toString(),
       status: 'Stable',
-      completion: 20
+      completion: 20,
+      poNumber: item.poNumber || '',
+      quantity: item.cartQuantity || 0
     });
   };
 
@@ -979,13 +1019,15 @@ const Dashboard: React.FC<DashboardProps> = ({
                     <p className="text-xs text-gray-500 mt-1">Pending orders from web & email</p>
                  </div>
                  <div className="flex-1 overflow-y-auto p-4 space-y-3">
-                    {[...cart, 
+                    {[...salesQueue, 
                       { id: 'MOCK-1', name: 'Bulk Chemical Solvent', price: 12000, cartQuantity: 10, unit: 'L', customerName: 'EcoClean Ltd', category: 'Industrial', image: 'https://images.unsplash.com/photo-1605333144182-4e45d625d886?auto=format&fit=crop&q=80&w=100' },
                       { id: 'MOCK-2', name: 'Cotton Yarn Spools', price: 450, cartQuantity: 500, unit: 'Units', customerName: 'TextilePro Inc', category: 'Manufacturing', image: 'https://images.unsplash.com/photo-1520188741372-a4282361d15c?auto=format&fit=crop&q=80&w=100' }
-                    ].map((item: any, idx) => (
-                       <div key={idx} onClick={() => fillFormFromCart(item)} className="bg-white dark:bg-gray-800 p-3 rounded-xl border border-gray-200 dark:border-gray-700 cursor-pointer hover:border-violet-500 hover:shadow-md transition-all group">
+                    ].map((item: any, idx) => {
+                       const isSelected = selectedSalesItem?.id === item.id || (item.poNumber && selectedSalesItem?.poNumber === item.poNumber);
+                       return (
+                       <div key={idx} onClick={() => fillFormFromQueue(item)} className={`p-3 rounded-xl border cursor-pointer hover:shadow-md transition-all group ${isSelected ? 'border-violet-600 bg-violet-50 dark:bg-violet-900/20 ring-1 ring-violet-500' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-violet-500'}`}>
                           <div className="flex justify-between items-start mb-2">
-                             <span className="text-xs font-bold text-gray-400">ORDER #{1000 + idx}</span>
+                             <span className={`text-xs font-bold ${isSelected ? 'text-violet-700 dark:text-violet-300' : 'text-gray-400'}`}>ORDER #{item.poNumber || (1000 + idx)}</span>
                              <span className="bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 text-[10px] px-2 py-0.5 rounded-full font-bold">New</span>
                           </div>
                           <div className="flex gap-3">
@@ -995,10 +1037,10 @@ const Dashboard: React.FC<DashboardProps> = ({
                                 <p className="text-xs text-gray-500 line-clamp-1">{item.name}</p>
                                 <p className="text-xs font-bold text-gray-900 dark:text-white mt-1">Bir {(item.price * item.cartQuantity).toLocaleString()}</p>
                              </div>
-                             <div className="ml-auto self-center opacity-0 group-hover:opacity-100 transition-opacity"><ChevronRight className="w-4 h-4 text-gray-400" /></div>
+                             <div className={`ml-auto self-center transition-opacity ${isSelected ? 'opacity-100 text-violet-600' : 'opacity-0 group-hover:opacity-100 text-gray-400'}`}><ChevronRight className="w-4 h-4" /></div>
                           </div>
                        </div>
-                    ))}
+                    )})}
                  </div>
               </div>
               <div className="w-2/3 flex flex-col bg-white dark:bg-gray-800">
@@ -1007,8 +1049,74 @@ const Dashboard: React.FC<DashboardProps> = ({
                     <button onClick={() => setIsSalesProcessingOpen(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"><X className="w-6 h-6" /></button>
                  </div>
                  <div className="flex-1 p-8 overflow-y-auto">
+                    {/* ORDER CONTEXT SECTION */}
+                    {selectedSalesItem && (
+                        <div className="mb-8 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl p-5 border border-indigo-100 dark:border-indigo-800">
+                            <h4 className="text-sm font-bold text-indigo-800 dark:text-indigo-300 uppercase tracking-wide mb-4 flex items-center gap-2">
+                                <FileText className="w-4 h-4" /> Order Context
+                            </h4>
+                            <div className="grid grid-cols-2 gap-y-4 gap-x-8">
+                                <div>
+                                    <p className="text-gray-500 dark:text-gray-400 text-xs uppercase font-semibold mb-1">Product</p>
+                                    <p className="font-bold text-gray-900 dark:text-white text-sm">{selectedSalesItem.name}</p>
+                                </div>
+                                <div>
+                                    <p className="text-gray-500 dark:text-gray-400 text-xs uppercase font-semibold mb-1">Unit Price</p>
+                                    <p className="font-bold text-gray-900 dark:text-white text-sm">Bir {selectedSalesItem.price.toLocaleString()}</p>
+                                </div>
+                                <div className="col-span-2">
+                                    <p className="text-gray-500 dark:text-gray-400 text-xs uppercase font-semibold mb-1">Order Details</p>
+                                    <p className="font-medium text-gray-900 dark:text-white text-sm">
+                                        {salesForm.quantity} units <span className="text-gray-400 mx-1">×</span> Bir {selectedSalesItem.price.toLocaleString()} = <span className="text-indigo-600 dark:text-indigo-400 font-bold">Bir {(salesForm.quantity * selectedSalesItem.price).toLocaleString()}</span>
+                                    </p>
+                                    {salesForm.quantity !== selectedSalesItem.cartQuantity && (
+                                        <p className="text-xs text-orange-500 mt-1 italic">
+                                            (Original request: {selectedSalesItem.cartQuantity} units)
+                                        </p>
+                                    )}
+                                </div>
+                                {selectedSalesItem.notes && (
+                                    <div className="col-span-2 pt-3 border-t border-indigo-200 dark:border-indigo-800/50 mt-1">
+                                        <p className="text-gray-500 dark:text-gray-400 text-xs uppercase font-semibold mb-1">Additional Notes</p>
+                                        <p className="text-gray-700 dark:text-gray-300 text-sm italic bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-700">
+                                            "{selectedSalesItem.notes}"
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
                     <form onSubmit={handleProcessSale} className="space-y-6 max-w-lg mx-auto">
-                       {/* ... Form Fields (Same as before) ... */}
+                       <div className="grid grid-cols-2 gap-6">
+                          <div>
+                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">PO Number</label>
+                             <div className="relative">
+                                <Hash className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                <input type="text" required className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-violet-500 outline-none transition-all dark:text-white font-mono" placeholder="PO-XXXX" value={salesForm.poNumber} onChange={e => setSalesForm({...salesForm, poNumber: e.target.value})} />
+                             </div>
+                          </div>
+                          <div>
+                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Quantity</label>
+                             <input 
+                                type="number" 
+                                required 
+                                className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-violet-500 outline-none transition-all dark:text-white" 
+                                placeholder="0" 
+                                value={salesForm.quantity} 
+                                onChange={e => {
+                                    const qty = Number(e.target.value);
+                                    const unitPrice = selectedSalesItem ? selectedSalesItem.price : 0;
+                                    setSalesForm({
+                                        ...salesForm, 
+                                        quantity: qty,
+                                        value: (qty * unitPrice).toString()
+                                    });
+                                }} 
+                             />
+                          </div>
+                       </div>
+
                        <div className="grid grid-cols-2 gap-6">
                           <div>
                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Client / Company Name</label>
@@ -1128,7 +1236,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                        <CheckCircle2 className="w-8 h-8" />
                     </div>
                     <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Order Request Sent!</h2>
-                    <p className="text-gray-500">Your account manager will review and confirm your PO shortly.</p>
+                    <p className="text-gray-500">Your order has been forwarded to the Sales Department for processing.</p>
                  </div>
               ) : (
                  <>
@@ -1136,18 +1244,18 @@ const Dashboard: React.FC<DashboardProps> = ({
                   <form onSubmit={submitOrder} className="space-y-4">
                      <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Purchase Order (PO) Number</label>
-                        <input type="text" required className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g. PO-9923" />
+                        <input type="text" name="poNumber" required className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g. PO-9923" />
                      </div>
                      <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Shipping Address</label>
-                        <select className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent text-gray-900 dark:text-white outline-none">
+                        <select name="shippingAddress" className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent text-gray-900 dark:text-white outline-none">
                            <option>Main Warehouse - New York, NY</option>
                            <option>Distribution Center - Chicago, IL</option>
                         </select>
                      </div>
                      <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Additional Notes</label>
-                        <textarea className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none" rows={3}></textarea>
+                        <textarea name="notes" className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none" rows={3}></textarea>
                      </div>
                      
                      <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg flex justify-between items-center">
