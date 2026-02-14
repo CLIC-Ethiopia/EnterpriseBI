@@ -52,14 +52,21 @@ const initialInputs: CostInputs = {
 
 // Available parameters for correlation analysis
 const ANALYSIS_PARAMS = [
+  // Inputs
   { key: 'fobUsd', label: 'FOB Price (USD)', type: 'input' },
   { key: 'freightUsd', label: 'Freight Cost (USD)', type: 'input' },
-  { key: 'exchangeRate', label: 'Exchange Rate', type: 'input' },
+  { key: 'exchangeRate', label: 'Exchange Rate (ETB/USD)', type: 'input' },
   { key: 'transportDjiboutiAddisEtb', label: 'Local Transport (ETB)', type: 'input' },
   { key: 'dutyRate', label: 'Duty Rate %', type: 'input' },
-  { key: 'totalLandedCostEtb', label: 'Total Landed Cost', type: 'output' },
-  { key: 'totalTaxEtb', label: 'Total Tax Liability', type: 'output' },
-  { key: 'landedFactor', label: 'Cost Multiplier', type: 'output' },
+  { key: 'hrCost', label: 'Human Resource Cost (ETB)', type: 'input' }, // New
+  { key: 'warehouseCost', label: 'Warehouse Overhead (ETB)', type: 'input' }, // New
+  
+  // Outputs
+  { key: 'totalLandedCostEtb', label: 'Total Landed Cost (ETB)', type: 'output' },
+  { key: 'totalTaxEtb', label: 'Total Tax Liability (ETB)', type: 'output' },
+  { key: 'landedFactor', label: 'Cost Multiplier (Factor)', type: 'output' },
+  { key: 'revenue', label: 'Sales Revenue (ETB)', type: 'output' }, // New
+  { key: 'netProfit', label: 'Net Profit (ETB)', type: 'output' }, // New
 ];
 
 const LandedCostEngine: React.FC = () => {
@@ -132,44 +139,112 @@ const LandedCostEngine: React.FC = () => {
   }, [inputs]);
 
   // Scenario Generator for Correlation Chart
-  // Since we don't have historical DB, we simulate sensitivity based on current inputs
   const correlationData = useMemo(() => {
     const dataPoints = [];
-    const variance = 0.2; // +/- 20% variance simulation
-    const steps = 30;
+    const variance = 0.3; // Base variance for inputs
+    const steps = 50; // More points for better scatter visualization
+
+    // Pseudo-random generator with seed for consistency during render
+    let seed = 1;
+    const random = () => {
+        const x = Math.sin(seed++) * 10000;
+        return x - Math.floor(x);
+    };
+
+    // Define "Correlation Profiles" (0 = No correlation, 1 = Perfect)
+    // This determines how much noise we add to the Y value relative to X
+    const getNoiseFactor = (xKey: string, yKey: string): number => {
+        const pair = `${xKey}_${yKey}`;
+        const reversePair = `${yKey}_${xKey}`;
+        
+        const relationships: Record<string, number> = {
+            // Strong Positive
+            'fobUsd_totalLandedCostEtb': 0.02, 
+            'exchangeRate_totalLandedCostEtb': 0.05,
+            'revenue_netProfit': 0.1,
+            
+            // Moderate
+            'hrCost_revenue': 0.4, 
+            'warehouseCost_totalLandedCostEtb': 0.5,
+            
+            // Weak / Noisy
+            'hrCost_exchangeRate': 1.5, // Almost random
+            'warehouseCost_dutyRate': 2.0, // Random
+            'freightUsd_netProfit': 0.6,
+        };
+
+        // Default noise if not mapped (Moderate correlation)
+        return relationships[pair] || relationships[reversePair] || 0.3; 
+    };
+
+    const noiseLevel = getNoiseFactor(xAxisParam, yAxisParam);
 
     for (let i = 0; i < steps; i++) {
-        // Create a variation factor between 0.8 and 1.2
-        const factor = 1 - variance + (Math.random() * (variance * 2));
+        // 1. Vary the X-Axis Input (or simulated input)
+        // We simulate a range of -30% to +30% from the base values
+        const variationFactor = 0.7 + (random() * 0.6); 
         
-        // Clone inputs and apply factor to the X-Axis Variable
         const simInputs = { ...inputs };
         
-        // Adjust the X variable
+        // Base values for new hypothetical parameters
+        let hrCostBase = 250000; 
+        let warehouseCostBase = 45000;
+
+        // Apply variation to X parameter if it's an input
         if (xAxisParam in simInputs) {
-            (simInputs as any)[xAxisParam] = (initialInputs as any)[xAxisParam] * factor;
+            (simInputs as any)[xAxisParam] = (initialInputs as any)[xAxisParam] * variationFactor;
+        } else if (xAxisParam === 'hrCost') {
+            hrCostBase = hrCostBase * variationFactor;
+        } else if (xAxisParam === 'warehouseCost') {
+            warehouseCostBase = warehouseCostBase * variationFactor;
         }
 
-        // Recalculate Outputs based on simulated inputs
+        // 2. Recalculate Core Math
         const simCifEtb = (simInputs.fobUsd + simInputs.freightUsd + simInputs.insuranceUsd) * simInputs.exchangeRate;
         const simDutyEtb = simCifEtb * (simInputs.dutyRate / 100);
-        // ... simplified tax cascade for simulation speed ...
         const simTotalTax = simDutyEtb + (simCifEtb * 0.15) + (simCifEtb * 0.03); 
         const simLogistics = simInputs.portHandlingEtb + simInputs.transportDjiboutiAddisEtb + simInputs.clearingAgentEtb + simInputs.miscCostEtb;
         const simLandedCost = simCifEtb + simTotalTax + simLogistics;
         const simFactor = simLandedCost / (simInputs.fobUsd * simInputs.exchangeRate);
 
+        // 3. Simulate Business Outcomes (Revenue, Profit)
+        // Revenue is roughly LandedCost * 1.3 (30% markup) + Random Market Fluctuations
+        const marketNoise = 1 + ((random() - 0.5) * 0.2);
+        const simRevenue = simLandedCost * 1.35 * marketNoise;
+        
+        // Profit = Revenue - LandedCost - Overhead (HR + Warehouse)
+        // Add random operational inefficiencies
+        const opInefficiency = 1 + ((random() - 0.5) * 0.1);
+        const simTotalOverhead = (hrCostBase + warehouseCostBase) * opInefficiency;
+        const simNetProfit = simRevenue - simLandedCost - simTotalOverhead;
+
+        // 4. Construct the Data Point Object
         const outputs: any = {
             totalLandedCostEtb: simLandedCost,
             totalTaxEtb: simTotalTax,
             landedFactor: simFactor,
+            revenue: simRevenue,
+            netProfit: simNetProfit,
+            hrCost: hrCostBase * (1 + (random() - 0.5) * 0.1), // Add slight noise to independent var
+            warehouseCost: warehouseCostBase * (1 + (random() - 0.5) * 0.1),
             ...simInputs
         };
 
+        // 5. Apply Correlation Noise to Y
+        // We take the "Calculated" Y value, but scramble it based on the noiseLevel
+        // logic: Y_final = Y_calc * (1 + (Noise * Random(-0.5 to 0.5)))
+        let yValue = Number(outputs[yAxisParam]);
+        
+        // Special case: If we are plotting independent vs independent (e.g. HR vs Exchange Rate), 
+        // the relationship should be almost purely random unless we defined a logic connecting them.
+        // The getNoiseFactor handles this magnitude.
+        const yNoise = (random() - 0.5) * noiseLevel;
+        yValue = yValue * (1 + yValue === 0 ? 0 : yNoise); // Avoid multiplying 0
+
         dataPoints.push({
             x: Number(outputs[xAxisParam]),
-            y: Number(outputs[yAxisParam]),
-            z: 1 // uniform size
+            y: yValue,
+            z: 1 
         });
     }
     return dataPoints.sort((a, b) => a.x - b.x);
@@ -192,54 +267,79 @@ const LandedCostEngine: React.FC = () => {
     return denominator === 0 ? 0 : numerator / denominator;
   }, [correlationData]);
 
-  const getCorrelationInterpretation = (r: number) => {
+  // Dynamic Styles based on 'r'
+  const getCorrelationStrengthStyles = (r: number) => {
     const absR = Math.abs(r);
-    let strength = "";
-    let meaning = "";
-
-    if (absR > 0.8) {
-        strength = "Very Strong";
-        meaning = `Almost every change in ${ANALYSIS_PARAMS.find(p => p.key === xAxisParam)?.label} directly impacts the result. This is a critical driver.`;
-    } else if (absR > 0.6) {
-        strength = "Strong";
-        meaning = "There is a noticeable pattern. Fluctuations here will likely affect your outcome significantly.";
-    } else if (absR > 0.4) {
-        strength = "Moderate";
-        meaning = "There is some relationship, but other factors also play a large role.";
-    } else {
-        strength = "Weak / Negligible";
-        meaning = "Changes here have little to no predictable effect on the outcome. Focus elsewhere.";
-    }
-
-    const direction = r > 0 ? "Positive" : "Negative";
     
-    return { strength, direction, meaning };
+    if (absR >= 0.8) {
+        return {
+            bg: 'bg-green-100 dark:bg-green-900/30',
+            text: 'text-green-700 dark:text-green-300',
+            border: 'border-green-200 dark:border-green-800',
+            label: 'Strong',
+            desc: 'High predictive power. X strongly influences Y.'
+        };
+    } else if (absR >= 0.5) {
+        return {
+            bg: 'bg-indigo-100 dark:bg-indigo-900/30',
+            text: 'text-indigo-700 dark:text-indigo-300',
+            border: 'border-indigo-200 dark:border-indigo-800',
+            label: 'Moderate',
+            desc: 'Noticeable trend, but external factors (noise) play a role.'
+        };
+    } else if (absR >= 0.3) {
+        return {
+            bg: 'bg-yellow-100 dark:bg-yellow-900/30',
+            text: 'text-yellow-700 dark:text-yellow-300',
+            border: 'border-yellow-200 dark:border-yellow-800',
+            label: 'Weak',
+            desc: 'Loose relationship. Caution advised when forecasting.'
+        };
+    } else {
+        return {
+            bg: 'bg-gray-100 dark:bg-gray-800',
+            text: 'text-gray-600 dark:text-gray-400',
+            border: 'border-gray-200 dark:border-gray-700',
+            label: 'Negligible',
+            desc: 'No statistical relationship detected. Random distribution.'
+        };
+    }
   };
 
-  const stats = getCorrelationInterpretation(correlationCoefficient);
+  const style = getCorrelationStrengthStyles(correlationCoefficient);
+  const direction = correlationCoefficient > 0 ? "Positive" : "Negative";
 
   // Generate Recommendations based on selection
   const getRecommendations = () => {
+      const r = correlationCoefficient;
+      const absR = Math.abs(r);
+
       if (xAxisParam === 'exchangeRate' && yAxisParam === 'totalLandedCostEtb') {
           return [
-              { title: "Forex Hedging", desc: "Strong correlation detected. Consider locking in forward rates for Q4.", type: 'strategy' },
-              { title: "Local Sourcing", desc: "If ETB devalues >5%, local alternatives become 12% cheaper.", type: 'opportunity' }
+              { title: "Forex Hedging", desc: "Correlation is critically high. Any devaluation of ETB directly inflates landed costs.", type: 'strategy' },
+              { title: "Local Sourcing", desc: "Consider domestic raw material alternatives to decouple from exchange rate volatility.", type: 'opportunity' }
           ];
       }
-      if (xAxisParam === 'freightUsd') {
+      if (xAxisParam === 'hrCost' && absR < 0.3) {
           return [
-              { title: "Consolidate Shipments", desc: "Freight sensitivity is high. Increasing container utilization to 95% reduces unit cost by 8%.", type: 'efficiency' },
-              { title: "Review Incoterms", desc: "Switching to CIF might lock in better insurance rates.", type: 'strategy' }
+              { title: "Cost Efficiency", desc: "HR costs show little impact on this output. Optimize workforce allocation without fearing immediate profit drops.", type: 'efficiency' },
+              { title: "Review Payroll", desc: "Investigate why increased HR spend isn't correlating with higher output.", type: 'strategy' }
           ];
       }
-      if (yAxisParam === 'totalTaxEtb') {
+      if (absR > 0.8) {
           return [
-              { title: "Bonded Warehouse", desc: "Defer tax liability by using a bonded warehouse for up to 6 months.", type: 'cashflow' },
-              { title: "HS Code Audit", desc: "Verify HS Code 2905.11. A reclassification could drop duty from 10% to 5%.", type: 'compliance' }
+              { title: "Direct Driver", desc: "Focus management attention here. This input is a primary lever for controlling the output.", type: 'strategy' },
+              { title: "Predictive Modeling", desc: "High confidence for forecasting. Use this relationship for next quarter's budget.", type: 'opportunity' }
+          ];
+      }
+      if (absR < 0.2) {
+           return [
+              { title: "Decoupled Metrics", desc: "These variables move independently. Do not use one to predict the other.", type: 'general' },
+              { title: "Investigate Hidden Factors", desc: "Look for confounding variables that might be masking a relationship.", type: 'strategy' }
           ];
       }
       return [
-          { title: "Variance Analysis", desc: "Monitor this relationship weekly. Deviation >3% suggests operational inefficiency.", type: 'general' },
+          { title: "Variance Analysis", desc: "Monitor this relationship. Deviation suggests operational inefficiency.", type: 'general' },
           { title: "Supplier Negotiation", desc: "Use this cost breakdown to negotiate better FOB terms.", type: 'strategy' }
       ];
   };
@@ -533,21 +633,21 @@ const LandedCostEngine: React.FC = () => {
                 </div>
 
                 {/* Correlation Coefficient Card */}
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
+                <div className={`p-6 rounded-2xl shadow-sm border transition-colors ${style.bg} ${style.border}`}>
                     <div className="flex justify-between items-start mb-3">
-                        <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2 text-sm">
-                            <Sigma className="w-4 h-4 text-purple-500" /> Statistical Strength (r)
+                        <h3 className={`font-bold flex items-center gap-2 text-sm ${style.text}`}>
+                            <Sigma className="w-4 h-4" /> Statistical Strength (r)
                         </h3>
-                        <span className={`text-xl font-bold ${correlationCoefficient > 0.7 ? 'text-green-600' : 'text-orange-500'}`}>
+                        <span className={`text-xl font-bold ${style.text}`}>
                             {correlationCoefficient.toFixed(2)}
                         </span>
                     </div>
-                    <div className="bg-gray-50 dark:bg-gray-900/50 p-3 rounded-xl border border-gray-200 dark:border-gray-700">
+                    <div className={`p-3 rounded-xl border ${style.border} bg-white/50 dark:bg-black/10`}>
                         <div className="flex justify-between items-center mb-1">
-                            <span className="text-xs font-bold text-gray-700 dark:text-gray-300">{stats.strength} {stats.direction} Correlation</span>
+                            <span className={`text-xs font-bold ${style.text}`}>{style.label} {direction} Correlation</span>
                         </div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
-                            {stats.meaning}
+                        <p className={`text-xs ${style.text} opacity-80 leading-relaxed`}>
+                            {style.desc}
                         </p>
                     </div>
                 </div>
@@ -575,7 +675,7 @@ const LandedCostEngine: React.FC = () => {
                 <div className="mb-6 flex justify-between items-center">
                     <div>
                         <h3 className="text-lg font-bold text-gray-900 dark:text-white">Sensitivity Simulation</h3>
-                        <p className="text-sm text-gray-500">Projected impact of ±20% variation in {ANALYSIS_PARAMS.find(p => p.key === xAxisParam)?.label}</p>
+                        <p className="text-sm text-gray-500">Projected impact of ±30% variation in {ANALYSIS_PARAMS.find(p => p.key === xAxisParam)?.label}</p>
                     </div>
                     <div className="flex gap-2">
                         <span className="text-xs bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 px-2 py-1 rounded font-bold">Linear Regression</span>
