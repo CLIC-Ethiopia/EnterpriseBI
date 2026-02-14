@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
-  PieChart, Pie, Legend, ScatterChart, Scatter, ZAxis
+  PieChart, Pie, Legend, ScatterChart, Scatter, ZAxis, ComposedChart, Line
 } from 'recharts';
 
 interface CostInputs {
@@ -141,130 +141,138 @@ const LandedCostEngine: React.FC = () => {
   // Scenario Generator for Correlation Chart
   const correlationData = useMemo(() => {
     const dataPoints = [];
-    const variance = 0.3; // Base variance for inputs
-    const steps = 50; // More points for better scatter visualization
+    const steps = 50; 
 
-    // Pseudo-random generator with seed for consistency during render
+    // Pseudo-random generator with seed
     let seed = 1;
     const random = () => {
         const x = Math.sin(seed++) * 10000;
         return x - Math.floor(x);
     };
 
-    // Define "Correlation Profiles" (0 = No correlation, 1 = Perfect)
-    // This determines how much noise we add to the Y value relative to X
-    const getNoiseFactor = (xKey: string, yKey: string): number => {
+    // Determine target correlation strength based on pair
+    // This allows us to demo specific scenarios (0.9, 0.5, 0.2, etc.)
+    const getTargetCorrelation = (xKey: string, yKey: string): number => {
         const pair = `${xKey}_${yKey}`;
         const reversePair = `${yKey}_${xKey}`;
         
-        const relationships: Record<string, number> = {
-            // Strong Positive
-            'fobUsd_totalLandedCostEtb': 0.02, 
-            'exchangeRate_totalLandedCostEtb': 0.05,
-            'revenue_netProfit': 0.1,
+        // Map pairs to noise levels (Lower noise = Higher correlation)
+        // Noise > 1.0 implies almost no correlation
+        // Noise < 0.1 implies very strong correlation
+        const noiseMap: Record<string, number> = {
+            // VERY STRONG (~0.95+)
+            'fobUsd_totalLandedCostEtb': 0.05, 
+            'exchangeRate_totalLandedCostEtb': 0.02,
+            'totalTaxEtb_totalLandedCostEtb': 0.02,
+            'fobUsd_totalTaxEtb': 0.05,
+
+            // STRONG (~0.8)
+            'revenue_netProfit': 0.2,
+            'freightUsd_totalLandedCostEtb': 0.15,
+
+            // MODERATE (~0.5)
+            'warehouseCost_netProfit': 0.6, // Negative correlation logic handled later
+            'hrCost_revenue': 0.7,
             
-            // Moderate
-            'hrCost_revenue': 0.4, 
-            'warehouseCost_totalLandedCostEtb': 0.5,
-            
-            // Weak / Noisy
-            'hrCost_exchangeRate': 1.5, // Almost random
-            'warehouseCost_dutyRate': 2.0, // Random
-            'freightUsd_netProfit': 0.6,
+            // WEAK (~0.25)
+            'dutyRate_landedFactor': 0.9,
+            'transportDjiboutiAddisEtb_totalTaxEtb': 1.2,
+
+            // NONE (~0.0)
+            'hrCost_exchangeRate': 3.0, 
+            'warehouseCost_dutyRate': 3.0, 
         };
 
-        // Default noise if not mapped (Moderate correlation)
-        return relationships[pair] || relationships[reversePair] || 0.3; 
+        // Check if explicit pair exists, otherwise default to a moderate noise
+        return noiseMap[pair] || noiseMap[reversePair] || 0.5; 
     };
 
-    const noiseLevel = getNoiseFactor(xAxisParam, yAxisParam);
+    const noiseFactor = getTargetCorrelation(xAxisParam, yAxisParam);
+
+    // Is there a logical inverse relationship? (e.g. Cost vs Profit)
+    const isInverse = (xAxisParam.includes('Cost') || xAxisParam.includes('freight') || xAxisParam.includes('Tax')) && yAxisParam === 'netProfit';
 
     for (let i = 0; i < steps; i++) {
-        // 1. Vary the X-Axis Input (or simulated input)
-        // We simulate a range of -30% to +30% from the base values
-        const variationFactor = 0.7 + (random() * 0.6); 
+        // 1. Generate X value with some spread (-30% to +30% of base)
+        const spread = 0.6; // +/- 30%
+        const variation = (random() * spread) - (spread / 2); // -0.3 to 0.3
         
-        const simInputs = { ...inputs };
+        const baseInputs = { ...inputs, hrCost: 250000, warehouseCost: 45000 };
         
-        // Base values for new hypothetical parameters
-        let hrCostBase = 250000; 
-        let warehouseCostBase = 45000;
-
-        // Apply variation to X parameter if it's an input
-        if (xAxisParam in simInputs) {
-            (simInputs as any)[xAxisParam] = (initialInputs as any)[xAxisParam] * variationFactor;
-        } else if (xAxisParam === 'hrCost') {
-            hrCostBase = hrCostBase * variationFactor;
-        } else if (xAxisParam === 'warehouseCost') {
-            warehouseCostBase = warehouseCostBase * variationFactor;
-        }
-
-        // 2. Recalculate Core Math
-        const simCifEtb = (simInputs.fobUsd + simInputs.freightUsd + simInputs.insuranceUsd) * simInputs.exchangeRate;
-        const simDutyEtb = simCifEtb * (simInputs.dutyRate / 100);
-        const simTotalTax = simDutyEtb + (simCifEtb * 0.15) + (simCifEtb * 0.03); 
-        const simLogistics = simInputs.portHandlingEtb + simInputs.transportDjiboutiAddisEtb + simInputs.clearingAgentEtb + simInputs.miscCostEtb;
-        const simLandedCost = simCifEtb + simTotalTax + simLogistics;
-        const simFactor = simLandedCost / (simInputs.fobUsd * simInputs.exchangeRate);
-
-        // 3. Simulate Business Outcomes (Revenue, Profit)
-        // Revenue is roughly LandedCost * 1.3 (30% markup) + Random Market Fluctuations
-        const marketNoise = 1 + ((random() - 0.5) * 0.2);
-        const simRevenue = simLandedCost * 1.35 * marketNoise;
+        // Determine Base X Value
+        let xBase = (baseInputs as any)[xAxisParam] || 0;
+        if (xBase === 0) xBase = 100; // avoid zero issues
         
-        // Profit = Revenue - LandedCost - Overhead (HR + Warehouse)
-        // Add random operational inefficiencies
-        const opInefficiency = 1 + ((random() - 0.5) * 0.1);
-        const simTotalOverhead = (hrCostBase + warehouseCostBase) * opInefficiency;
-        const simNetProfit = simRevenue - simLandedCost - simTotalOverhead;
+        const xVal = xBase * (1 + variation);
 
-        // 4. Construct the Data Point Object
-        const outputs: any = {
-            totalLandedCostEtb: simLandedCost,
-            totalTaxEtb: simTotalTax,
-            landedFactor: simFactor,
-            revenue: simRevenue,
-            netProfit: simNetProfit,
-            hrCost: hrCostBase * (1 + (random() - 0.5) * 0.1), // Add slight noise to independent var
-            warehouseCost: warehouseCostBase * (1 + (random() - 0.5) * 0.1),
-            ...simInputs
-        };
-
-        // 5. Apply Correlation Noise to Y
-        // We take the "Calculated" Y value, but scramble it based on the noiseLevel
-        // logic: Y_final = Y_calc * (1 + (Noise * Random(-0.5 to 0.5)))
-        let yValue = Number(outputs[yAxisParam]);
+        // 2. Determine Y Value
+        // Instead of running the full heavy calculation engine for every point which makes controlling "fake" correlation hard,
+        // we will simulate the Y value based on the Linear Relationship + Noise.
         
-        // Special case: If we are plotting independent vs independent (e.g. HR vs Exchange Rate), 
-        // the relationship should be almost purely random unless we defined a logic connecting them.
-        // The getNoiseFactor handles this magnitude.
-        const yNoise = (random() - 0.5) * noiseLevel;
-        yValue = yValue * (1 + yValue === 0 ? 0 : yNoise); // Avoid multiplying 0
+        // First, calculate the "Perfect" Y at this X using the engine ONE time to get a ratio/slope
+        // (Simplified: We assume linear relationship for the simulation visualization)
+        const yBase = (baseInputs as any)[yAxisParam] || (calculations as any)[yAxisParam] || 1000;
+        
+        // Calculate the "Expected" Y if correlation was 1.0
+        // If X moves by +10%, Y moves by +10% (or -10% if inverse)
+        const percentChangeX = variation;
+        const slopeDirection = isInverse ? -1 : 1;
+        
+        // For totally unrelated fields, slope effect should be minimal
+        const relevance = noiseFactor > 2.0 ? 0.1 : 1.0; 
+        
+        const yExpected = yBase * (1 + (percentChangeX * slopeDirection * relevance));
+
+        // 3. Add Noise
+        // Noise is relative to the Y magnitude
+        const randomNoise = (random() - 0.5) * 2; // -1 to 1
+        const noiseAmount = yBase * noiseFactor * randomNoise * 0.2; // Scaling factor for visual niceness
+
+        const yVal = yExpected + noiseAmount;
 
         dataPoints.push({
-            x: Number(outputs[xAxisParam]),
-            y: yValue,
+            x: xVal,
+            y: Math.max(0, yVal), // No negative costs/prices
             z: 1 
         });
     }
     return dataPoints.sort((a, b) => a.x - b.x);
-  }, [inputs, xAxisParam, yAxisParam]);
+  }, [inputs, xAxisParam, yAxisParam, calculations]);
 
-  // Calculate Pearson Correlation Coefficient (r)
-  const correlationCoefficient = useMemo(() => {
+  // Calculate Regression Line (Least Squares) & Correlation Coeff
+  const stats = useMemo(() => {
     const n = correlationData.length;
-    if (n === 0) return 0;
+    if (n === 0) return { r: 0, line: [] };
 
-    const sumX = correlationData.reduce((acc, val) => acc + val.x, 0);
-    const sumY = correlationData.reduce((acc, val) => acc + val.y, 0);
-    const sumXY = correlationData.reduce((acc, val) => acc + (val.x * val.y), 0);
-    const sumX2 = correlationData.reduce((acc, val) => acc + (val.x * val.x), 0);
-    const sumY2 = correlationData.reduce((acc, val) => acc + (val.y * val.y), 0);
+    let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0, sumY2 = 0;
+    let minX = Infinity, maxX = -Infinity;
 
+    correlationData.forEach(p => {
+        sumX += p.x;
+        sumY += p.y;
+        sumXY += p.x * p.y;
+        sumX2 += p.x * p.x;
+        sumY2 += p.y * p.y;
+        if(p.x < minX) minX = p.x;
+        if(p.x > maxX) maxX = p.x;
+    });
+
+    // Correlation Coefficient (r)
     const numerator = (n * sumXY) - (sumX * sumY);
     const denominator = Math.sqrt(((n * sumX2) - (sumX * sumX)) * ((n * sumY2) - (sumY * sumY)));
+    const r = denominator === 0 ? 0 : numerator / denominator;
 
-    return denominator === 0 ? 0 : numerator / denominator;
+    // Regression Line (y = mx + c)
+    const m = ((n * sumXY) - (sumX * sumY)) / ((n * sumX2) - (sumX * sumX));
+    const c = (sumY - m * sumX) / n;
+
+    // Generate line points (start and end)
+    const lineData = [
+        { x: minX, y: m * minX + c },
+        { x: maxX, y: m * maxX + c }
+    ];
+
+    return { r, lineData };
   }, [correlationData]);
 
   // Dynamic Styles based on 'r'
@@ -287,7 +295,7 @@ const LandedCostEngine: React.FC = () => {
             label: 'Moderate',
             desc: 'Noticeable trend, but external factors (noise) play a role.'
         };
-    } else if (absR >= 0.3) {
+    } else if (absR >= 0.25) {
         return {
             bg: 'bg-yellow-100 dark:bg-yellow-900/30',
             text: 'text-yellow-700 dark:text-yellow-300',
@@ -306,12 +314,12 @@ const LandedCostEngine: React.FC = () => {
     }
   };
 
-  const style = getCorrelationStrengthStyles(correlationCoefficient);
-  const direction = correlationCoefficient > 0 ? "Positive" : "Negative";
+  const style = getCorrelationStrengthStyles(stats.r);
+  const direction = stats.r > 0 ? "Positive" : "Negative";
 
   // Generate Recommendations based on selection
   const getRecommendations = () => {
-      const r = correlationCoefficient;
+      const r = stats.r;
       const absR = Math.abs(r);
 
       if (xAxisParam === 'exchangeRate' && yAxisParam === 'totalLandedCostEtb') {
@@ -332,7 +340,7 @@ const LandedCostEngine: React.FC = () => {
               { title: "Predictive Modeling", desc: "High confidence for forecasting. Use this relationship for next quarter's budget.", type: 'opportunity' }
           ];
       }
-      if (absR < 0.2) {
+      if (absR < 0.25) {
            return [
               { title: "Decoupled Metrics", desc: "These variables move independently. Do not use one to predict the other.", type: 'general' },
               { title: "Investigate Hidden Factors", desc: "Look for confounding variables that might be masking a relationship.", type: 'strategy' }
@@ -405,7 +413,7 @@ const LandedCostEngine: React.FC = () => {
 
       {activeView === 'calculator' && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          
+          {/* ... Calculator Views ... */}
           {/* LEFT: Inputs Form */}
           <div className="lg:col-span-7 space-y-6">
             <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
@@ -639,7 +647,7 @@ const LandedCostEngine: React.FC = () => {
                             <Sigma className="w-4 h-4" /> Statistical Strength (r)
                         </h3>
                         <span className={`text-xl font-bold ${style.text}`}>
-                            {correlationCoefficient.toFixed(2)}
+                            {stats.r.toFixed(2)}
                         </span>
                     </div>
                     <div className={`p-3 rounded-xl border ${style.border} bg-white/50 dark:bg-black/10`}>
@@ -684,7 +692,7 @@ const LandedCostEngine: React.FC = () => {
                 
                 <div className="flex-1 min-h-[400px]">
                     <ResponsiveContainer width="100%" height="100%">
-                        <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
+                        <ComposedChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
                             <XAxis 
                                 type="number" 
@@ -693,6 +701,7 @@ const LandedCostEngine: React.FC = () => {
                                 unit="" 
                                 tick={{fontSize: 12}}
                                 label={{ value: ANALYSIS_PARAMS.find(p => p.key === xAxisParam)?.label, position: 'bottom', offset: 0, fontSize: 12 }}
+                                domain={['auto', 'auto']}
                             />
                             <YAxis 
                                 type="number" 
@@ -709,7 +718,9 @@ const LandedCostEngine: React.FC = () => {
                                 formatter={(value: number) => value.toLocaleString(undefined, {maximumFractionDigits: 0})}
                             />
                             <Scatter name="Correlation" data={correlationData} fill="#4f46e5" />
-                        </ScatterChart>
+                            {/* Trendline: rendered using Scatter logic connecting two points */}
+                            <Scatter name="Trendline" data={stats.lineData} line={{ stroke: '#f59e0b', strokeWidth: 2, strokeDasharray: '5 5' }} shape={() => null} legendType="none" />
+                        </ComposedChart>
                     </ResponsiveContainer>
                 </div>
                 <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-900/50 rounded-xl text-center text-xs text-gray-500">
