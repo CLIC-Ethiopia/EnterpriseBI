@@ -321,34 +321,73 @@ const LandedCostEngine: React.FC = () => {
   const getRecommendations = () => {
       const r = stats.r;
       const absR = Math.abs(r);
+      const xLabel = ANALYSIS_PARAMS.find(p => p.key === xAxisParam)?.label || xAxisParam;
+      const yLabel = ANALYSIS_PARAMS.find(p => p.key === yAxisParam)?.label || yAxisParam;
 
+      // 1. Specific Business Logic Pairs
       if (xAxisParam === 'exchangeRate' && yAxisParam === 'totalLandedCostEtb') {
           return [
-              { title: "Forex Hedging", desc: "Correlation is critically high. Any devaluation of ETB directly inflates landed costs.", type: 'strategy' },
-              { title: "Local Sourcing", desc: "Consider domestic raw material alternatives to decouple from exchange rate volatility.", type: 'opportunity' }
+              { title: "Forex Risk Management", desc: `High sensitivity (${r.toFixed(2)}). Consider forward contracts to lock in rates if volatility is expected.`, type: 'strategy' },
+              { title: "Local Sourcing", desc: "If devaluation continues, domestic alternatives become statistically cheaper.", type: 'opportunity' }
           ];
       }
-      if (xAxisParam === 'hrCost' && absR < 0.3) {
-          return [
-              { title: "Cost Efficiency", desc: "HR costs show little impact on this output. Optimize workforce allocation without fearing immediate profit drops.", type: 'efficiency' },
-              { title: "Review Payroll", desc: "Investigate why increased HR spend isn't correlating with higher output.", type: 'strategy' }
+      if (xAxisParam === 'fobUsd' && yAxisParam === 'totalLandedCostEtb') {
+           return [
+              { title: "Supplier Negotiation", desc: "Base price is the primary driver. A 5% discount here impacts landed cost more than freight optimization.", type: 'strategy' },
+              { title: "Volume Discounts", desc: "Check if bulk ordering (increasing Qty) lowers unit FOB enough to offset storage costs.", type: 'efficiency' }
           ];
       }
+      if (xAxisParam === 'freightUsd' && yAxisParam === 'totalLandedCostEtb') {
+           return [
+              { title: "Logistics Optimization", desc: `Freight impact is ${absR > 0.5 ? 'significant' : 'moderate'}. Consolidate shipments to maximize container utilization.`, type: 'efficiency' },
+              { title: "Incoterms Review", desc: "Switching to CIF might lock in better insurance/freight rates if correlation remains high.", type: 'strategy' }
+          ];
+      }
+      if (xAxisParam === 'hrCost' && yAxisParam === 'revenue') {
+           if (r > 0.5) return [
+              { title: "Talent Investment", desc: "Positive correlation suggests hiring more sales/support staff directly boosts revenue.", type: 'opportunity' },
+              { title: "Training ROI", desc: "Invest in training existing staff to further steepen this curve.", type: 'strategy' }
+           ];
+           return [
+              { title: "Efficiency Audit", desc: "Weak correlation. Adding headcount isn't driving sales. Review sales processes first.", type: 'warning' },
+              { title: "Automation", desc: "Consider automating repetitive tasks instead of hiring.", type: 'efficiency' }
+           ];
+      }
+      if (xAxisParam === 'warehouseCost' && yAxisParam === 'netProfit') {
+           if (r < -0.3) return [
+              { title: "Lean Inventory", desc: "Higher storage costs are eating into profits. Implement Just-In-Time (JIT) ordering.", type: 'strategy' },
+              { title: "Dead Stock Analysis", desc: "Clear out slow-moving items to reduce overhead immediately.", type: 'efficiency' }
+           ];
+           return [
+              { title: "Cost Absorption", desc: "Warehouse costs currently have minimal impact on overall profit margins.", type: 'general' },
+              { title: "Capacity Check", desc: "Ensure you aren't under-utilizing rented space.", type: 'efficiency' }
+           ];
+      }
+
+      // 2. Generic Statistical Advice based on r
       if (absR > 0.8) {
           return [
-              { title: "Direct Driver", desc: "Focus management attention here. This input is a primary lever for controlling the output.", type: 'strategy' },
-              { title: "Predictive Modeling", desc: "High confidence for forecasting. Use this relationship for next quarter's budget.", type: 'opportunity' }
+              { title: "Critical Driver", desc: `${xLabel} is a dominant factor for ${yLabel}. Prioritize management of ${xLabel}.`, type: 'strategy' },
+              { title: "Predictive Modeling", desc: "High confidence relationship. Use linear regression to forecast future outcomes.", type: 'opportunity' }
           ];
       }
-      if (absR < 0.25) {
+      if (absR > 0.5) {
+          return [
+              { title: "Moderate Influence", desc: `${xLabel} affects ${yLabel}, but external factors (noise) also play a role.`, type: 'general' },
+              { title: "Variance Analysis", desc: `Monitor outliers where ${yLabel} deviates significantly from the expected trendline.`, type: 'efficiency' }
+          ];
+      }
+      if (absR < 0.3) {
            return [
-              { title: "Decoupled Metrics", desc: "These variables move independently. Do not use one to predict the other.", type: 'general' },
-              { title: "Investigate Hidden Factors", desc: "Look for confounding variables that might be masking a relationship.", type: 'strategy' }
+              { title: "Decoupled Metrics", desc: `Changes in ${xLabel} have little predictable effect on ${yLabel}. Focus resources elsewhere.`, type: 'warning' },
+              { title: "Investigate Hidden Factors", desc: "Look for confounding variables that might be masking the relationship.", type: 'general' }
           ];
       }
+
+      // Default
       return [
-          { title: "Variance Analysis", desc: "Monitor this relationship. Deviation suggests operational inefficiency.", type: 'general' },
-          { title: "Supplier Negotiation", desc: "Use this cost breakdown to negotiate better FOB terms.", type: 'strategy' }
+          { title: "Data Analysis", desc: `Observed correlation of ${r.toFixed(2)}. Continue monitoring for stability.`, type: 'general' },
+          { title: "Scenario Planning", desc: "Run simulations with extreme values to test robustness.", type: 'strategy' }
       ];
   };
 
