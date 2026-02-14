@@ -3,11 +3,12 @@ import React, { useState, useMemo } from 'react';
 import { 
   Calculator, TrendingUp, DollarSign, Truck, Anchor, 
   AlertCircle, ChevronRight, Save, RotateCcw, PieChart as PieIcon, BarChart3,
-  Network, Lightbulb, ArrowUpRight, ArrowDownRight, Filter, Sigma
+  Network, Lightbulb, ArrowUpRight, ArrowDownRight, Filter, Sigma, Calendar,
+  Layers, CreditCard, ShoppingBag, Package, Users
 } from 'lucide-react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
-  PieChart, Pie, Legend, ScatterChart, Scatter, ZAxis, ComposedChart, Line
+  PieChart, Pie, Legend, ScatterChart, Scatter, ZAxis, ComposedChart, Line, Area, AreaChart, LineChart
 } from 'recharts';
 
 interface CostInputs {
@@ -28,6 +29,9 @@ interface CostInputs {
   transportDjiboutiAddisEtb: number;
   clearingAgentEtb: number;
   miscCostEtb: number;
+  // Optional simulated inputs for chart generation
+  hrCost?: number;
+  warehouseCost?: number;
 }
 
 const initialInputs: CostInputs = {
@@ -47,7 +51,9 @@ const initialInputs: CostInputs = {
   portHandlingEtb: 15000,
   transportDjiboutiAddisEtb: 65000,
   clearingAgentEtb: 12000,
-  miscCostEtb: 5000
+  miscCostEtb: 5000,
+  hrCost: 150000,
+  warehouseCost: 45000
 };
 
 // Available parameters for correlation analysis
@@ -138,6 +144,53 @@ const LandedCostEngine: React.FC = () => {
     };
   }, [inputs]);
 
+  // Analytics Data Generator
+  const analyticsData = useMemo(() => {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const currentYear = new Date().getFullYear();
+    
+    // Base values to jitter around
+    const baseFob = inputs.fobUsd;
+    const baseFreight = inputs.freightUsd;
+    const baseExRate = inputs.exchangeRate;
+    const baseHr = inputs.hrCost || 150000;
+    const baseWarehouse = inputs.warehouseCost || 45000;
+    
+    return months.map((month, idx) => {
+        // Simulate trends
+        const trendFactor = 1 + (idx * 0.02); // 2% inflation/growth per month roughly
+        const seasonalFactor = 1 + (Math.sin(idx) * 0.05); // Seasonal wobble
+        const inventoryCycle = Math.abs(Math.sin((idx + 2) * 0.6)) * 500 + 800; // Simulated stock levels
+        
+        // Data from Departments
+        const rate = baseExRate * (1 + (idx * 0.015) - 0.05); // Forex slowly rising (Finance Dept)
+        const freight = baseFreight * seasonalFactor * (1 + (Math.random() * 0.1 - 0.05)); // Logistics Volatility
+        const taxes = (baseFob * rate * 0.35) * trendFactor; // Compliance/Govt
+        
+        const landedCost = (baseFob * rate) + (freight * rate) + taxes + 50000; // Simplified calc
+        const marketPrice = landedCost * 1.35 * (1 + (Math.random() * 0.05)); // Sales Dept pricing
+
+        // Operational Costs
+        const hr = baseHr * (1 + (idx * 0.01)); // Slow salary growth
+        const storage = baseWarehouse * (inventoryCycle / 1000); // Storage cost correlated to inventory
+
+        return {
+            month: `${month} '${currentYear.toString().substr(2)}`,
+            FOB_Value: Math.round(baseFob * rate),
+            Freight_Logistics: Math.round((freight * rate) + 50000), // Including local logistics
+            Taxes_Duties: Math.round(taxes),
+            Total_Landed: Math.round(landedCost),
+            Market_Price: Math.round(marketPrice),
+            Exchange_Rate: Number(rate.toFixed(2)),
+            Profit_Margin: Math.round(marketPrice - landedCost),
+            Inventory_Units: Math.round(inventoryCycle),
+            HR_Cost: Math.round(hr),
+            Storage_Cost: Math.round(storage),
+            Total_Overhead: Math.round(hr + storage)
+        };
+    });
+  }, [inputs]);
+
   // Scenario Generator for Correlation Chart
   const correlationData = useMemo(() => {
     const dataPoints = [];
@@ -151,88 +204,53 @@ const LandedCostEngine: React.FC = () => {
     };
 
     // Determine target correlation strength based on pair
-    // This allows us to demo specific scenarios (0.9, 0.5, 0.2, etc.)
     const getTargetCorrelation = (xKey: string, yKey: string): number => {
         const pair = `${xKey}_${yKey}`;
         const reversePair = `${yKey}_${xKey}`;
         
-        // Map pairs to noise levels (Lower noise = Higher correlation)
-        // Noise > 1.0 implies almost no correlation
-        // Noise < 0.1 implies very strong correlation
         const noiseMap: Record<string, number> = {
-            // VERY STRONG (~0.95+)
             'fobUsd_totalLandedCostEtb': 0.05, 
             'exchangeRate_totalLandedCostEtb': 0.02,
             'totalTaxEtb_totalLandedCostEtb': 0.02,
             'fobUsd_totalTaxEtb': 0.05,
-
-            // STRONG (~0.8)
             'revenue_netProfit': 0.2,
             'freightUsd_totalLandedCostEtb': 0.15,
-
-            // MODERATE (~0.5)
-            'warehouseCost_netProfit': 0.6, // Negative correlation logic handled later
+            'warehouseCost_netProfit': 0.6,
             'hrCost_revenue': 0.7,
-            
-            // WEAK (~0.25)
             'dutyRate_landedFactor': 0.9,
             'transportDjiboutiAddisEtb_totalTaxEtb': 1.2,
-
-            // NONE (~0.0)
             'hrCost_exchangeRate': 3.0, 
             'warehouseCost_dutyRate': 3.0, 
         };
-
-        // Check if explicit pair exists, otherwise default to a moderate noise
         return noiseMap[pair] || noiseMap[reversePair] || 0.5; 
     };
 
     const noiseFactor = getTargetCorrelation(xAxisParam, yAxisParam);
-
-    // Is there a logical inverse relationship? (e.g. Cost vs Profit)
     const isInverse = (xAxisParam.includes('Cost') || xAxisParam.includes('freight') || xAxisParam.includes('Tax')) && yAxisParam === 'netProfit';
 
     for (let i = 0; i < steps; i++) {
-        // 1. Generate X value with some spread (-30% to +30% of base)
-        const spread = 0.6; // +/- 30%
-        const variation = (random() * spread) - (spread / 2); // -0.3 to 0.3
-        
+        const spread = 0.6; 
+        const variation = (random() * spread) - (spread / 2); 
         const baseInputs = { ...inputs, hrCost: 250000, warehouseCost: 45000 };
         
-        // Determine Base X Value
         let xBase = (baseInputs as any)[xAxisParam] || 0;
-        if (xBase === 0) xBase = 100; // avoid zero issues
+        if (xBase === 0) xBase = 100;
         
         const xVal = xBase * (1 + variation);
-
-        // 2. Determine Y Value
-        // Instead of running the full heavy calculation engine for every point which makes controlling "fake" correlation hard,
-        // we will simulate the Y value based on the Linear Relationship + Noise.
-        
-        // First, calculate the "Perfect" Y at this X using the engine ONE time to get a ratio/slope
-        // (Simplified: We assume linear relationship for the simulation visualization)
         const yBase = (baseInputs as any)[yAxisParam] || (calculations as any)[yAxisParam] || 1000;
-        
-        // Calculate the "Expected" Y if correlation was 1.0
-        // If X moves by +10%, Y moves by +10% (or -10% if inverse)
         const percentChangeX = variation;
         const slopeDirection = isInverse ? -1 : 1;
-        
-        // For totally unrelated fields, slope effect should be minimal
         const relevance = noiseFactor > 2.0 ? 0.1 : 1.0; 
         
         const yExpected = yBase * (1 + (percentChangeX * slopeDirection * relevance));
-
-        // 3. Add Noise
-        // Noise is relative to the Y magnitude
-        const randomNoise = (random() - 0.5) * 2; // -1 to 1
-        const noiseAmount = yBase * noiseFactor * randomNoise * 0.2; // Scaling factor for visual niceness
+        const randomNoise = (random() - 0.5) * 2; 
+        const noiseAmount = yBase * noiseFactor * randomNoise * 0.2; 
 
         const yVal = yExpected + noiseAmount;
 
         dataPoints.push({
             x: xVal,
-            y: Math.max(0, yVal), // No negative costs/prices
+            y: Math.max(0, yVal), 
             z: 1 
         });
     }
@@ -257,16 +275,13 @@ const LandedCostEngine: React.FC = () => {
         if(p.x > maxX) maxX = p.x;
     });
 
-    // Correlation Coefficient (r)
     const numerator = (n * sumXY) - (sumX * sumY);
     const denominator = Math.sqrt(((n * sumX2) - (sumX * sumX)) * ((n * sumY2) - (sumY * sumY)));
     const r = denominator === 0 ? 0 : numerator / denominator;
 
-    // Regression Line (y = mx + c)
     const m = ((n * sumXY) - (sumX * sumY)) / ((n * sumX2) - (sumX * sumX));
     const c = (sumY - m * sumX) / n;
 
-    // Generate line points (start and end)
     const lineData = [
         { x: minX, y: m * minX + c },
         { x: maxX, y: m * maxX + c }
@@ -278,40 +293,10 @@ const LandedCostEngine: React.FC = () => {
   // Dynamic Styles based on 'r'
   const getCorrelationStrengthStyles = (r: number) => {
     const absR = Math.abs(r);
-    
-    if (absR >= 0.8) {
-        return {
-            bg: 'bg-green-100 dark:bg-green-900/30',
-            text: 'text-green-700 dark:text-green-300',
-            border: 'border-green-200 dark:border-green-800',
-            label: 'Strong',
-            desc: 'High predictive power. X strongly influences Y.'
-        };
-    } else if (absR >= 0.5) {
-        return {
-            bg: 'bg-indigo-100 dark:bg-indigo-900/30',
-            text: 'text-indigo-700 dark:text-indigo-300',
-            border: 'border-indigo-200 dark:border-indigo-800',
-            label: 'Moderate',
-            desc: 'Noticeable trend, but external factors (noise) play a role.'
-        };
-    } else if (absR >= 0.25) {
-        return {
-            bg: 'bg-yellow-100 dark:bg-yellow-900/30',
-            text: 'text-yellow-700 dark:text-yellow-300',
-            border: 'border-yellow-200 dark:border-yellow-800',
-            label: 'Weak',
-            desc: 'Loose relationship. Caution advised when forecasting.'
-        };
-    } else {
-        return {
-            bg: 'bg-gray-100 dark:bg-gray-800',
-            text: 'text-gray-600 dark:text-gray-400',
-            border: 'border-gray-200 dark:border-gray-700',
-            label: 'Negligible',
-            desc: 'No statistical relationship detected. Random distribution.'
-        };
-    }
+    if (absR >= 0.8) return { bg: 'bg-green-100 dark:bg-green-900/30', text: 'text-green-700 dark:text-green-300', border: 'border-green-200 dark:border-green-800', label: 'Strong', desc: 'High predictive power. X strongly influences Y.' };
+    if (absR >= 0.5) return { bg: 'bg-indigo-100 dark:bg-indigo-900/30', text: 'text-indigo-700 dark:text-indigo-300', border: 'border-indigo-200 dark:border-indigo-800', label: 'Moderate', desc: 'Noticeable trend, but external factors (noise) play a role.' };
+    if (absR >= 0.25) return { bg: 'bg-yellow-100 dark:bg-yellow-900/30', text: 'text-yellow-700 dark:text-yellow-300', border: 'border-yellow-200 dark:border-yellow-800', label: 'Weak', desc: 'Loose relationship. Caution advised when forecasting.' };
+    return { bg: 'bg-gray-100 dark:bg-gray-800', text: 'text-gray-600 dark:text-gray-400', border: 'border-gray-200 dark:border-gray-700', label: 'Negligible', desc: 'No statistical relationship detected. Random distribution.' };
   };
 
   const style = getCorrelationStrengthStyles(stats.r);
@@ -324,71 +309,17 @@ const LandedCostEngine: React.FC = () => {
       const xLabel = ANALYSIS_PARAMS.find(p => p.key === xAxisParam)?.label || xAxisParam;
       const yLabel = ANALYSIS_PARAMS.find(p => p.key === yAxisParam)?.label || yAxisParam;
 
-      // 1. Specific Business Logic Pairs
-      if (xAxisParam === 'exchangeRate' && yAxisParam === 'totalLandedCostEtb') {
-          return [
-              { title: "Forex Risk Management", desc: `High sensitivity (${r.toFixed(2)}). Consider forward contracts to lock in rates if volatility is expected.`, type: 'strategy' },
-              { title: "Local Sourcing", desc: "If devaluation continues, domestic alternatives become statistically cheaper.", type: 'opportunity' }
-          ];
-      }
-      if (xAxisParam === 'fobUsd' && yAxisParam === 'totalLandedCostEtb') {
-           return [
-              { title: "Supplier Negotiation", desc: "Base price is the primary driver. A 5% discount here impacts landed cost more than freight optimization.", type: 'strategy' },
-              { title: "Volume Discounts", desc: "Check if bulk ordering (increasing Qty) lowers unit FOB enough to offset storage costs.", type: 'efficiency' }
-          ];
-      }
-      if (xAxisParam === 'freightUsd' && yAxisParam === 'totalLandedCostEtb') {
-           return [
-              { title: "Logistics Optimization", desc: `Freight impact is ${absR > 0.5 ? 'significant' : 'moderate'}. Consolidate shipments to maximize container utilization.`, type: 'efficiency' },
-              { title: "Incoterms Review", desc: "Switching to CIF might lock in better insurance/freight rates if correlation remains high.", type: 'strategy' }
-          ];
-      }
-      if (xAxisParam === 'hrCost' && yAxisParam === 'revenue') {
-           if (r > 0.5) return [
-              { title: "Talent Investment", desc: "Positive correlation suggests hiring more sales/support staff directly boosts revenue.", type: 'opportunity' },
-              { title: "Training ROI", desc: "Invest in training existing staff to further steepen this curve.", type: 'strategy' }
-           ];
-           return [
-              { title: "Efficiency Audit", desc: "Weak correlation. Adding headcount isn't driving sales. Review sales processes first.", type: 'warning' },
-              { title: "Automation", desc: "Consider automating repetitive tasks instead of hiring.", type: 'efficiency' }
-           ];
-      }
-      if (xAxisParam === 'warehouseCost' && yAxisParam === 'netProfit') {
-           if (r < -0.3) return [
-              { title: "Lean Inventory", desc: "Higher storage costs are eating into profits. Implement Just-In-Time (JIT) ordering.", type: 'strategy' },
-              { title: "Dead Stock Analysis", desc: "Clear out slow-moving items to reduce overhead immediately.", type: 'efficiency' }
-           ];
-           return [
-              { title: "Cost Absorption", desc: "Warehouse costs currently have minimal impact on overall profit margins.", type: 'general' },
-              { title: "Capacity Check", desc: "Ensure you aren't under-utilizing rented space.", type: 'efficiency' }
-           ];
-      }
+      if (xAxisParam === 'exchangeRate' && yAxisParam === 'totalLandedCostEtb') return [{ title: "Forex Risk Management", desc: `High sensitivity (${r.toFixed(2)}). Consider forward contracts to lock in rates if volatility is expected.`, type: 'strategy' }, { title: "Local Sourcing", desc: "If devaluation continues, domestic alternatives become statistically cheaper.", type: 'opportunity' }];
+      if (xAxisParam === 'fobUsd' && yAxisParam === 'totalLandedCostEtb') return [{ title: "Supplier Negotiation", desc: "Base price is the primary driver. A 5% discount here impacts landed cost more than freight optimization.", type: 'strategy' }, { title: "Volume Discounts", desc: "Check if bulk ordering (increasing Qty) lowers unit FOB enough to offset storage costs.", type: 'efficiency' }];
+      if (xAxisParam === 'freightUsd' && yAxisParam === 'totalLandedCostEtb') return [{ title: "Logistics Optimization", desc: `Freight impact is ${absR > 0.5 ? 'significant' : 'moderate'}. Consolidate shipments to maximize container utilization.`, type: 'efficiency' }, { title: "Incoterms Review", desc: "Switching to CIF might lock in better insurance/freight rates if correlation remains high.", type: 'strategy' }];
+      if (xAxisParam === 'hrCost' && yAxisParam === 'revenue') return r > 0.5 ? [{ title: "Talent Investment", desc: "Positive correlation suggests hiring more sales/support staff directly boosts revenue.", type: 'opportunity' }, { title: "Training ROI", desc: "Invest in training existing staff to further steepen this curve.", type: 'strategy' }] : [{ title: "Efficiency Audit", desc: "Weak correlation. Adding headcount isn't driving sales. Review sales processes first.", type: 'warning' }, { title: "Automation", desc: "Consider automating repetitive tasks instead of hiring.", type: 'efficiency' }];
+      if (xAxisParam === 'warehouseCost' && yAxisParam === 'netProfit') return r < -0.3 ? [{ title: "Lean Inventory", desc: "Higher storage costs are eating into profits. Implement Just-In-Time (JIT) ordering.", type: 'strategy' }, { title: "Dead Stock Analysis", desc: "Clear out slow-moving items to reduce overhead immediately.", type: 'efficiency' }] : [{ title: "Cost Absorption", desc: "Warehouse costs currently have minimal impact on overall profit margins.", type: 'general' }, { title: "Capacity Check", desc: "Ensure you aren't under-utilizing rented space.", type: 'efficiency' }];
 
-      // 2. Generic Statistical Advice based on r
-      if (absR > 0.8) {
-          return [
-              { title: "Critical Driver", desc: `${xLabel} is a dominant factor for ${yLabel}. Prioritize management of ${xLabel}.`, type: 'strategy' },
-              { title: "Predictive Modeling", desc: "High confidence relationship. Use linear regression to forecast future outcomes.", type: 'opportunity' }
-          ];
-      }
-      if (absR > 0.5) {
-          return [
-              { title: "Moderate Influence", desc: `${xLabel} affects ${yLabel}, but external factors (noise) also play a role.`, type: 'general' },
-              { title: "Variance Analysis", desc: `Monitor outliers where ${yLabel} deviates significantly from the expected trendline.`, type: 'efficiency' }
-          ];
-      }
-      if (absR < 0.3) {
-           return [
-              { title: "Decoupled Metrics", desc: `Changes in ${xLabel} have little predictable effect on ${yLabel}. Focus resources elsewhere.`, type: 'warning' },
-              { title: "Investigate Hidden Factors", desc: "Look for confounding variables that might be masking the relationship.", type: 'general' }
-          ];
-      }
+      if (absR > 0.8) return [{ title: "Critical Driver", desc: `${xLabel} is a dominant factor for ${yLabel}. Prioritize management of ${xLabel}.`, type: 'strategy' }, { title: "Predictive Modeling", desc: "High confidence relationship. Use linear regression to forecast future outcomes.", type: 'opportunity' }];
+      if (absR > 0.5) return [{ title: "Moderate Influence", desc: `${xLabel} affects ${yLabel}, but external factors (noise) also play a role.`, type: 'general' }, { title: "Variance Analysis", desc: `Monitor outliers where ${yLabel} deviates significantly from the expected trendline.`, type: 'efficiency' }];
+      if (absR < 0.3) return [{ title: "Decoupled Metrics", desc: `Changes in ${xLabel} have little predictable effect on ${yLabel}. Focus resources elsewhere.`, type: 'warning' }, { title: "Investigate Hidden Factors", desc: "Look for confounding variables that might be masking the relationship.", type: 'general' }];
 
-      // Default
-      return [
-          { title: "Data Analysis", desc: `Observed correlation of ${r.toFixed(2)}. Continue monitoring for stability.`, type: 'general' },
-          { title: "Scenario Planning", desc: "Run simulations with extreme values to test robustness.", type: 'strategy' }
-      ];
+      return [{ title: "Data Analysis", desc: `Observed correlation of ${r.toFixed(2)}. Continue monitoring for stability.`, type: 'general' }, { title: "Scenario Planning", desc: "Run simulations with extreme values to test robustness.", type: 'strategy' }];
   };
 
   // Chart Data
@@ -404,18 +335,12 @@ const LandedCostEngine: React.FC = () => {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setInputs(prev => ({
-      ...prev,
-      [name]: parseFloat(value) || 0
-    }));
+    setInputs(prev => ({ ...prev, [name]: parseFloat(value) || 0 }));
   };
 
   const handleTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setInputs(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setInputs(prev => ({ ...prev, [name]: value }));
   };
 
   return (
@@ -429,30 +354,14 @@ const LandedCostEngine: React.FC = () => {
           <p className="text-gray-500 dark:text-gray-400 mt-1">Djibouti Corridor Import Calculator & Analysis</p>
         </div>
         <div className="flex gap-2 bg-gray-100 dark:bg-gray-700 p-1 rounded-lg">
-           <button 
-             onClick={() => setActiveView('calculator')}
-             className={`px-4 py-2 rounded-md text-sm font-medium flex items-center gap-2 transition-colors ${activeView === 'calculator' ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900'}`}
-           >
-             <Calculator className="w-4 h-4" /> Calculator
-           </button>
-           <button 
-             onClick={() => setActiveView('analytics')}
-             className={`px-4 py-2 rounded-md text-sm font-medium flex items-center gap-2 transition-colors ${activeView === 'analytics' ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900'}`}
-           >
-             <TrendingUp className="w-4 h-4" /> Trend Analytics
-           </button>
-           <button 
-             onClick={() => setActiveView('correlation')}
-             className={`px-4 py-2 rounded-md text-sm font-medium flex items-center gap-2 transition-colors ${activeView === 'correlation' ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900'}`}
-           >
-             <Network className="w-4 h-4" /> Correlation & Recommender
-           </button>
+           <button onClick={() => setActiveView('calculator')} className={`px-4 py-2 rounded-md text-sm font-medium flex items-center gap-2 transition-colors ${activeView === 'calculator' ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900'}`}><Calculator className="w-4 h-4" /> Calculator</button>
+           <button onClick={() => setActiveView('analytics')} className={`px-4 py-2 rounded-md text-sm font-medium flex items-center gap-2 transition-colors ${activeView === 'analytics' ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900'}`}><TrendingUp className="w-4 h-4" /> Trend Analytics</button>
+           <button onClick={() => setActiveView('correlation')} className={`px-4 py-2 rounded-md text-sm font-medium flex items-center gap-2 transition-colors ${activeView === 'correlation' ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900'}`}><Network className="w-4 h-4" /> Correlation</button>
         </div>
       </div>
 
       {activeView === 'calculator' && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* ... Calculator Views ... */}
           {/* LEFT: Inputs Form */}
           <div className="lg:col-span-7 space-y-6">
             <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
@@ -589,10 +498,10 @@ const LandedCostEngine: React.FC = () => {
                             contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
                          />
                          <Legend />
-                         <Bar dataKey="Product" stackId="a" fill="#3b82f6" radius={[4, 0, 0, 4]} />
-                         <Bar dataKey="Freight_Ins" stackId="a" fill="#6366f1" />
-                         <Bar dataKey="Taxes" stackId="a" fill="#ef4444" />
-                         <Bar dataKey="Logistics" stackId="a" fill="#10b981" radius={[0, 4, 4, 0]} />
+                         <Bar dataKey="Product" stackId="a" fill="#0ea5e9" radius={[4, 0, 0, 4]} name="FOB Value" />
+                         <Bar dataKey="Freight_Ins" stackId="a" fill="#f59e0b" name="Freight & Ins" />
+                         <Bar dataKey="Taxes" stackId="a" fill="#f43f5e" name="Duties & Tax" />
+                         <Bar dataKey="Logistics" stackId="a" fill="#10b981" radius={[0, 4, 4, 0]} name="Local Logistics" />
                       </BarChart>
                    </ResponsiveContainer>
                 </div>
@@ -625,18 +534,184 @@ const LandedCostEngine: React.FC = () => {
       )}
 
       {activeView === 'analytics' && (
-         <div className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col items-center justify-center min-h-[400px] text-center">
-            <BarChart3 className="w-16 h-16 text-gray-200 dark:text-gray-700 mb-4" />
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Historical Analytics Module</h3>
-            <p className="text-gray-500 dark:text-gray-400 max-w-md">
-               This module tracks landed cost variance over time, helping you analyze the impact of exchange rate fluctuations and policy changes on your bottom line.
-            </p>
-            <button 
-               onClick={() => setActiveView('calculator')}
-               className="mt-6 px-6 py-2 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 transition-colors"
-            >
-               Return to Calculator
-            </button>
+         <div className="space-y-6">
+            {/* Header / Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+               <div className="bg-white dark:bg-gray-800 p-5 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 flex items-center gap-4">
+                  <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
+                     <Layers className="w-6 h-6 text-blue-600" />
+                  </div>
+                  <div>
+                     <p className="text-xs text-gray-500 uppercase font-bold">Avg. Landed Cost</p>
+                     <h3 className="text-xl font-bold text-gray-900 dark:text-white">Bir {(analyticsData.reduce((acc, curr) => acc + curr.Total_Landed, 0) / 12).toLocaleString(undefined, {maximumFractionDigits: 0})}</h3>
+                     <p className="text-xs text-green-500 font-medium flex items-center gap-1"><ArrowUpRight className="w-3 h-3" /> +12% YoY</p>
+                  </div>
+               </div>
+               <div className="bg-white dark:bg-gray-800 p-5 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 flex items-center gap-4">
+                  <div className="p-3 bg-orange-50 dark:bg-orange-900/20 rounded-xl">
+                     <CreditCard className="w-6 h-6 text-orange-600" />
+                  </div>
+                  <div>
+                     <p className="text-xs text-gray-500 uppercase font-bold">Exchange Volatility</p>
+                     <h3 className="text-xl font-bold text-gray-900 dark:text-white">High (4.2%)</h3>
+                     <p className="text-xs text-gray-400 font-medium">Source: Finance Dept</p>
+                  </div>
+               </div>
+               <div className="bg-white dark:bg-gray-800 p-5 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 flex items-center gap-4">
+                  <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-xl">
+                     <ShoppingBag className="w-6 h-6 text-green-600" />
+                  </div>
+                  <div>
+                     <p className="text-xs text-gray-500 uppercase font-bold">Profit Margin</p>
+                     <h3 className="text-xl font-bold text-gray-900 dark:text-white">~18.5%</h3>
+                     <p className="text-xs text-gray-400 font-medium">Market Price vs Cost</p>
+                  </div>
+               </div>
+            </div>
+
+            {/* Main Trend Chart */}
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
+               <div className="flex justify-between items-center mb-6">
+                  <div>
+                     <h3 className="text-lg font-bold text-gray-900 dark:text-white">Cost Composition Trend (12 Months)</h3>
+                     <p className="text-sm text-gray-500">Historical breakdown of landed cost components overlaid with exchange rate.</p>
+                  </div>
+                  <div className="flex gap-4">
+                     <span className="text-xs flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-[#0ea5e9]"></div> FOB</span>
+                     <span className="text-xs flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-[#f59e0b]"></div> Freight</span>
+                     <span className="text-xs flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-[#f43f5e]"></div> Tax</span>
+                     <span className="text-xs flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-[#8b5cf6]"></div> Exchange Rate</span>
+                  </div>
+               </div>
+               <div className="h-[400px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                     <ComposedChart data={analyticsData}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                        <XAxis dataKey="month" tick={{fontSize: 12}} />
+                        <YAxis yAxisId="left" tick={{fontSize: 12}} />
+                        <YAxis yAxisId="right" orientation="right" tick={{fontSize: 12}} domain={['auto', 'auto']} />
+                        <Tooltip 
+                           contentStyle={{ backgroundColor: '#ffffff', borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}
+                           itemStyle={{ color: '#1e293b', fontWeight: 'bold', fontSize: '12px' }}
+                           labelStyle={{ color: '#64748b', fontWeight: 'bold', marginBottom: '4px' }}
+                           cursor={{ fill: 'rgba(0,0,0,0.05)' }}
+                           formatter={(value: any, name: string) => [
+                              name === 'Exchange_Rate' ? value : `Bir ${value.toLocaleString()}`, 
+                              name.replace('_', ' ')
+                           ]}
+                        />
+                        <Bar yAxisId="left" dataKey="FOB_Value" stackId="a" fill="#0ea5e9" name="FOB Value" />
+                        <Bar yAxisId="left" dataKey="Freight_Logistics" stackId="a" fill="#f59e0b" name="Freight & Logistics" />
+                        <Bar yAxisId="left" dataKey="Taxes_Duties" stackId="a" fill="#f43f5e" radius={[4, 4, 0, 0]} name="Duties & Taxes" />
+                        <Line yAxisId="right" type="monotone" dataKey="Exchange_Rate" stroke="#8b5cf6" strokeWidth={3} dot={{r: 4}} name="Exchange Rate" />
+                     </ComposedChart>
+                  </ResponsiveContainer>
+               </div>
+            </div>
+
+            {/* Profitability Analysis */}
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
+               <div className="flex justify-between items-center mb-6">
+                  <div>
+                     <h3 className="text-lg font-bold text-gray-900 dark:text-white">Margin Analysis</h3>
+                     <p className="text-sm text-gray-500">Landed Cost vs. Average Selling Price (Sales Dept Data)</p>
+                  </div>
+               </div>
+               <div className="h-[300px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                     <AreaChart data={analyticsData}>
+                        <defs>
+                           <linearGradient id="colorProfit" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%" stopColor="#10b981" stopOpacity={0.2}/>
+                              <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                           </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                        <XAxis dataKey="month" tick={{fontSize: 12}} />
+                        <YAxis tick={{fontSize: 12}} />
+                        <Tooltip 
+                            contentStyle={{ backgroundColor: '#ffffff', borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}
+                            itemStyle={{ color: '#1e293b', fontWeight: 'bold', fontSize: '12px' }}
+                            labelStyle={{ color: '#64748b', fontWeight: 'bold', marginBottom: '4px' }}
+                        />
+                        <Area type="monotone" dataKey="Market_Price" stackId="1" stroke="#10b981" fill="url(#colorProfit)" strokeWidth={2} name="Selling Price" />
+                        <Area type="monotone" dataKey="Total_Landed" stackId="2" stroke="#6366f1" fill="none" strokeWidth={2} strokeDasharray="5 5" name="Landed Cost" />
+                     </AreaChart>
+                  </ResponsiveContainer>
+               </div>
+               <div className="flex justify-center gap-6 mt-4 text-sm">
+                  <div className="flex items-center gap-2">
+                     <div className="w-3 h-1 bg-emerald-500"></div>
+                     <span className="text-gray-600 dark:text-gray-300">Market Price (Sales Data)</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                     <div className="w-3 h-1 border-t-2 border-indigo-500 border-dashed"></div>
+                     <span className="text-gray-600 dark:text-gray-300">Total Landed Cost</span>
+                  </div>
+               </div>
+            </div>
+
+            {/* Operational & Inventory Trends */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Inventory Trends */}
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
+                    <div className="flex justify-between items-center mb-6">
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                            <Package className="w-5 h-5 text-indigo-500" /> Inventory Volume
+                        </h3>
+                    </div>
+                    <div className="h-[250px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={analyticsData}>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                                <XAxis dataKey="month" tick={{fontSize: 10}} />
+                                <YAxis tick={{fontSize: 10}} />
+                                <Tooltip 
+                                    contentStyle={{ backgroundColor: '#ffffff', borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}
+                                    itemStyle={{ color: '#1e293b', fontWeight: 'bold', fontSize: '12px' }}
+                                    labelStyle={{ color: '#64748b', fontWeight: 'bold', marginBottom: '4px' }}
+                                />
+                                <Line type="monotone" dataKey="Inventory_Units" stroke="#8b5cf6" strokeWidth={3} dot={false} name="Units in Stock" />
+                            </LineChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
+
+                {/* Operational Costs */}
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
+                    <div className="flex justify-between items-center mb-6">
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                            <Users className="w-5 h-5 text-orange-500" /> Operational Overheads
+                        </h3>
+                    </div>
+                    <div className="h-[250px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <AreaChart data={analyticsData}>
+                                <defs>
+                                    <linearGradient id="colorHR" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#f97316" stopOpacity={0.2}/>
+                                        <stop offset="95%" stopColor="#f97316" stopOpacity={0}/>
+                                    </linearGradient>
+                                    <linearGradient id="colorStorage" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.2}/>
+                                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                                    </linearGradient>
+                                </defs>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                                <XAxis dataKey="month" tick={{fontSize: 10}} />
+                                <YAxis tick={{fontSize: 10}} />
+                                <Tooltip 
+                                    contentStyle={{ backgroundColor: '#ffffff', borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}
+                                    itemStyle={{ color: '#1e293b', fontWeight: 'bold', fontSize: '12px' }}
+                                    labelStyle={{ color: '#64748b', fontWeight: 'bold', marginBottom: '4px' }}
+                                />
+                                <Area type="monotone" dataKey="HR_Cost" stackId="1" stroke="#f97316" fill="url(#colorHR)" name="HR Costs" />
+                                <Area type="monotone" dataKey="Storage_Cost" stackId="1" stroke="#3b82f6" fill="url(#colorStorage)" name="Storage Costs" />
+                            </AreaChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
+            </div>
          </div>
       )}
 
