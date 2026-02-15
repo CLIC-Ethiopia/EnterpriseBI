@@ -10,7 +10,7 @@ import {
   LayoutDashboard, Users, Database, Globe, Package, BadgeDollarSign, TrendingUp, Settings,
   LogOut, X, Filter, Download, MessageSquare, Check, CheckCircle2, XCircle, Banknote, ShieldAlert, Calculator,
   Printer, HelpCircle, GraduationCap, ShoppingCart, Briefcase, ChevronRight, Save, UserPlus, ShoppingBag, Minus, Plus, CheckCircle, Anchor,
-  FileBarChart, FileText, Hash
+  FileBarChart, FileText, Hash, Calendar, ChevronDown
 } from 'lucide-react';
 import { CustomerPortal } from './CustomerPortal';
 import DataAdminPortal from './DataAdminPortal';
@@ -74,6 +74,15 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   // General Management - Specific Views
   const [executiveView, setExecutiveView] = useState<'overview' | 'reporting'>('overview');
+
+  // Report Generator State
+  const [reportConfig, setReportConfig] = useState({
+    period: 'Quarterly',
+    startDate: '',
+    endDate: '',
+    isOpen: false,
+    isSaving: false
+  });
 
   // Sales Processing State
   const [isSalesProcessingOpen, setIsSalesProcessingOpen] = useState(false);
@@ -317,6 +326,16 @@ const Dashboard: React.FC<DashboardProps> = ({
       poNumber: item.poNumber || '',
       quantity: item.cartQuantity || 0
     });
+  };
+
+  // Report Logic
+  const handleDownloadReport = () => {
+    setReportConfig(prev => ({...prev, isSaving: true}));
+    // Simulate API call/processing
+    setTimeout(() => {
+        setReportConfig(prev => ({...prev, isSaving: false}));
+        alert(`Report successfully saved: ${department.name}_${reportConfig.period}_Report.pdf`);
+    }, 1500);
   };
 
   const generalDept = allDepartments.find(d => d.id === DepartmentType.GENERAL);
@@ -976,14 +995,60 @@ const Dashboard: React.FC<DashboardProps> = ({
                             </div>
                         </div>
 
+                        {/* Interactive Report Card */}
                         <div className={`bg-gradient-to-br from-${department.themeColor}-600 to-${department.themeColor}-800 p-6 rounded-2xl shadow-lg text-white relative overflow-hidden break-inside-avoid print:hidden`}>
-                            <div className="relative z-10">
-                              <h3 className="text-xl font-bold mb-2">Quarterly Report Ready</h3>
-                              <p className="text-white/80 mb-6 text-sm max-w-xs">The automated Q3 report for {department.name} has been generated and is ready for review.</p>
-                              <button className="bg-white text-gray-900 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-gray-50 transition-colors">
-                                Download PDF
-                              </button>
+                            <div className="relative z-10 flex flex-col h-full">
+                              <h3 className="text-xl font-bold mb-1 flex items-center gap-2">
+                                <FileText className="w-5 h-5" /> Generate Performance Report
+                              </h3>
+                              <p className="text-white/80 mb-6 text-sm">Select a period to create a PDF report.</p>
+                              
+                              <div className="space-y-4 mt-auto">
+                                <div className="relative">
+                                  <select 
+                                    value={reportConfig.period}
+                                    onChange={(e) => setReportConfig({...reportConfig, period: e.target.value})}
+                                    className="w-full appearance-none bg-white/10 border border-white/20 rounded-xl px-4 py-2.5 text-sm font-medium outline-none focus:bg-white/20 transition-all cursor-pointer"
+                                  >
+                                    <option className="text-gray-900">Monthly</option>
+                                    <option className="text-gray-900">Quarterly</option>
+                                    <option className="text-gray-900">Semi-Annually</option>
+                                    <option className="text-gray-900">Annually</option>
+                                    <option className="text-gray-900">Custom</option>
+                                  </select>
+                                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none opacity-80" />
+                                </div>
+
+                                {reportConfig.period === 'Custom' && (
+                                  <div className="flex gap-2 animate-in slide-in-from-top-2">
+                                    <div className="relative flex-1">
+                                      <input 
+                                        type="date" 
+                                        value={reportConfig.startDate}
+                                        onChange={(e) => setReportConfig({...reportConfig, startDate: e.target.value})}
+                                        className="w-full bg-white/10 border border-white/20 rounded-xl px-3 py-2 text-xs outline-none focus:bg-white/20"
+                                      />
+                                    </div>
+                                    <div className="relative flex-1">
+                                      <input 
+                                        type="date" 
+                                        value={reportConfig.endDate}
+                                        onChange={(e) => setReportConfig({...reportConfig, endDate: e.target.value})}
+                                        className="w-full bg-white/10 border border-white/20 rounded-xl px-3 py-2 text-xs outline-none focus:bg-white/20"
+                                      />
+                                    </div>
+                                  </div>
+                                )}
+
+                                <button 
+                                  onClick={() => setReportConfig({...reportConfig, isOpen: true})}
+                                  className="w-full bg-white text-gray-900 px-4 py-3 rounded-xl text-sm font-bold hover:bg-gray-100 transition-colors flex items-center justify-center gap-2 shadow-md"
+                                >
+                                  <Printer className="w-4 h-4" /> Preview & Download
+                                </button>
+                              </div>
                             </div>
+                            
                             {/* Decorative circles */}
                             <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 rounded-full bg-white/10 blur-3xl"></div>
                             <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-40 h-40 rounded-full bg-white/10 blur-2xl"></div>
@@ -1005,6 +1070,150 @@ const Dashboard: React.FC<DashboardProps> = ({
       >
         <GraduationCap className="w-6 h-6" />
       </button>
+
+      {/* Report Preview Modal */}
+      {reportConfig.isOpen && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 backdrop-blur-sm bg-black/70">
+           <div className="bg-gray-100 dark:bg-gray-900 rounded-2xl w-full max-w-4xl h-[90vh] shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+              
+              {/* Header Actions */}
+              <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex justify-between items-center">
+                 <div>
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                       <FileText className="w-5 h-5 text-indigo-600" /> Report Preview
+                    </h3>
+                    <p className="text-xs text-gray-500">Review content before printing.</p>
+                 </div>
+                 <div className="flex items-center gap-2">
+                    <button onClick={handleDownloadReport} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors">
+                       <Download className="w-4 h-4" /> Save PDF
+                    </button>
+                    <button onClick={() => window.print()} className="flex items-center gap-2 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded-lg text-sm font-medium hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
+                       <Printer className="w-4 h-4" /> Print
+                    </button>
+                    <button onClick={() => setReportConfig({...reportConfig, isOpen: false})} className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                       <X className="w-6 h-6" />
+                    </button>
+                 </div>
+              </div>
+
+              {/* PDF/Paper Preview Area - Always Light Mode for printing simulation */}
+              <div className="flex-1 overflow-y-auto p-8 bg-gray-200 dark:bg-gray-900 flex justify-center">
+                 <div className="bg-white text-black w-full max-w-[21cm] min-h-[29.7cm] p-12 shadow-xl print:shadow-none print:w-full print:max-w-none">
+                    
+                    {/* Report Header */}
+                    <div className="flex justify-between items-start border-b-2 border-black pb-6 mb-8">
+                       <div>
+                          <h1 className="text-3xl font-bold uppercase tracking-tight text-indigo-900">{department.name} Report</h1>
+                          <p className="text-sm text-gray-600 mt-1">Generated by GlobalTrade BI</p>
+                       </div>
+                       <div className="text-right">
+                          <p className="text-xl font-bold text-gray-800">{reportConfig.period}</p>
+                          <p className="text-sm text-gray-500">
+                             {reportConfig.period === 'Custom' 
+                                ? `${reportConfig.startDate} to ${reportConfig.endDate}` 
+                                : new Date().getFullYear()}
+                          </p>
+                       </div>
+                    </div>
+
+                    {/* Executive Summary */}
+                    <div className="mb-8">
+                       <h3 className="text-lg font-bold text-gray-800 border-b border-gray-300 pb-2 mb-4 uppercase text-sm tracking-wider">Executive Summary</h3>
+                       <p className="text-sm text-gray-700 leading-relaxed text-justify">
+                          This report provides a comprehensive overview of performance metrics for the {department.name} department. 
+                          Key indicators highlight a trend of <strong>{department.kpis[0]?.trend === 'up' ? 'positive growth' : 'stabilization'}</strong> in the primary operational sectors. 
+                          Total assessed value currently stands at <strong>{department.kpis[0]?.value}</strong>, reflecting a {department.kpis[0]?.change} shift from the previous period.
+                       </p>
+                    </div>
+
+                    {/* KPI Table */}
+                    <div className="mb-8">
+                       <h3 className="text-lg font-bold text-gray-800 border-b border-gray-300 pb-2 mb-4 uppercase text-sm tracking-wider">Key Performance Indicators</h3>
+                       <table className="w-full text-sm text-left border-collapse">
+                          <thead>
+                             <tr className="bg-gray-100 border-b border-gray-300">
+                                <th className="p-3 font-bold text-gray-700">Metric</th>
+                                <th className="p-3 font-bold text-gray-700 text-right">Value</th>
+                                <th className="p-3 font-bold text-gray-700 text-right">Change</th>
+                                <th className="p-3 font-bold text-gray-700 text-center">Trend</th>
+                             </tr>
+                          </thead>
+                          <tbody>
+                             {department.kpis.map((kpi, i) => (
+                                <tr key={i} className="border-b border-gray-200">
+                                   <td className="p-3">{kpi.label}</td>
+                                   <td className="p-3 text-right font-mono font-bold">{kpi.value}</td>
+                                   <td className="p-3 text-right text-gray-600">{kpi.change}</td>
+                                   <td className="p-3 text-center uppercase text-xs font-bold text-gray-500">{kpi.trend}</td>
+                                </tr>
+                             ))}
+                          </tbody>
+                       </table>
+                    </div>
+
+                    {/* Chart Snapshot (Visual Representation) */}
+                    <div className="mb-8">
+                        <h3 className="text-lg font-bold text-gray-800 border-b border-gray-300 pb-2 mb-4 uppercase text-sm tracking-wider">Performance Visualization</h3>
+                        <div className="h-64 bg-gray-50 border border-gray-200 rounded flex items-center justify-center relative">
+                           {/* Simplified SVG Chart for Print */}
+                           <svg viewBox="0 0 400 150" className="w-full h-full p-4">
+                              <polyline 
+                                 fill="none" 
+                                 stroke="#4f46e5" 
+                                 strokeWidth="3" 
+                                 points="0,120 50,100 100,110 150,80 200,90 250,50 300,60 350,30 400,40" 
+                              />
+                              <rect x="0" y="148" width="400" height="2" fill="#333" />
+                              <text x="0" y="145" fontSize="10" fill="#666">Period Start</text>
+                              <text x="350" y="145" fontSize="10" fill="#666">Period End</text>
+                           </svg>
+                           <p className="absolute text-xs text-gray-400 bottom-2 right-4 italic">* Chart data simplified for print view</p>
+                        </div>
+                    </div>
+
+                    {/* Data Table */}
+                    <div className="mb-8">
+                       <h3 className="text-lg font-bold text-gray-800 border-b border-gray-300 pb-2 mb-4 uppercase text-sm tracking-wider">Detailed Records</h3>
+                       <table className="w-full text-xs text-left border-collapse">
+                          <thead>
+                             <tr className="bg-gray-100 border-b border-gray-300">
+                                <th className="p-2 font-bold text-gray-700">Item</th>
+                                <th className="p-2 font-bold text-gray-700">Category</th>
+                                <th className="p-2 font-bold text-gray-700">Status</th>
+                                <th className="p-2 font-bold text-gray-700 text-right">Value</th>
+                             </tr>
+                          </thead>
+                          <tbody>
+                             {department.summaryTableData.slice(0, 8).map((row, i) => (
+                                <tr key={i} className="border-b border-gray-200">
+                                   <td className="p-2">{row.item}</td>
+                                   <td className="p-2 text-gray-600">{row.category}</td>
+                                   <td className="p-2">{row.status}</td>
+                                   <td className="p-2 text-right font-mono">{row.value}</td>
+                                </tr>
+                             ))}
+                          </tbody>
+                       </table>
+                    </div>
+
+                    {/* Signoff Area */}
+                    <div className="mt-16 pt-8 border-t-2 border-gray-800 flex justify-between">
+                       <div>
+                          <p className="text-xs font-bold uppercase mb-8">Authorized Signature</p>
+                          <div className="w-48 border-b border-black"></div>
+                       </div>
+                       <div className="text-right">
+                          <p className="text-xs font-bold uppercase mb-1">Date Generated</p>
+                          <p className="text-sm">{new Date().toLocaleDateString()}</p>
+                       </div>
+                    </div>
+
+                 </div>
+              </div>
+           </div>
+        </div>
+      )}
 
       {/* Sales Processing Modal */}
       {isSalesProcessingOpen && (
