@@ -154,46 +154,41 @@ const App: React.FC = () => {
       {/* Global Print Styles */}
       <style>{`
         @media print {
-          @page { margin: 0; size: auto; }
+          @page {
+            size: A4;
+            margin: 1.5cm; /* Standard print margin */
+          }
           
-          body {
-            background-color: white !important;
-            margin: 0 !important;
-            padding: 0 !important;
+          /* Crucial: Reset height constraints that cause single-page bug */
+          html, body, #root {
+            height: auto !important;
             overflow: visible !important;
+            min-height: auto !important;
+            background-color: white !important;
           }
 
-          /* Hide everything by default in print */
-          body * {
-            visibility: hidden;
-          }
-
-          /* Only show the print wrapper and its children */
-          .print-view-wrapper, .print-view-wrapper * {
-            visibility: visible;
-          }
-
-          .print-view-wrapper {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: auto;
-            z-index: 9999;
-            background: white;
-            display: block !important;
-          }
-
-          /* Force hide the main app container contents to prevent layout interference */
-          .main-app-content {
+          /* Hide non-print content explicitly */
+          .main-app-content, .main-app-content * {
             display: none !important;
+          }
+
+          /* Ensure print wrapper is visible and flows naturally */
+          .print-view-wrapper {
+            display: block !important;
+            position: relative !important; /* Must be relative/static to flow */
+            width: 100% !important;
+            height: auto !important;
+            overflow: visible !important;
+            z-index: 9999;
+            left: 0 !important;
+            top: 0 !important;
           }
         }
       `}</style>
 
-      {/* Print View Wrapper - Always rendered but conditionally shown/hidden logic handled by DashboardPrintView component and CSS */}
+      {/* Print View Wrapper - Always rendered but conditionally shown/hidden */}
       {isPrintViewOpen && activeDepartment && (
-        <div className="print-view-wrapper fixed inset-0 z-[9999] bg-white overflow-auto">
+        <div className="print-view-wrapper fixed inset-0 z-[9999] bg-gray-100 overflow-auto">
           <DashboardPrintView 
             department={activeDepartment}
             onClose={() => setIsPrintViewOpen(false)}
@@ -201,8 +196,8 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {/* Main Content Wrapper - Tagged for CSS hiding */}
-      <div className={isPrintViewOpen ? "hidden" : "main-app-content"}>
+      {/* Main Content Wrapper */}
+      <div className={isPrintViewOpen ? "main-app-content hidden" : "main-app-content"}>
         
         {/* Background decoration for SELECTION view */}
         {viewState === 'SELECTION' && (
@@ -362,7 +357,7 @@ const App: React.FC = () => {
                   </div>
                 </form>
               </div>
-              <div className="bg-gray-50 dark:bg-gray-900/50 px-8 py-4 text-xs text-center text-gray-500 border-t border-gray-100 dark:border-gray-700">
+              <div className="bg-white dark:bg-gray-900/50 px-8 py-4 text-xs text-center text-gray-500 border-t border-gray-100 dark:border-gray-700">
                 Secure Connection • 256-bit Encryption
               </div>
             </div>

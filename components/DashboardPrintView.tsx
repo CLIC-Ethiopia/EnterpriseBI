@@ -16,9 +16,8 @@ const COLORS = ['#4f46e5', '#10b981', '#f59e0b', '#ef4444'];
 
 const DashboardPrintView: React.FC<DashboardPrintViewProps> = ({ department, onClose }) => {
   
-  // Auto-trigger print dialog after a short delay to ensure charts render
   useEffect(() => {
-    // 800ms delay gives Recharts time to animate/render the SVG before print freeze
+    // 800ms delay gives Recharts time to animate/render before freeze
     const timer = setTimeout(() => {
       window.print();
     }, 800);
@@ -46,8 +45,8 @@ const DashboardPrintView: React.FC<DashboardPrintViewProps> = ({ department, onC
   const currentTime = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
 
   return (
-    // Outer Wrapper: Fixed/Absolute for screen preview, Static for print to allow paging
-    <div className="fixed inset-0 z-[9999] bg-gray-100 overflow-y-auto flex justify-center items-start pt-10 print:static print:pt-0 print:block print:bg-white print:overflow-visible">
+    // Outer Wrapper
+    <div className="flex justify-center items-start pt-10 min-h-screen bg-gray-100 print:bg-white print:pt-0 print:block print:min-h-0 print:h-auto">
       
       {/* Floating Close Button (Hidden in Print) */}
       <button 
@@ -57,8 +56,12 @@ const DashboardPrintView: React.FC<DashboardPrintViewProps> = ({ department, onC
         <X className="w-5 h-5" /> Close Print View
       </button>
 
-      {/* A4 Page Container */}
-      <div id="dashboard-print-view" className="bg-white w-[210mm] min-h-[297mm] p-[15mm] shadow-2xl print:shadow-none print:w-full print:p-0 print:m-0 text-black font-sans relative">
+      {/* 
+         Document Container 
+         Screen: Fixed A4 dimensions + Shadow
+         Print: Full Width/Height, No Shadow, No Margins (handled by @page)
+      */}
+      <div id="dashboard-print-view" className="bg-white w-[210mm] min-h-[297mm] p-[15mm] shadow-2xl print:shadow-none print:w-full print:min-h-0 print:h-auto print:p-0 text-black font-sans relative">
         
         {/* REPORT HEADER */}
         <header className="border-b-4 border-indigo-900 pb-6 mb-8 flex justify-between items-start print:break-inside-avoid">
@@ -131,7 +134,6 @@ const DashboardPrintView: React.FC<DashboardPrintViewProps> = ({ department, onC
                         <XAxis dataKey="name" tick={{fontSize: 10}} axisLine={false} tickLine={false} />
                         <YAxis tick={{fontSize: 10}} axisLine={false} tickLine={false} />
                         <Tooltip contentStyle={{display: 'none'}} /> 
-                        {/* No interactivity in print, simplified rendering */}
                         {Object.keys(department.mainChartData[0] || {}).filter(k => k !== 'name').map((key, i) => (
                             <Area 
                                 key={key}
@@ -140,7 +142,7 @@ const DashboardPrintView: React.FC<DashboardPrintViewProps> = ({ department, onC
                                 stroke={i === 0 ? '#4f46e5' : COLORS[i % COLORS.length]} 
                                 fill={i === 0 ? '#e0e7ff' : "none"} 
                                 strokeWidth={2}
-                                isAnimationActive={false} // CRITICAL for print: disables animation so it renders immediately
+                                isAnimationActive={false} 
                             />
                         ))}
                     </AreaChart>
@@ -149,7 +151,7 @@ const DashboardPrintView: React.FC<DashboardPrintViewProps> = ({ department, onC
 
             <div className="grid grid-cols-2 gap-6">
                 {/* Secondary Pie */}
-                <div className="border border-gray-200 rounded-lg p-4 h-[250px] flex flex-col items-center justify-center">
+                <div className="border border-gray-200 rounded-lg p-4 h-[250px] flex flex-col items-center justify-center break-inside-avoid">
                     <h4 className="text-xs font-bold text-gray-500 mb-2 w-full text-left">Distribution</h4>
                     <div className="w-full h-full">
                         <ResponsiveContainer width="100%" height="100%">
@@ -175,7 +177,7 @@ const DashboardPrintView: React.FC<DashboardPrintViewProps> = ({ department, onC
                 </div>
 
                 {/* Tertiary Bar */}
-                <div className="border border-gray-200 rounded-lg p-4 h-[250px]">
+                <div className="border border-gray-200 rounded-lg p-4 h-[250px] break-inside-avoid">
                     <h4 className="text-xs font-bold text-gray-500 mb-2">{department.barChartTitle}</h4>
                     <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={department.barChartData} barSize={20}>
@@ -199,7 +201,7 @@ const DashboardPrintView: React.FC<DashboardPrintViewProps> = ({ department, onC
         </section>
 
         {/* DATA TABLE SECTION - Force Page Break Before if content is long */}
-        <section className="break-before-auto">
+        <section className="print:block">
             <h3 className="text-sm font-bold text-gray-500 uppercase border-b border-gray-300 pb-2 mb-4">{department.tableTitle}</h3>
             <table className="w-full text-xs text-left border-collapse border border-gray-200">
                 <thead className="bg-gray-100 text-gray-700 print:bg-gray-100 print:print-color-adjust-exact">
@@ -213,7 +215,7 @@ const DashboardPrintView: React.FC<DashboardPrintViewProps> = ({ department, onC
                 </thead>
                 <tbody className="divide-y divide-gray-200">
                     {department.summaryTableData.map((row) => (
-                        <tr key={row.id} className="break-inside-avoid">
+                        <tr key={row.id} className="break-inside-avoid print:break-inside-avoid">
                             <td className="p-3 font-medium text-gray-900">{row.item}</td>
                             <td className="p-3 text-gray-600">{row.category}</td>
                             <td className="p-3">
@@ -241,8 +243,8 @@ const DashboardPrintView: React.FC<DashboardPrintViewProps> = ({ department, onC
             </table>
         </section>
 
-        {/* FOOTER - Repeated on pages usually via browser, but this is a static footer for the end of document */}
-        <footer className="mt-12 pt-6 border-t-2 border-gray-800 flex justify-between items-center text-[10px] text-gray-500 break-inside-avoid">
+        {/* FOOTER */}
+        <footer className="mt-12 pt-6 border-t-2 border-gray-800 flex justify-between items-center text-[10px] text-gray-500 break-inside-avoid print:break-inside-avoid">
             <div className="flex items-center gap-2">
                 <ShieldCheck className="w-3 h-3" />
                 <span>Generated by GlobalTrade BI System • v2.4</span>
