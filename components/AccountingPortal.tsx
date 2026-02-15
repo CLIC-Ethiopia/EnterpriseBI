@@ -4,7 +4,7 @@ import { DepartmentData, LedgerEntry, SupplierTaxCategory, TransactionType, TaxC
 import { 
   Calculator, PieChart as PieIcon, TrendingUp, DollarSign, Calendar, Search, 
   FileText, Sliders, ArrowRight, Plus, Download, RefreshCw, Activity, Layers, Scale, X, GraduationCap,
-  Stamp, Printer, AlertCircle, FileCheck, CheckCircle2, FileBarChart, Table, Grid3X3
+  Stamp, Printer, AlertCircle, FileCheck, CheckCircle2, FileBarChart, Table, Grid3X3, Maximize2, Minimize2, Divide
 } from 'lucide-react';
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
@@ -32,6 +32,180 @@ const ACCOUNTING_REQUESTS: ReportRequest[] = [
   { id: 'REQ-202', title: 'Expense Audit: Marketing', submittedBy: 'Tigist Bekele', department: 'Sales', dateSubmitted: '2024-10-24', priority: 'High', status: 'Approved', description: 'Review of travel and event expenses against budget.' },
 ];
 
+// Mock Data for Cross-Department Analysis
+const CROSS_DEPT_DATA = [
+  { id: 1, dept: 'Sales', category: 'Travel', month: 'Jan', amount: 15000, riskScore: 85 },
+  { id: 2, dept: 'Sales', category: 'Software', month: 'Jan', amount: 4200, riskScore: 20 },
+  { id: 3, dept: 'IT', category: 'Hardware', month: 'Jan', amount: 45000, riskScore: 10 },
+  { id: 4, dept: 'HR', category: 'Training', month: 'Jan', amount: 8000, riskScore: 5 },
+  { id: 5, dept: 'Ops', category: 'Logistics', month: 'Jan', amount: 120000, riskScore: 60 },
+  { id: 6, dept: 'Sales', category: 'Travel', month: 'Feb', amount: 18500, riskScore: 90 },
+  { id: 7, dept: 'Sales', category: 'Software', month: 'Feb', amount: 4200, riskScore: 20 },
+  { id: 8, dept: 'IT', category: 'Cloud', month: 'Feb', amount: 12000, riskScore: 30 },
+  { id: 9, dept: 'HR', category: 'Recruiting', month: 'Feb', amount: 15000, riskScore: 40 },
+  { id: 10, dept: 'Ops', category: 'Logistics', month: 'Feb', amount: 95000, riskScore: 55 },
+  { id: 11, dept: 'Sales', category: 'Entertainment', month: 'Mar', amount: 5000, riskScore: 95 },
+  { id: 12, dept: 'IT', category: 'Software', month: 'Mar', amount: 6000, riskScore: 15 },
+];
+
+// --- PIVOT HELPER FUNCTIONS ---
+type AggregationType = 'sum' | 'count' | 'avg' | 'max' | 'min';
+
+const calculatePivotData = (data: any[], rowKeyField: string, colKeyField: string, valueField: string, operation: AggregationType) => {
+  const rowKeys = new Set<string>();
+  const colKeys = new Set<string>();
+  const matrix: Record<string, Record<string, number>> = {};
+  // For average calculation
+  const counts: Record<string, Record<string, number>> = {}; 
+  
+  let maxVal = 0;
+
+  data.forEach(entry => {
+    const rKey = String(entry[rowKeyField] || 'Unknown');
+    const cKey = String(entry[colKeyField] || 'Unknown');
+    const val = Number(entry[valueField] || 0);
+
+    rowKeys.add(rKey);
+    colKeys.add(cKey);
+
+    if (!matrix[rKey]) matrix[rKey] = {};
+    if (!matrix[rKey][cKey] && matrix[rKey][cKey] !== 0) {
+       // Initialize based on op
+       matrix[rKey][cKey] = operation === 'min' ? Infinity : operation === 'max' ? -Infinity : 0;
+    }
+    
+    if (!counts[rKey]) counts[rKey] = {};
+    if (!counts[rKey][cKey]) counts[rKey][cKey] = 0;
+
+    if (operation === 'sum') matrix[rKey][cKey] += val;
+    else if (operation === 'count') matrix[rKey][cKey] += 1;
+    else if (operation === 'max') matrix[rKey][cKey] = Math.max(matrix[rKey][cKey], val);
+    else if (operation === 'min') matrix[rKey][cKey] = Math.min(matrix[rKey][cKey], val);
+    else if (operation === 'avg') {
+      matrix[rKey][cKey] += val; // Sum first, divide later
+      counts[rKey][cKey] += 1;
+    }
+  });
+
+  // Final Pass for Averages and Global Max finding
+  const rows = Array.from(rowKeys).sort();
+  const cols = Array.from(colKeys).sort();
+
+  rows.forEach(r => {
+    cols.forEach(c => {
+      if (matrix[r] && matrix[r][c] !== undefined) {
+        if (operation === 'avg') {
+          matrix[r][c] = matrix[r][c] / counts[r][c];
+        }
+        // Handle Infinity for Min if no data
+        if (matrix[r][c] === Infinity || matrix[r][c] === -Infinity) matrix[r][c] = 0;
+        
+        if (matrix[r][c] > maxVal) maxVal = matrix[r][c];
+      }
+    });
+  });
+
+  return { rows, cols, matrix, maxVal };
+};
+
+// Reusable Pivot Table Component
+const PivotTableVisual: React.FC<{ 
+  title: string, 
+  icon: React.ReactNode, 
+  data: any[], 
+  config: { row: string, col: string, val: string, op: AggregationType },
+  onConfigChange?: (key: string, val: string) => void
+}> = ({ title, icon, data, config, onConfigChange }) => {
+  
+  const { rows, cols, matrix, maxVal } = useMemo(() => 
+    calculatePivotData(data, config.row, config.col, config.val, config.op), 
+  [data, config]);
+
+  const getCellColor = (value: number, max: number) => {
+    if (!value && value !== 0) return 'transparent';
+    const intensity = max === 0 ? 0 : Math.min((value / max) * 0.8 + 0.1, 0.9);
+    // Dynamic color based on op logic?
+    // For now stick to Indigo for consistency
+    return `rgba(99, 102, 241, ${intensity})`; 
+  };
+
+  const getTextColor = (value: number, max: number) => {
+    if (!value && value !== 0) return '';
+    return (max > 0 && (value / max) > 0.5) ? 'text-white' : 'text-gray-900 dark:text-gray-100';
+  };
+
+  return (
+    <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 h-full flex flex-col">
+        <div className="flex justify-between items-start mb-4">
+            <div>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                {icon} {title}
+              </h3>
+              <p className="text-xs text-gray-500 mt-1">
+                {config.op.toUpperCase()} of {config.val} by {config.row} & {config.col}
+              </p>
+            </div>
+            {onConfigChange && (
+               <div className="flex gap-2">
+                  <select 
+                    className="text-xs border rounded p-1 bg-gray-50 dark:bg-gray-700 dark:text-white dark:border-gray-600 outline-none"
+                    value={config.op}
+                    onChange={(e) => onConfigChange('op', e.target.value)}
+                  >
+                    <option value="sum">Sum</option>
+                    <option value="avg">Avg</option>
+                    <option value="max">Max</option>
+                    <option value="min">Min</option>
+                    <option value="count">Count</option>
+                  </select>
+               </div>
+            )}
+        </div>
+
+        <div className="overflow-auto flex-1 rounded-xl border border-gray-200 dark:border-gray-700">
+          <table className="w-full text-xs text-left border-collapse">
+            <thead className="bg-gray-100 dark:bg-gray-700/50 text-gray-500 dark:text-gray-400 font-bold sticky top-0 z-10">
+              <tr>
+                <th className="p-3 border-b border-r border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 sticky left-0 z-20">
+                  {config.row} \ {config.col}
+                </th>
+                {cols.map(col => (
+                  <th key={col} className="p-3 border-b border-gray-200 dark:border-gray-600 text-right min-w-[80px]">
+                    {col}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+              {rows.map(row => (
+                <tr key={row} className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
+                  <td className="p-3 font-semibold text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 sticky left-0 z-10">
+                    {row}
+                  </td>
+                  {cols.map(col => {
+                    const val = matrix[row]?.[col] || 0;
+                    const bgStyle = getCellColor(val, maxVal);
+                    const textClass = getTextColor(val, maxVal);
+                    return (
+                      <td 
+                        key={col} 
+                        className={`p-2 text-right font-medium transition-colors ${textClass}`}
+                        style={{ backgroundColor: bgStyle }}
+                      >
+                        {val !== 0 ? val.toLocaleString(undefined, {maximumFractionDigits: 0}) : '-'}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+    </div>
+  );
+};
+
+
 const AccountingPortal: React.FC<AccountingPortalProps> = ({ data, onOpenAI, isDarkMode }) => {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'ledger' | 'analysis' | 'compliance' | 'reports' | 'summary'>('dashboard');
   const [ledgerSearch, setLedgerSearch] = useState('');
@@ -48,12 +222,27 @@ const AccountingPortal: React.FC<AccountingPortalProps> = ({ data, onOpenAI, isD
     status: 'Pending'
   });
 
-  // --- SUMMARY TABLE STATE ---
-  const [pivotConfig, setPivotConfig] = useState({
-    rowGroup: 'account' as keyof LedgerEntry | 'month',
-    colGroup: 'status' as keyof LedgerEntry | 'month',
-    valueOp: 'sum' as 'sum' | 'count'
+  // --- SUMMARY TABLE STATES ---
+  const [mainPivotConfig, setMainPivotConfig] = useState({
+    row: 'account', col: 'status', val: 'amount', op: 'sum' as AggregationType
   });
+  
+  const [maxPivotConfig, setMaxPivotConfig] = useState({
+    row: 'dept', col: 'category', val: 'amount', op: 'max' as AggregationType
+  });
+
+  const [avgPivotConfig, setAvgPivotConfig] = useState({
+    row: 'dept', col: 'month', val: 'amount', op: 'avg' as AggregationType
+  });
+
+  // Prepare ledger data for Pivot (ensure month exists for grouping)
+  const ledgerForPivot = useMemo(() => {
+    return localLedger.map(entry => ({
+      ...entry,
+      month: new Date(entry.date).toLocaleString('default', { month: 'short', year: '2-digit' })
+    }));
+  }, [localLedger]);
+
 
   // --- ETHIOPIAN TAX COMPLIANCE STATE ---
   const [taxInput, setTaxInput] = useState({
@@ -229,63 +418,6 @@ const AccountingPortal: React.FC<AccountingPortalProps> = ({ data, onOpenAI, isD
     { name: 'Op. Margin', value: 18, color: '#3b82f6' },
     { name: 'Net Margin', value: 12, color: '#6366f1' },
   ];
-
-  // --- PIVOT TABLE LOGIC ---
-  const pivotData = useMemo(() => {
-    const rowKeys = new Set<string>();
-    const colKeys = new Set<string>();
-    const matrix: Record<string, Record<string, number>> = {};
-    let maxVal = 0;
-
-    localLedger.forEach(entry => {
-      // Determine Row Key
-      let rKey = '';
-      if (pivotConfig.rowGroup === 'month') {
-        rKey = new Date(entry.date).toLocaleString('default', { month: 'short', year: '2-digit' });
-      } else {
-        rKey = String(entry[pivotConfig.rowGroup] || 'Unknown');
-      }
-
-      // Determine Col Key
-      let cKey = '';
-      if (pivotConfig.colGroup === 'month') {
-        cKey = new Date(entry.date).toLocaleString('default', { month: 'short', year: '2-digit' });
-      } else {
-        cKey = String(entry[pivotConfig.colGroup] || 'Unknown');
-      }
-
-      rowKeys.add(rKey);
-      colKeys.add(cKey);
-
-      if (!matrix[rKey]) matrix[rKey] = {};
-      if (!matrix[rKey][cKey]) matrix[rKey][cKey] = 0;
-
-      const val = pivotConfig.valueOp === 'sum' ? entry.amount : 1;
-      matrix[rKey][cKey] += val;
-
-      if (matrix[rKey][cKey] > maxVal) maxVal = matrix[rKey][cKey];
-    });
-
-    return {
-      rows: Array.from(rowKeys).sort(),
-      cols: Array.from(colKeys).sort(),
-      matrix,
-      maxVal
-    };
-  }, [localLedger, pivotConfig]);
-
-  // Helper to get heatmap color intensity
-  const getCellColor = (value: number, max: number) => {
-    if (!value) return 'transparent';
-    const intensity = Math.min((value / max) * 0.8 + 0.1, 0.9); // Scale opacity between 0.1 and 0.9
-    // Using Indigo as base color
-    return `rgba(99, 102, 241, ${intensity})`; 
-  };
-
-  const getTextColor = (value: number, max: number) => {
-    if (!value) return '';
-    return (value / max) > 0.5 ? 'text-white' : 'text-gray-900 dark:text-gray-100';
-  };
 
   return (
     <div className="space-y-6">
@@ -476,130 +608,113 @@ const AccountingPortal: React.FC<AccountingPortalProps> = ({ data, onOpenAI, isD
       {/* Summary Tables Tab */}
       {activeTab === 'summary' && (
         <div className="space-y-6">
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-              <div>
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                  <Grid3X3 className="w-6 h-6 text-indigo-600" /> Comparative Pivot Table
-                </h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                  Dynamic multi-dimensional analysis with value heatmapping.
-                </p>
-              </div>
-              
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                <Grid3X3 className="w-6 h-6 text-indigo-600" /> Comparative Pivot Tables
+              </h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                Dynamic multi-dimensional analysis with value heatmapping.
+              </p>
+            </div>
+            <div className="bg-gray-100 dark:bg-gray-700 p-1 rounded-lg flex items-center text-xs">
+               <span className="px-2 font-semibold text-gray-500">Datasets:</span>
+               <div className="px-2 py-1 bg-white dark:bg-gray-600 rounded shadow-sm text-gray-900 dark:text-white">Ledger</div>
+               <div className="px-2 py-1 text-gray-500 dark:text-gray-400">Budget</div>
+               <div className="px-2 py-1 text-gray-500 dark:text-gray-400">Inventory</div>
+            </div>
+          </div>
+
+          {/* Main Configurable Pivot */}
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 h-[500px] flex flex-col">
+            <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-6">
+              <h4 className="font-bold text-gray-700 dark:text-gray-200">Main Ledger Analysis</h4>
               {/* Controls */}
-              <div className="flex flex-wrap gap-4 bg-gray-50 dark:bg-gray-900/50 p-3 rounded-xl border border-gray-200 dark:border-gray-700">
-                <div>
-                  <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Rows (Group By)</label>
-                  <select 
-                    value={pivotConfig.rowGroup}
-                    onChange={(e) => setPivotConfig({...pivotConfig, rowGroup: e.target.value as any})}
-                    className="px-3 py-1.5 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none"
-                  >
-                    <option value="account">Account Name</option>
-                    <option value="type">Transaction Type</option>
-                    <option value="status">Status</option>
-                    <option value="month">Month</option>
-                  </select>
-                </div>
+              <div className="flex flex-wrap gap-2 bg-gray-50 dark:bg-gray-900/50 p-2 rounded-xl border border-gray-200 dark:border-gray-700">
+                <select 
+                  value={mainPivotConfig.row}
+                  onChange={(e) => setMainPivotConfig({...mainPivotConfig, row: e.target.value})}
+                  className="px-2 py-1 text-xs rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none"
+                >
+                  <option value="account">Rows: Account</option>
+                  <option value="type">Rows: Type</option>
+                  <option value="status">Rows: Status</option>
+                  <option value="month">Rows: Month</option>
+                </select>
                 
-                <ArrowRight className="w-4 h-4 self-center text-gray-400 mt-4 hidden md:block" />
+                <span className="text-gray-300 dark:text-gray-600 self-center">×</span>
 
-                <div>
-                  <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Columns</label>
-                  <select 
-                    value={pivotConfig.colGroup}
-                    onChange={(e) => setPivotConfig({...pivotConfig, colGroup: e.target.value as any})}
-                    className="px-3 py-1.5 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none"
-                  >
-                    <option value="month">Month</option>
-                    <option value="status">Status</option>
-                    <option value="type">Transaction Type</option>
-                    <option value="account">Account Name</option>
-                  </select>
-                </div>
+                <select 
+                  value={mainPivotConfig.col}
+                  onChange={(e) => setMainPivotConfig({...mainPivotConfig, col: e.target.value})}
+                  className="px-2 py-1 text-xs rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none"
+                >
+                  <option value="month">Cols: Month</option>
+                  <option value="status">Cols: Status</option>
+                  <option value="type">Cols: Type</option>
+                  <option value="account">Cols: Account</option>
+                </select>
 
-                <div className="w-px h-10 bg-gray-300 dark:bg-gray-600 self-center hidden md:block mx-2"></div>
+                <span className="text-gray-300 dark:text-gray-600 self-center">=</span>
 
-                <div>
-                  <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Values</label>
-                  <select 
-                    value={pivotConfig.valueOp}
-                    onChange={(e) => setPivotConfig({...pivotConfig, valueOp: e.target.value as any})}
-                    className="px-3 py-1.5 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none"
-                  >
-                    <option value="sum">Sum of Amount</option>
-                    <option value="count">Count of Entries</option>
-                  </select>
-                </div>
+                <select 
+                  value={mainPivotConfig.op}
+                  onChange={(e) => setMainPivotConfig({...mainPivotConfig, op: e.target.value as any})}
+                  className="px-2 py-1 text-xs rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none font-bold text-indigo-600"
+                >
+                  <option value="sum">Sum Amount</option>
+                  <option value="count">Count Entries</option>
+                  <option value="avg">Avg Amount</option>
+                  <option value="max">Max Amount</option>
+                  <option value="min">Min Amount</option>
+                </select>
               </div>
             </div>
 
-            <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700">
-              <table className="w-full text-sm text-left border-collapse">
-                <thead className="bg-gray-100 dark:bg-gray-700/50 text-gray-500 dark:text-gray-400 text-xs uppercase font-bold">
-                  <tr>
-                    <th className="p-4 border-b border-r border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 sticky left-0 z-10">
-                      {pivotConfig.rowGroup} \ {pivotConfig.colGroup}
-                    </th>
-                    {pivotData.cols.map(col => (
-                      <th key={col} className="p-4 border-b border-gray-200 dark:border-gray-600 text-right min-w-[120px]">
-                        {col}
-                      </th>
-                    ))}
-                    <th className="p-4 border-b border-gray-200 dark:border-gray-600 text-right bg-gray-50 dark:bg-gray-800 font-extrabold">
-                      Total
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-                  {pivotData.rows.map(row => {
-                    let rowTotal = 0;
-                    return (
-                      <tr key={row} className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
-                        <td className="p-4 font-semibold text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 sticky left-0 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
-                          {row}
-                        </td>
-                        {pivotData.cols.map(col => {
-                          const val = pivotData.matrix[row][col] || 0;
-                          rowTotal += val;
-                          const bgStyle = getCellColor(val, pivotData.maxVal);
-                          const textClass = getTextColor(val, pivotData.maxVal);
-                          
-                          return (
-                            <td 
-                              key={col} 
-                              className={`p-3 text-right font-medium transition-colors ${textClass}`}
-                              style={{ backgroundColor: bgStyle }}
-                            >
-                              {val > 0 ? (pivotConfig.valueOp === 'sum' ? val.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0}) : val) : '-'}
-                            </td>
-                          );
-                        })}
-                        <td className="p-4 text-right font-bold text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800/50 border-l border-gray-200 dark:border-gray-600">
-                          {pivotConfig.valueOp === 'sum' ? rowTotal.toLocaleString() : rowTotal}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+            <div className="flex-1 overflow-hidden">
+               <PivotTableVisual 
+                  title="Ledger Pivot" 
+                  icon={<FileText className="w-4 h-4" />} 
+                  data={ledgerForPivot} 
+                  config={mainPivotConfig}
+               />
             </div>
-            
-            <div className="mt-4 flex justify-between items-center text-xs text-gray-500">
-               <div className="flex items-center gap-2">
-                  <span>Heatmap Intensity:</span>
-                  <div className="w-32 h-2 rounded-full bg-gradient-to-r from-indigo-100 to-indigo-600 dark:from-indigo-900/30 dark:to-indigo-500"></div>
-               </div>
-               <p>Showing {pivotData.rows.length} rows based on {filteredLedger.length} ledger entries.</p>
-            </div>
+          </div>
+
+          <div className="border-t border-gray-200 dark:border-gray-700 my-8 relative">
+             <span className="absolute left-1/2 top-0 transform -translate-x-1/2 -translate-y-1/2 bg-gray-50 dark:bg-gray-900 px-4 text-xs font-bold text-gray-400 uppercase tracking-widest">
+                Advanced Statistical Analysis (Cross-Department)
+             </span>
+          </div>
+
+          {/* Secondary Pivots Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[400px]">
+             
+             {/* Pivot 2: Max Values (Peak Analysis) */}
+             <PivotTableVisual 
+                title="Peak Expenditure Analysis" 
+                icon={<Maximize2 className="w-4 h-4 text-red-500" />} 
+                data={CROSS_DEPT_DATA} 
+                config={maxPivotConfig}
+                onConfigChange={(k, v) => setMaxPivotConfig({...maxPivotConfig, [k]: v})}
+             />
+
+             {/* Pivot 3: Average Values (Efficiency) */}
+             <PivotTableVisual 
+                title="Average Monthly Burn Rate" 
+                icon={<Divide className="w-4 h-4 text-emerald-500" />} 
+                data={CROSS_DEPT_DATA} 
+                config={avgPivotConfig}
+                onConfigChange={(k, v) => setAvgPivotConfig({...avgPivotConfig, [k]: v})}
+             />
+
           </div>
         </div>
       )}
 
       {activeTab === 'compliance' && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          
+          {/* ... existing compliance content ... */}
           {/* Tax Engine Input */}
           <div className="space-y-6">
             <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
@@ -865,6 +980,7 @@ const AccountingPortal: React.FC<AccountingPortalProps> = ({ data, onOpenAI, isD
         </div>
       )}
 
+      {/* Ledger and other tabs remain mostly unchanged but re-included for context */}
       {activeTab === 'ledger' && (
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col h-[600px]">
            <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-900/50 rounded-t-2xl">
