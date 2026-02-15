@@ -4,7 +4,8 @@ import { DepartmentData, LedgerEntry, SupplierTaxCategory, TransactionType, TaxC
 import { 
   Calculator, PieChart as PieIcon, TrendingUp, DollarSign, Calendar, Search, 
   FileText, Sliders, ArrowRight, Plus, Download, RefreshCw, Activity, Layers, Scale, X, GraduationCap,
-  Stamp, Printer, AlertCircle, FileCheck, CheckCircle2, FileBarChart, Table, Grid3X3, Maximize2, Minimize2, Divide
+  Stamp, Printer, AlertCircle, FileCheck, CheckCircle2, FileBarChart, Table, Grid3X3, Maximize2, Minimize2, Divide,
+  Package, Landmark, Truck
 } from 'lucide-react';
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
@@ -46,6 +47,30 @@ const CROSS_DEPT_DATA = [
   { id: 10, dept: 'Ops', category: 'Logistics', month: 'Feb', amount: 95000, riskScore: 55 },
   { id: 11, dept: 'Sales', category: 'Entertainment', month: 'Mar', amount: 5000, riskScore: 95 },
   { id: 12, dept: 'IT', category: 'Software', month: 'Mar', amount: 6000, riskScore: 15 },
+];
+
+// Mock Data for Budget Analysis
+const BUDGET_DATA = [
+  { dept: 'Sales', category: 'Travel', month: 'Jan', budget: 20000, actual: 15000, variance: 5000 },
+  { dept: 'Sales', category: 'Marketing', month: 'Jan', budget: 50000, actual: 48000, variance: 2000 },
+  { dept: 'IT', category: 'Hardware', month: 'Jan', budget: 40000, actual: 45000, variance: -5000 },
+  { dept: 'HR', category: 'Training', month: 'Jan', budget: 15000, actual: 8000, variance: 7000 },
+  { dept: 'Ops', category: 'Logistics', month: 'Jan', budget: 100000, actual: 120000, variance: -20000 },
+  { dept: 'Sales', category: 'Travel', month: 'Feb', budget: 20000, actual: 18500, variance: 1500 },
+  { dept: 'IT', category: 'Software', month: 'Feb', budget: 15000, actual: 12000, variance: 3000 },
+  { dept: 'HR', category: 'Recruiting', month: 'Feb', budget: 10000, actual: 15000, variance: -5000 },
+  { dept: 'Ops', category: 'Maintenance', month: 'Feb', budget: 25000, actual: 22000, variance: 3000 },
+];
+
+// Mock Data for Inventory Analysis
+const INVENTORY_DATA = [
+  { item: 'Chemical A', category: 'Chemicals', location: 'Zone A', quantity: 500, unit_cost: 50, total_value: 25000, status: 'In Stock' },
+  { item: 'Fabric Roll X', category: 'Textiles', location: 'Zone B', quantity: 100, unit_cost: 150, total_value: 15000, status: 'Low Stock' },
+  { item: 'Dye Blue', category: 'Chemicals', location: 'Zone A', quantity: 1200, unit_cost: 20, total_value: 24000, status: 'In Stock' },
+  { item: 'Cotton Yarn', category: 'Textiles', location: 'Zone C', quantity: 0, unit_cost: 80, total_value: 0, status: 'Out of Stock' },
+  { item: 'Solvent Z', category: 'Chemicals', location: 'Zone B', quantity: 300, unit_cost: 40, total_value: 12000, status: 'In Stock' },
+  { item: 'Spare Parts', category: 'Machinery', location: 'Zone D', quantity: 50, unit_cost: 500, total_value: 25000, status: 'Critical' },
+  { item: 'Packaging', category: 'Supplies', location: 'Zone C', quantity: 5000, unit_cost: 2, total_value: 10000, status: 'In Stock' },
 ];
 
 // --- PIVOT HELPER FUNCTIONS ---
@@ -123,15 +148,16 @@ const PivotTableVisual: React.FC<{
 
   const getCellColor = (value: number, max: number) => {
     if (!value && value !== 0) return 'transparent';
-    const intensity = max === 0 ? 0 : Math.min((value / max) * 0.8 + 0.1, 0.9);
-    // Dynamic color based on op logic?
-    // For now stick to Indigo for consistency
+    const intensity = max === 0 ? 0 : Math.min((Math.abs(value) / max) * 0.8 + 0.1, 0.9);
+    // Use Red for negative values if it's variance, else Indigo
+    const isNegative = value < 0;
+    if (isNegative) return `rgba(239, 68, 68, ${intensity})`;
     return `rgba(99, 102, 241, ${intensity})`; 
   };
 
   const getTextColor = (value: number, max: number) => {
     if (!value && value !== 0) return '';
-    return (max > 0 && (value / max) > 0.5) ? 'text-white' : 'text-gray-900 dark:text-gray-100';
+    return (max > 0 && (Math.abs(value) / max) > 0.5) ? 'text-white' : 'text-gray-900 dark:text-gray-100';
   };
 
   return (
@@ -142,7 +168,7 @@ const PivotTableVisual: React.FC<{
                 {icon} {title}
               </h3>
               <p className="text-xs text-gray-500 mt-1">
-                {config.op.toUpperCase()} of {config.val} by {config.row} & {config.col}
+                {config.op.toUpperCase()} of <span className="font-semibold text-indigo-600 dark:text-indigo-400">{config.val.replace(/_/g, ' ')}</span> by {config.row} & {config.col}
               </p>
             </div>
             {onConfigChange && (
@@ -166,7 +192,7 @@ const PivotTableVisual: React.FC<{
           <table className="w-full text-xs text-left border-collapse">
             <thead className="bg-gray-100 dark:bg-gray-700/50 text-gray-500 dark:text-gray-400 font-bold sticky top-0 z-10">
               <tr>
-                <th className="p-3 border-b border-r border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 sticky left-0 z-20">
+                <th className="p-3 border-b border-r border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 sticky left-0 z-20 min-w-[120px]">
                   {config.row} \ {config.col}
                 </th>
                 {cols.map(col => (
@@ -223,18 +249,13 @@ const AccountingPortal: React.FC<AccountingPortalProps> = ({ data, onOpenAI, isD
   });
 
   // --- SUMMARY TABLE STATES ---
+  type DatasetType = 'ledger' | 'budget' | 'inventory';
+  const [activeDataset, setActiveDataset] = useState<DatasetType>('ledger');
+
   const [mainPivotConfig, setMainPivotConfig] = useState({
     row: 'account', col: 'status', val: 'amount', op: 'sum' as AggregationType
   });
   
-  const [maxPivotConfig, setMaxPivotConfig] = useState({
-    row: 'dept', col: 'category', val: 'amount', op: 'max' as AggregationType
-  });
-
-  const [avgPivotConfig, setAvgPivotConfig] = useState({
-    row: 'dept', col: 'month', val: 'amount', op: 'avg' as AggregationType
-  });
-
   // Prepare ledger data for Pivot (ensure month exists for grouping)
   const ledgerForPivot = useMemo(() => {
     return localLedger.map(entry => ({
@@ -242,6 +263,43 @@ const AccountingPortal: React.FC<AccountingPortalProps> = ({ data, onOpenAI, isD
       month: new Date(entry.date).toLocaleString('default', { month: 'short', year: '2-digit' })
     }));
   }, [localLedger]);
+
+  // Determine current dataset array based on selection
+  const currentDataset = useMemo(() => {
+    switch(activeDataset) {
+      case 'budget': return BUDGET_DATA;
+      case 'inventory': return INVENTORY_DATA;
+      case 'ledger': 
+      default: return ledgerForPivot;
+    }
+  }, [activeDataset, ledgerForPivot]);
+
+  // Determine available keys for the current dataset (for dropdowns)
+  const availableKeys = useMemo(() => {
+    if (currentDataset.length === 0) return [];
+    // Get keys from first item, filter out 'id' if generic
+    return Object.keys(currentDataset[0]).filter(k => k !== 'id' && typeof currentDataset[0][k] !== 'object');
+  }, [currentDataset]);
+
+  // Reset pivot config when switching dataset to valid defaults
+  useEffect(() => {
+    if (activeDataset === 'ledger') {
+      setMainPivotConfig({ row: 'account', col: 'month', val: 'amount', op: 'sum' });
+    } else if (activeDataset === 'budget') {
+      setMainPivotConfig({ row: 'dept', col: 'month', val: 'budget', op: 'sum' });
+    } else if (activeDataset === 'inventory') {
+      setMainPivotConfig({ row: 'category', col: 'location', val: 'total_value', op: 'sum' });
+    }
+  }, [activeDataset]);
+
+  // Secondary Pivot States
+  const [maxPivotConfig, setMaxPivotConfig] = useState({
+    row: 'dept', col: 'category', val: 'amount', op: 'max' as AggregationType
+  });
+
+  const [avgPivotConfig, setAvgPivotConfig] = useState({
+    row: 'dept', col: 'month', val: 'amount', op: 'avg' as AggregationType
+  });
 
 
   // --- ETHIOPIAN TAX COMPLIANCE STATE ---
@@ -617,29 +675,58 @@ const AccountingPortal: React.FC<AccountingPortalProps> = ({ data, onOpenAI, isD
                 Dynamic multi-dimensional analysis with value heatmapping.
               </p>
             </div>
-            <div className="bg-gray-100 dark:bg-gray-700 p-1 rounded-lg flex items-center text-xs">
-               <span className="px-2 font-semibold text-gray-500">Datasets:</span>
-               <div className="px-2 py-1 bg-white dark:bg-gray-600 rounded shadow-sm text-gray-900 dark:text-white">Ledger</div>
-               <div className="px-2 py-1 text-gray-500 dark:text-gray-400">Budget</div>
-               <div className="px-2 py-1 text-gray-500 dark:text-gray-400">Inventory</div>
+            <div className="bg-gray-100 dark:bg-gray-700 p-1 rounded-lg flex items-center text-xs gap-1">
+               <span className="px-2 font-semibold text-gray-500 dark:text-gray-400">Datasets:</span>
+               
+               <button 
+                 onClick={() => setActiveDataset('ledger')}
+                 className={`px-3 py-1.5 rounded-md shadow-sm flex items-center gap-1.5 transition-all ${
+                   activeDataset === 'ledger' 
+                     ? 'bg-white dark:bg-gray-600 text-indigo-600 dark:text-indigo-400 font-bold ring-1 ring-black/5 dark:ring-white/10' 
+                     : 'text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                 }`}
+               >
+                 <FileText className="w-3 h-3" /> Ledger
+               </button>
+
+               <button 
+                 onClick={() => setActiveDataset('budget')}
+                 className={`px-3 py-1.5 rounded-md shadow-sm flex items-center gap-1.5 transition-all ${
+                   activeDataset === 'budget' 
+                     ? 'bg-white dark:bg-gray-600 text-indigo-600 dark:text-indigo-400 font-bold ring-1 ring-black/5 dark:ring-white/10' 
+                     : 'text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                 }`}
+               >
+                 <Landmark className="w-3 h-3" /> Budget
+               </button>
+
+               <button 
+                 onClick={() => setActiveDataset('inventory')}
+                 className={`px-3 py-1.5 rounded-md shadow-sm flex items-center gap-1.5 transition-all ${
+                   activeDataset === 'inventory' 
+                     ? 'bg-white dark:bg-gray-600 text-indigo-600 dark:text-indigo-400 font-bold ring-1 ring-black/5 dark:ring-white/10' 
+                     : 'text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                 }`}
+               >
+                 <Package className="w-3 h-3" /> Inventory
+               </button>
             </div>
           </div>
 
           {/* Main Configurable Pivot */}
           <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 h-[500px] flex flex-col">
             <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-6">
-              <h4 className="font-bold text-gray-700 dark:text-gray-200">Main Ledger Analysis</h4>
+              <h4 className="font-bold text-gray-700 dark:text-gray-200 capitalize">
+                {activeDataset} Analysis
+              </h4>
               {/* Controls */}
               <div className="flex flex-wrap gap-2 bg-gray-50 dark:bg-gray-900/50 p-2 rounded-xl border border-gray-200 dark:border-gray-700">
                 <select 
                   value={mainPivotConfig.row}
                   onChange={(e) => setMainPivotConfig({...mainPivotConfig, row: e.target.value})}
-                  className="px-2 py-1 text-xs rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none"
+                  className="px-2 py-1 text-xs rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none capitalize"
                 >
-                  <option value="account">Rows: Account</option>
-                  <option value="type">Rows: Type</option>
-                  <option value="status">Rows: Status</option>
-                  <option value="month">Rows: Month</option>
+                  {availableKeys.map(key => <option key={key} value={key}>Row: {key.replace(/_/g, ' ')}</option>)}
                 </select>
                 
                 <span className="text-gray-300 dark:text-gray-600 self-center">×</span>
@@ -647,35 +734,42 @@ const AccountingPortal: React.FC<AccountingPortalProps> = ({ data, onOpenAI, isD
                 <select 
                   value={mainPivotConfig.col}
                   onChange={(e) => setMainPivotConfig({...mainPivotConfig, col: e.target.value})}
-                  className="px-2 py-1 text-xs rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none"
+                  className="px-2 py-1 text-xs rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none capitalize"
                 >
-                  <option value="month">Cols: Month</option>
-                  <option value="status">Cols: Status</option>
-                  <option value="type">Cols: Type</option>
-                  <option value="account">Cols: Account</option>
+                  {availableKeys.map(key => <option key={key} value={key}>Col: {key.replace(/_/g, ' ')}</option>)}
                 </select>
 
                 <span className="text-gray-300 dark:text-gray-600 self-center">=</span>
+
+                <select 
+                  value={mainPivotConfig.val}
+                  onChange={(e) => setMainPivotConfig({...mainPivotConfig, val: e.target.value})}
+                  className="px-2 py-1 text-xs rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none capitalize"
+                >
+                  {availableKeys.filter(k => typeof currentDataset[0]?.[k] === 'number').map(key => (
+                    <option key={key} value={key}>Val: {key.replace(/_/g, ' ')}</option>
+                  ))}
+                </select>
 
                 <select 
                   value={mainPivotConfig.op}
                   onChange={(e) => setMainPivotConfig({...mainPivotConfig, op: e.target.value as any})}
                   className="px-2 py-1 text-xs rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none font-bold text-indigo-600"
                 >
-                  <option value="sum">Sum Amount</option>
-                  <option value="count">Count Entries</option>
-                  <option value="avg">Avg Amount</option>
-                  <option value="max">Max Amount</option>
-                  <option value="min">Min Amount</option>
+                  <option value="sum">Sum</option>
+                  <option value="count">Count</option>
+                  <option value="avg">Avg</option>
+                  <option value="max">Max</option>
+                  <option value="min">Min</option>
                 </select>
               </div>
             </div>
 
             <div className="flex-1 overflow-hidden">
                <PivotTableVisual 
-                  title="Ledger Pivot" 
+                  title={`${activeDataset.charAt(0).toUpperCase() + activeDataset.slice(1)} Pivot`} 
                   icon={<FileText className="w-4 h-4" />} 
-                  data={ledgerForPivot} 
+                  data={currentDataset} 
                   config={mainPivotConfig}
                />
             </div>
@@ -714,688 +808,286 @@ const AccountingPortal: React.FC<AccountingPortalProps> = ({ data, onOpenAI, isD
 
       {activeTab === 'compliance' && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* ... existing compliance content ... */}
-          {/* Tax Engine Input */}
           <div className="space-y-6">
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
-               <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-                  <Calculator className="w-6 h-6 text-emerald-600" /> Ethiopian Tax Engine
-               </h3>
-               
-               <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                     <div>
-                        <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Transaction Amount (ETB)</label>
-                        <input 
-                           type="number" 
-                           value={taxInput.amount} 
-                           onChange={e => setTaxInput({...taxInput, amount: Number(e.target.value)})} 
-                           className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-600 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-white"
-                        />
-                     </div>
-                     <div>
-                        <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Transaction Type</label>
-                        <select 
-                           value={taxInput.transactionType} 
-                           onChange={e => setTaxInput({...taxInput, transactionType: e.target.value as TransactionType})}
-                           className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-600 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-white"
-                        >
-                           <option value="Goods">Goods (2% WHT)</option>
-                           <option value="Services">Services (5% WHT)</option>
-                        </select>
-                     </div>
-                  </div>
-
-                  <div>
-                     <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Supplier Tax Category</label>
-                     <div className="flex gap-2">
-                        {['VAT_Reg', 'TOT_Reg', 'None'].map((cat) => (
-                           <button
-                              key={cat}
-                              onClick={() => setTaxInput({...taxInput, supplierCategory: cat as SupplierTaxCategory})}
-                              className={`flex-1 py-2 text-xs font-bold rounded-lg border transition-colors ${
-                                 taxInput.supplierCategory === cat 
-                                 ? 'bg-emerald-100 border-emerald-500 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' 
-                                 : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300'
-                              }`}
-                           >
-                              {cat === 'VAT_Reg' ? 'VAT Registered' : cat === 'TOT_Reg' ? 'TOT Registered' : 'Unregistered'}
-                           </button>
-                        ))}
-                     </div>
-                  </div>
-
-                  <div className="h-px bg-gray-100 dark:bg-gray-700 my-4"></div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                     <div>
-                        <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Supplier Name</label>
-                        <input 
-                           type="text" 
-                           value={taxInput.supplierName} 
-                           onChange={e => setTaxInput({...taxInput, supplierName: e.target.value})}
-                           className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-600 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-white"
-                        />
-                     </div>
-                     <div>
-                        <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">TIN Number</label>
-                        <input 
-                           type="text" 
-                           value={taxInput.tinNumber} 
-                           onChange={e => setTaxInput({...taxInput, tinNumber: e.target.value})}
-                           className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-600 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-white"
-                        />
-                     </div>
-                  </div>
-               </div>
-            </div>
-
-            {/* Breakdown Card */}
-            {taxResult && (
-               <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
-                  <h4 className="text-sm font-bold text-gray-500 uppercase mb-4">Calculated Breakdown</h4>
-                  <div className="space-y-3">
-                     <div className="flex justify-between items-center text-sm">
-                        <span className="text-gray-600 dark:text-gray-300">Taxable Amount</span>
-                        <span className="font-medium text-gray-900 dark:text-white">{taxResult.baseAmount.toLocaleString()} ETB</span>
-                     </div>
-                     <div className="flex justify-between items-center text-sm">
-                        <span className="text-gray-600 dark:text-gray-300">
-                           {taxInput.supplierCategory === 'VAT_Reg' ? 'VAT (15%)' : 'TOT (2%/10%)'}
-                        </span>
-                        <span className="font-medium text-blue-600">
-                           + {(taxResult.vatAmount || taxResult.totAmount).toLocaleString()} ETB
-                        </span>
-                     </div>
-                     <div className="flex justify-between items-center text-sm">
-                        <span className="text-gray-600 dark:text-gray-300">Withholding Tax</span>
-                        <span className={`font-medium ${taxResult.whtAmount > 0 ? 'text-red-500' : 'text-gray-400'}`}>
-                           - {taxResult.whtAmount.toLocaleString()} ETB
-                        </span>
-                     </div>
-                     <div className="border-t border-gray-100 dark:border-gray-700 pt-3 flex justify-between items-center">
-                        <span className="font-bold text-gray-900 dark:text-white">Net Payment</span>
-                        <span className="text-xl font-bold text-emerald-600">{taxResult.netPayable.toLocaleString()} ETB</span>
-                     </div>
-                  </div>
-                  <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg text-xs text-gray-500 space-y-1">
-                     {taxResult.notes.map((note, idx) => (
-                        <p key={idx} className="flex items-center gap-2"><CheckCircle2 className="w-3 h-3 text-emerald-500" /> {note}</p>
-                     ))}
-                  </div>
-               </div>
-            )}
-          </div>
-
-          {/* Right Column: Documents & Reports */}
-          <div className="space-y-6">
-             
-             {/* WHT Letter Preview */}
              <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
-                <div className="flex justify-between items-center mb-6">
-                   <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                      <FileCheck className="w-5 h-5 text-indigo-600" /> Withholding Receipt
-                   </h3>
-                   <button 
-                     onClick={() => window.print()}
-                     disabled={!taxResult?.isWhtApplicable}
-                     className="px-3 py-1.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg text-xs font-bold text-gray-700 dark:text-gray-300 flex items-center gap-2 disabled:opacity-50"
-                   >
-                      <Printer className="w-3 h-3" /> Print
-                   </button>
-                </div>
-
-                {taxResult?.isWhtApplicable ? (
-                   <div className="border border-gray-200 dark:border-gray-600 p-6 rounded-sm bg-white text-black font-serif text-sm relative overflow-hidden">
-                      {/* Watermark */}
-                      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-gray-100 text-6xl font-bold -rotate-45 pointer-events-none">
-                         COPY
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+                   <Stamp className="w-6 h-6 text-orange-500" /> ERCA Compliance Calculator
+                </h3>
+                
+                <div className="space-y-4">
+                   <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Transaction Amount (ETB)</label>
+                      <input 
+                        type="number" 
+                        value={taxInput.amount} 
+                        onChange={(e) => setTaxInput({...taxInput, amount: Number(e.target.value)})}
+                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-cyan-500 outline-none"
+                      />
+                   </div>
+                   
+                   <div className="grid grid-cols-2 gap-4">
+                      <div>
+                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Supplier Category</label>
+                         <select 
+                           value={taxInput.supplierCategory}
+                           onChange={(e) => setTaxInput({...taxInput, supplierCategory: e.target.value as any})}
+                           className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-cyan-500 outline-none"
+                         >
+                            <option value="VAT_Reg">VAT Registered</option>
+                            <option value="TOT_Reg">TOT Registered</option>
+                            <option value="None">None</option>
+                         </select>
                       </div>
-                      
-                      <div className="text-center border-b border-gray-300 pb-4 mb-4">
-                         <h2 className="font-bold text-lg uppercase">Official Withholding Tax Receipt</h2>
-                         <p className="text-xs text-gray-500">Federal Democratic Republic of Ethiopia</p>
-                         <p className="text-xs text-gray-500">Ministry of Revenues</p>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4 mb-4">
-                         <div>
-                            <p className="text-[10px] text-gray-500 uppercase">Withholding Agent</p>
-                            <p className="font-bold">GlobalTrade Logistics Inc.</p>
-                            <p className="text-xs">TIN: 0098765432</p>
-                         </div>
-                         <div className="text-right">
-                            <p className="text-[10px] text-gray-500 uppercase">Receipt No</p>
-                            <p className="font-bold text-red-600">WH-{Math.floor(Math.random()*10000)}</p>
-                            <p className="text-xs">Date: {new Date().toLocaleDateString()}</p>
-                         </div>
-                      </div>
-
-                      <div className="mb-4">
-                         <p className="text-[10px] text-gray-500 uppercase">Supplier Details</p>
-                         <p className="font-bold">{taxInput.supplierName}</p>
-                         <p className="text-xs">TIN: {taxInput.tinNumber}</p>
-                      </div>
-
-                      <table className="w-full border-collapse border border-gray-300 text-xs mb-6">
-                         <thead>
-                            <tr className="bg-gray-100">
-                               <th className="border border-gray-300 p-2 text-left">Description</th>
-                               <th className="border border-gray-300 p-2 text-right">Amount</th>
-                            </tr>
-                         </thead>
-                         <tbody>
-                            <tr>
-                               <td className="border border-gray-300 p-2">Gross Payment Amount</td>
-                               <td className="border border-gray-300 p-2 text-right">{taxResult.baseAmount.toLocaleString()}</td>
-                            </tr>
-                            <tr>
-                               <td className="border border-gray-300 p-2">Taxable Amount</td>
-                               <td className="border border-gray-300 p-2 text-right">{taxResult.baseAmount.toLocaleString()}</td>
-                            </tr>
-                            <tr>
-                               <td className="border border-gray-300 p-2 font-bold">Withholding Tax ({taxInput.transactionType === 'Goods' ? '2%' : '5%'})</td>
-                               <td className="border border-gray-300 p-2 text-right font-bold">{taxResult.whtAmount.toLocaleString()}</td>
-                            </tr>
-                         </tbody>
-                      </table>
-
-                      <div className="flex justify-between items-end mt-8">
-                         <div className="text-center">
-                            <div className="border-b border-black w-32 mb-1"></div>
-                            <p className="text-[10px]">Prepared By</p>
-                         </div>
-                         <div className="text-center">
-                            <div className="border-b border-black w-32 mb-1"></div>
-                            <p className="text-[10px]">Approved By</p>
-                         </div>
+                      <div>
+                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Type</label>
+                         <select 
+                           value={taxInput.transactionType}
+                           onChange={(e) => setTaxInput({...taxInput, transactionType: e.target.value as any})}
+                           className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-cyan-500 outline-none"
+                         >
+                            <option value="Goods">Goods</option>
+                            <option value="Services">Services</option>
+                         </select>
                       </div>
                    </div>
-                ) : (
-                   <div className="h-64 flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-900/50 rounded-lg border-2 border-dashed border-gray-200 dark:border-gray-700 text-gray-400">
-                      <AlertCircle className="w-8 h-8 mb-2 opacity-50" />
-                      <p>No Withholding Tax applicable for this transaction.</p>
-                      <p className="text-xs opacity-75">Amount must be &ge; 3,000 ETB</p>
+
+                   <div className="pt-2">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Supplier TIN</label>
+                      <input 
+                        type="text" 
+                        value={taxInput.tinNumber}
+                        onChange={(e) => setTaxInput({...taxInput, tinNumber: e.target.value})}
+                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white font-mono"
+                      />
                    </div>
-                )}
-             </div>
-
-             {/* ERCA Reporting Table */}
-             <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
-                <div className="flex justify-between items-center mb-4">
-                   <h3 className="text-lg font-bold text-gray-900 dark:text-white">Monthly Declaration (ERCA)</h3>
-                   <span className="text-xs font-mono bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">Period: Oct 2024</span>
-                </div>
-                <div className="overflow-x-auto">
-                   <table className="w-full text-xs text-left">
-                      <thead className="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
-                         <tr>
-                            <th className="p-2 rounded-tl-lg">Description</th>
-                            <th className="p-2 text-right">Taxable Value</th>
-                            <th className="p-2 text-right rounded-tr-lg">VAT/Tax</th>
-                         </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-                         <tr>
-                            <td className="p-2">Standard Rated Sales</td>
-                            <td className="p-2 text-right font-mono">1,250,000</td>
-                            <td className="p-2 text-right font-mono">187,500</td>
-                         </tr>
-                         <tr>
-                            <td className="p-2">Zero Rated / Exempt</td>
-                            <td className="p-2 text-right font-mono">450,000</td>
-                            <td className="p-2 text-right font-mono">0</td>
-                         </tr>
-                         <tr className="bg-gray-5 dark:bg-gray-900/30 font-bold">
-                            <td className="p-2">Total Output VAT (A)</td>
-                            <td className="p-2 text-right"></td>
-                            <td className="p-2 text-right text-red-500">187,500</td>
-                         </tr>
-                         <tr>
-                            <td className="p-2">Domestic Purchases</td>
-                            <td className="p-2 text-right font-mono">820,000</td>
-                            <td className="p-2 text-right font-mono">123,000</td>
-                         </tr>
-                         <tr>
-                            <td className="p-2">Import VAT Paid</td>
-                            <td className="p-2 text-right font-mono">--</td>
-                            <td className="p-2 text-right font-mono">45,000</td>
-                         </tr>
-                         <tr className="bg-gray-50 dark:bg-gray-900/30 font-bold">
-                            <td className="p-2">Total Input VAT (B)</td>
-                            <td className="p-2 text-right"></td>
-                            <td className="p-2 text-right text-green-500">168,000</td>
-                         </tr>
-                         <tr className="border-t-2 border-gray-200 dark:border-gray-600 font-extrabold text-sm">
-                            <td className="p-2">Net VAT Payable (A-B)</td>
-                            <td className="p-2 text-right"></td>
-                            <td className="p-2 text-right text-indigo-600">19,500</td>
-                         </tr>
-                      </tbody>
-                   </table>
                 </div>
              </div>
-
           </div>
-        </div>
-      )}
 
-      {/* Ledger and other tabs remain mostly unchanged but re-included for context */}
-      {activeTab === 'ledger' && (
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col h-[600px]">
-           <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-900/50 rounded-t-2xl">
-             <div className="relative">
-                <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                <input 
-                  type="text" 
-                  placeholder="Search ledger entries..." 
-                  className="pl-9 pr-4 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-cyan-500 outline-none w-64 text-gray-700 dark:text-gray-200"
-                  value={ledgerSearch}
-                  onChange={(e) => setLedgerSearch(e.target.value)}
-                />
-             </div>
-             <div className="flex gap-2">
-               <button className="px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors">
-                  <Download className="w-4 h-4" /> Export CSV
-               </button>
-               <button 
-                  onClick={() => setIsEntryModalOpen(true)}
-                  className="px-3 py-2 bg-cyan-600 text-white rounded-lg text-sm flex items-center gap-2 hover:bg-cyan-700 transition-colors shadow-lg shadow-cyan-200 dark:shadow-none"
-               >
-                  <Plus className="w-4 h-4" /> Manual Entry
-               </button>
-             </div>
-           </div>
-           
-           <div className="flex-1 overflow-auto">
-              <table className="w-full text-sm text-left">
-                 <thead className="bg-gray-50 dark:bg-gray-900/50 text-xs uppercase text-gray-500 dark:text-gray-400 font-medium sticky top-0">
-                    <tr>
-                       <th className="px-6 py-3">Date</th>
-                       <th className="px-6 py-3">Reference ID</th>
-                       <th className="px-6 py-3">Description</th>
-                       <th className="px-6 py-3">Account</th>
-                       <th className="px-6 py-3 text-right">Debit</th>
-                       <th className="px-6 py-3 text-right">Credit</th>
-                       <th className="px-6 py-3 text-center">Status</th>
-                    </tr>
-                 </thead>
-                 <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-                    {filteredLedger.map((entry, idx) => (
-                       <tr key={idx} className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
-                          <td className="px-6 py-4 text-gray-500 dark:text-gray-400">{entry.date}</td>
-                          <td className="px-6 py-4 font-mono text-xs text-gray-400">{entry.id}</td>
-                          <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">{entry.description}</td>
-                          <td className="px-6 py-4 text-gray-600 dark:text-gray-300">
-                             <span className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-xs">{entry.account}</span>
-                          </td>
-                          <td className="px-6 py-4 text-right font-medium text-gray-900 dark:text-white">
-                             {entry.type === 'Debit' ? entry.amount.toLocaleString() : '-'}
-                          </td>
-                          <td className="px-6 py-4 text-right font-medium text-gray-900 dark:text-white">
-                             {entry.type === 'Credit' ? entry.amount.toLocaleString() : '-'}
-                          </td>
-                          <td className="px-6 py-4 text-center">
-                             <span className={`px-2 py-1 rounded-full text-xs font-bold ${
-                                entry.status === 'Posted' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
-                                entry.status === 'Pending' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
-                                'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                             }`}>
-                                {entry.status}
-                             </span>
-                          </td>
-                       </tr>
-                    ))}
-                 </tbody>
-              </table>
-           </div>
+          <div className="bg-gray-50 dark:bg-gray-900/50 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 flex flex-col justify-center">
+             {taxResult && (
+               <div className="space-y-6">
+                  <div className="text-center">
+                     <p className="text-sm text-gray-500 dark:text-gray-400">Net Payable Amount</p>
+                     <h2 className="text-4xl font-bold text-gray-900 dark:text-white mt-2">
+                        <span className="text-base align-top text-gray-400 mr-1">ETB</span>
+                        {taxResult.netPayable.toLocaleString(undefined, {minimumFractionDigits: 2})}
+                     </h2>
+                  </div>
+
+                  <div className="space-y-3 border-t border-gray-200 dark:border-gray-700 pt-4">
+                     <div className="flex justify-between text-sm">
+                        <span className="text-gray-600 dark:text-gray-400">Base Amount</span>
+                        <span className="font-medium text-gray-900 dark:text-white">{taxResult.baseAmount.toLocaleString()}</span>
+                     </div>
+                     <div className="flex justify-between text-sm text-green-600 dark:text-green-400">
+                        <span>+ VAT (15%)</span>
+                        <span>{taxResult.vatAmount.toLocaleString()}</span>
+                     </div>
+                     <div className="flex justify-between text-sm text-blue-600 dark:text-blue-400">
+                        <span>+ TOT</span>
+                        <span>{taxResult.totAmount.toLocaleString()}</span>
+                     </div>
+                     <div className="flex justify-between text-sm text-red-500">
+                        <span>- Withholding Tax</span>
+                        <span>({taxResult.whtAmount.toLocaleString()})</span>
+                     </div>
+                  </div>
+
+                  <div className="bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-lg border border-yellow-200 dark:border-yellow-800">
+                     <p className="text-xs font-bold text-yellow-700 dark:text-yellow-400 uppercase mb-1">Compliance Notes</p>
+                     <ul className="list-disc list-inside text-xs text-yellow-800 dark:text-yellow-300">
+                        {taxResult.notes.map((note, i) => <li key={i}>{note}</li>)}
+                     </ul>
+                  </div>
+                  
+                  <button className="w-full py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold rounded-lg hover:opacity-90 flex items-center justify-center gap-2">
+                     <Printer className="w-4 h-4" /> Print Withholding Receipt
+                  </button>
+               </div>
+             )}
+          </div>
         </div>
       )}
 
       {activeTab === 'analysis' && (
          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Liquidity Ratio Calculator */}
+            {/* Liquidity Ratios */}
             <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
-               <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                     <Sliders className="w-5 h-5 text-cyan-600" /> Ratio Analyzer
-                  </h3>
-                  <button className="text-sm text-cyan-600 hover:underline">Load Live Data</button>
-               </div>
-               
-               <div className="grid grid-cols-2 gap-4 mb-6">
-                  <div>
-                     <label className="text-xs font-semibold text-gray-500 uppercase">Current Assets</label>
-                     <input 
-                       type="number" 
-                       className="w-full mt-1 px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-cyan-500 outline-none"
-                       value={ratioInputs.currentAssets}
-                       onChange={e => setRatioInputs({...ratioInputs, currentAssets: Number(e.target.value)})}
-                     />
-                  </div>
-                  <div>
-                     <label className="text-xs font-semibold text-gray-500 uppercase">Current Liabilities</label>
-                     <input 
-                       type="number" 
-                       className="w-full mt-1 px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-cyan-500 outline-none"
-                       value={ratioInputs.currentLiabilities}
-                       onChange={e => setRatioInputs({...ratioInputs, currentLiabilities: Number(e.target.value)})}
-                     />
-                  </div>
-                  <div>
-                     <label className="text-xs font-semibold text-gray-500 uppercase">Inventory Value</label>
-                     <input 
-                       type="number" 
-                       className="w-full mt-1 px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-cyan-500 outline-none"
-                       value={ratioInputs.inventory}
-                       onChange={e => setRatioInputs({...ratioInputs, inventory: Number(e.target.value)})}
-                     />
-                  </div>
-                  <div>
-                     <label className="text-xs font-semibold text-gray-500 uppercase">Cash & Equiv.</label>
-                     <input 
-                       type="number" 
-                       className="w-full mt-1 px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-cyan-500 outline-none"
-                       value={ratioInputs.cash}
-                       onChange={e => setRatioInputs({...ratioInputs, cash: Number(e.target.value)})}
-                     />
-                  </div>
-               </div>
-
+               <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-6">Liquidity Analysis</h3>
                <div className="space-y-4">
-                  <div className="flex justify-between items-center p-3 bg-cyan-50 dark:bg-cyan-900/20 rounded-xl">
+                  <div className="grid grid-cols-2 gap-4">
                      <div>
-                        <p className="font-bold text-gray-800 dark:text-white">Current Ratio</p>
-                        <p className="text-xs text-gray-500">Assets / Liabilities</p>
+                        <label className="block text-xs text-gray-500 uppercase font-bold mb-1">Current Assets</label>
+                        <input type="number" value={ratioInputs.currentAssets} onChange={e => setRatioInputs({...ratioInputs, currentAssets: +e.target.value})} className="w-full px-3 py-1.5 bg-gray-50 dark:bg-gray-900 border rounded text-sm dark:text-white" />
                      </div>
-                     <div className="text-right">
-                        <p className="text-2xl font-bold text-cyan-700 dark:text-cyan-400">{currentRatio}</p>
-                        <p className="text-xs text-green-600 font-semibold">{Number(currentRatio) > 1.5 ? 'Healthy' : 'Warning'}</p>
+                     <div>
+                        <label className="block text-xs text-gray-500 uppercase font-bold mb-1">Current Liab.</label>
+                        <input type="number" value={ratioInputs.currentLiabilities} onChange={e => setRatioInputs({...ratioInputs, currentLiabilities: +e.target.value})} className="w-full px-3 py-1.5 bg-gray-50 dark:bg-gray-900 border rounded text-sm dark:text-white" />
                      </div>
                   </div>
-                  <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-gray-100 dark:border-gray-700">
-                     <div>
-                        <p className="font-bold text-gray-800 dark:text-white">Quick Ratio</p>
-                        <p className="text-xs text-gray-500">(Assets - Inv) / Liabilities</p>
+                  <div className="grid grid-cols-3 gap-4 pt-4">
+                     <div className="text-center p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                        <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{currentRatio}</div>
+                        <div className="text-xs text-gray-500">Current Ratio</div>
                      </div>
-                     <div className="text-right">
-                        <p className="text-xl font-bold text-gray-700 dark:text-gray-300">{quickRatio}</p>
+                     <div className="text-center p-2 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg">
+                        <div className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">{quickRatio}</div>
+                        <div className="text-xs text-gray-500">Quick Ratio</div>
                      </div>
-                  </div>
-                  <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-gray-100 dark:border-gray-700">
-                     <div>
-                        <p className="font-bold text-gray-800 dark:text-white">Cash Ratio</p>
-                        <p className="text-xs text-gray-500">Cash / Liabilities</p>
-                     </div>
-                     <div className="text-right">
-                        <p className="text-xl font-bold text-gray-700 dark:text-gray-300">{cashRatio}</p>
+                     <div className="text-center p-2 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg">
+                        <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{cashRatio}</div>
+                        <div className="text-xs text-gray-500">Cash Ratio</div>
                      </div>
                   </div>
                </div>
             </div>
 
-            {/* Breakeven Simulator */}
+            {/* DuPont Analysis */}
             <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
-               <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                     <TrendingUp className="w-5 h-5 text-indigo-600" /> Breakeven Simulator
-                  </h3>
-               </div>
-
-               <div className="space-y-4 mb-6">
-                  <div>
-                     <div className="flex justify-between text-xs font-semibold text-gray-500 mb-1">
-                        <span>FIXED COSTS</span>
-                        <span>{breakevenInputs.fixedCosts.toLocaleString()}</span>
+               <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-6">DuPont ROE Decomposition</h3>
+               <div className="flex flex-col gap-4">
+                  <div className="flex items-center justify-between text-sm">
+                     <span className="text-gray-500">Net Profit Margin</span>
+                     <span className="font-bold text-gray-900 dark:text-white">{profitMargin.toFixed(2)}%</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                     <span className="text-gray-500">Asset Turnover</span>
+                     <span className="font-bold text-gray-900 dark:text-white">{assetTurnover.toFixed(2)}x</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                     <span className="text-gray-500">Financial Leverage</span>
+                     <span className="font-bold text-gray-900 dark:text-white">{financialLeverage.toFixed(2)}</span>
+                  </div>
+                  <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                     <div className="flex items-center justify-between">
+                        <span className="font-bold text-gray-900 dark:text-white">Return on Equity (ROE)</span>
+                        <span className="text-2xl font-bold text-purple-600 dark:text-purple-400">{roe.toFixed(2)}%</span>
                      </div>
-                     <input 
-                       type="range" min="10000" max="100000" step="1000" 
-                       className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-                       value={breakevenInputs.fixedCosts}
-                       onChange={e => setBreakevenInputs({...breakevenInputs, fixedCosts: Number(e.target.value)})}
-                     />
-                  </div>
-                  <div>
-                     <div className="flex justify-between text-xs font-semibold text-gray-500 mb-1">
-                        <span>VARIABLE COST / UNIT</span>
-                        <span>{breakevenInputs.variableCostPerUnit.toLocaleString()}</span>
-                     </div>
-                     <input 
-                       type="range" min="10" max="500" step="5" 
-                       className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-                       value={breakevenInputs.variableCostPerUnit}
-                       onChange={e => setBreakevenInputs({...breakevenInputs, variableCostPerUnit: Number(e.target.value)})}
-                     />
-                  </div>
-                  <div>
-                     <div className="flex justify-between text-xs font-semibold text-gray-500 mb-1">
-                        <span>PRICE / UNIT</span>
-                        <span>{breakevenInputs.pricePerUnit.toLocaleString()}</span>
-                     </div>
-                     <input 
-                       type="range" min="50" max="1000" step="10" 
-                       className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-                       value={breakevenInputs.pricePerUnit}
-                       onChange={e => setBreakevenInputs({...breakevenInputs, pricePerUnit: Number(e.target.value)})}
-                     />
-                  </div>
-               </div>
-
-               <div className="bg-indigo-600 rounded-xl p-6 text-white text-center">
-                  <p className="text-indigo-200 text-sm font-medium uppercase tracking-wider mb-2">Required Sales Volume</p>
-                  <h3 className="text-4xl font-extrabold mb-1">{breakevenUnits > 0 && isFinite(breakevenUnits) ? breakevenUnits.toLocaleString() : 'N/A'} <span className="text-lg text-indigo-200">units</span></h3>
-                  <div className="h-px bg-indigo-500 w-1/2 mx-auto my-3"></div>
-                  <p className="text-sm">Revenue to Breakeven: <span className="font-bold">Bir {breakevenRevenue > 0 && isFinite(breakevenRevenue) ? breakevenRevenue.toLocaleString() : 'N/A'}</span></p>
-               </div>
-               
-               <p className="text-xs text-gray-400 mt-4 text-center">
-                  *Calculated as Fixed Costs / (Price - Variable Cost)
-               </p>
-            </div>
-
-            {/* DuPont ROE Analysis */}
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
-               <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                     <Scale className="w-5 h-5 text-emerald-600" /> DuPont ROE Decomposer
-                  </h3>
-               </div>
-               <div className="grid grid-cols-2 gap-4 mb-6">
-                  <div>
-                     <label className="text-xs font-semibold text-gray-500 uppercase">Net Income</label>
-                     <input type="number" className="w-full mt-1 px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white outline-none" 
-                       value={dupontInputs.netIncome} onChange={e => setDupontInputs({...dupontInputs, netIncome: Number(e.target.value)})} />
-                  </div>
-                  <div>
-                     <label className="text-xs font-semibold text-gray-500 uppercase">Revenue</label>
-                     <input type="number" className="w-full mt-1 px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white outline-none" 
-                       value={dupontInputs.revenue} onChange={e => setDupontInputs({...dupontInputs, revenue: Number(e.target.value)})} />
-                  </div>
-                  <div>
-                     <label className="text-xs font-semibold text-gray-500 uppercase">Total Assets</label>
-                     <input type="number" className="w-full mt-1 px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white outline-none" 
-                       value={dupontInputs.assets} onChange={e => setDupontInputs({...dupontInputs, assets: Number(e.target.value)})} />
-                  </div>
-                  <div>
-                     <label className="text-xs font-semibold text-gray-500 uppercase">Avg Equity</label>
-                     <input type="number" className="w-full mt-1 px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white outline-none" 
-                       value={dupontInputs.equity} onChange={e => setDupontInputs({...dupontInputs, equity: Number(e.target.value)})} />
-                  </div>
-               </div>
-               <div className="grid grid-cols-3 gap-2 bg-emerald-50 dark:bg-emerald-900/20 p-4 rounded-xl text-center">
-                  <div className="border-r border-emerald-200 dark:border-emerald-800 pr-2">
-                     <p className="text-xs text-gray-500 mb-1">Profit Margin</p>
-                     <p className="font-bold text-emerald-700 dark:text-emerald-400">{profitMargin.toFixed(1)}%</p>
-                  </div>
-                  <div className="border-r border-emerald-200 dark:border-emerald-800 px-2">
-                     <p className="text-xs text-gray-500 mb-1">Asset Turnover</p>
-                     <p className="font-bold text-emerald-700 dark:text-emerald-400">{assetTurnover.toFixed(2)}x</p>
-                  </div>
-                  <div className="pl-2">
-                     <p className="text-xs text-gray-500 mb-1">Fin. Leverage</p>
-                     <p className="font-bold text-emerald-700 dark:text-emerald-400">{financialLeverage.toFixed(2)}</p>
-                  </div>
-               </div>
-               <div className="mt-4 flex justify-between items-center bg-white dark:bg-gray-700 p-3 rounded-lg border border-gray-200 dark:border-gray-600">
-                  <span className="font-bold text-gray-900 dark:text-white">Return on Equity (ROE)</span>
-                  <span className="text-xl font-extrabold text-emerald-600">{roe.toFixed(2)}%</span>
-               </div>
-            </div>
-
-            {/* Profit Scenario Modeler */}
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
-               <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                     <Activity className="w-5 h-5 text-purple-600" /> Sensitivity Analysis
-                  </h3>
-               </div>
-               <div className="space-y-6">
-                  <div>
-                     <div className="flex justify-between text-xs font-semibold text-gray-500 mb-2">
-                        <span>REVENUE GROWTH</span>
-                        <span className="text-purple-600">{sensitivityInputs.revenueGrowth > 0 ? '+' : ''}{sensitivityInputs.revenueGrowth}%</span>
-                     </div>
-                     <input type="range" min="-20" max="20" step="1" className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-                       value={sensitivityInputs.revenueGrowth} onChange={e => setSensitivityInputs({...sensitivityInputs, revenueGrowth: Number(e.target.value)})} />
-                  </div>
-                  <div>
-                     <div className="flex justify-between text-xs font-semibold text-gray-500 mb-2">
-                        <span>COGS INCREASE</span>
-                        <span className="text-red-500">{sensitivityInputs.cogsIncrease > 0 ? '+' : ''}{sensitivityInputs.cogsIncrease}%</span>
-                     </div>
-                     <input type="range" min="-10" max="20" step="1" className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-                       value={sensitivityInputs.cogsIncrease} onChange={e => setSensitivityInputs({...sensitivityInputs, cogsIncrease: Number(e.target.value)})} />
-                  </div>
-                  <div>
-                     <div className="flex justify-between text-xs font-semibold text-gray-500 mb-2">
-                        <span>OPEX VARIANCE</span>
-                        <span className="text-orange-500">{sensitivityInputs.opexIncrease > 0 ? '+' : ''}{sensitivityInputs.opexIncrease}%</span>
-                     </div>
-                     <input type="range" min="-20" max="20" step="1" className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-                       value={sensitivityInputs.opexIncrease} onChange={e => setSensitivityInputs({...sensitivityInputs, opexIncrease: Number(e.target.value)})} />
-                  </div>
-               </div>
-               <div className="mt-8 bg-gray-50 dark:bg-gray-900/50 p-4 rounded-xl flex justify-between items-end">
-                  <div>
-                     <p className="text-xs text-gray-500 mb-1">Projected Net Profit</p>
-                     <p className="text-2xl font-bold text-gray-900 dark:text-white">Bir {sensNetProfit.toLocaleString(undefined, {maximumFractionDigits: 0})}</p>
-                  </div>
-                  <div className="text-right">
-                     <p className="text-xs text-gray-500 mb-1">Est. Net Margin</p>
-                     <p className={`font-bold ${sensMargin >= 10 ? 'text-green-600' : 'text-orange-600'}`}>{sensMargin.toFixed(1)}%</p>
                   </div>
                </div>
             </div>
          </div>
       )}
 
-      {/* Report Builder Tab */}
-      {activeTab === 'reports' && (
-        <ExecutiveReporting 
-          metrics={ACCOUNTING_METRICS} 
-          initialRequests={ACCOUNTING_REQUESTS} 
-        />
-      )}
-
-      {/* Manual Entry Modal */}
-      {isEntryModalOpen && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-lg w-full p-8 shadow-2xl border border-gray-100 dark:border-gray-700">
-            <div className="flex justify-between items-center mb-6">
-               <h3 className="text-xl font-bold text-gray-900 dark:text-white">New Ledger Entry</h3>
-               <button onClick={() => setIsEntryModalOpen(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
-                 <X className="w-5 h-5" />
-               </button>
-            </div>
-            <form onSubmit={handleAddEntry} className="space-y-4">
-               <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Date</label>
-                  <input 
-                    type="date" 
-                    required
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent text-gray-900 dark:text-white focus:ring-2 focus:ring-cyan-500 outline-none"
-                    value={newEntry.date}
-                    onChange={(e) => setNewEntry({...newEntry, date: e.target.value})}
-                  />
-               </div>
-               <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+      {activeTab === 'ledger' && (
+         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col h-[600px]">
+            <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-900/50 rounded-t-2xl">
+               <div className="relative">
+                  <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                   <input 
                     type="text" 
-                    required
-                    placeholder="e.g. Office Supplies Payment"
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent text-gray-900 dark:text-white focus:ring-2 focus:ring-cyan-500 outline-none"
-                    value={newEntry.description}
-                    onChange={(e) => setNewEntry({...newEntry, description: e.target.value})}
+                    placeholder="Search transactions..." 
+                    className="pl-9 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg text-sm outline-none focus:ring-2 focus:ring-cyan-500 w-64 text-gray-700 dark:text-gray-200"
+                    value={ledgerSearch}
+                    onChange={(e) => setLedgerSearch(e.target.value)}
                   />
                </div>
-               <div className="grid grid-cols-2 gap-4">
-                 <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Account</label>
-                    <input 
-                      type="text" 
-                      required
-                      placeholder="e.g. Cash"
-                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent text-gray-900 dark:text-white focus:ring-2 focus:ring-cyan-500 outline-none"
-                      value={newEntry.account}
-                      onChange={(e) => setNewEntry({...newEntry, account: e.target.value})}
-                    />
-                 </div>
-                 <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Amount</label>
-                    <input 
-                      type="number" 
-                      required
-                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent text-gray-900 dark:text-white focus:ring-2 focus:ring-cyan-500 outline-none"
-                      value={newEntry.amount}
-                      onChange={(e) => setNewEntry({...newEntry, amount: Number(e.target.value)})}
-                    />
-                 </div>
-               </div>
-               <div className="grid grid-cols-2 gap-4">
-                 <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Type</label>
-                    <select 
-                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-cyan-500 outline-none"
-                      value={newEntry.type}
-                      onChange={(e) => setNewEntry({...newEntry, type: e.target.value as any})}
-                    >
-                      <option value="Debit">Debit</option>
-                      <option value="Credit">Credit</option>
-                    </select>
-                 </div>
-                 <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Status</label>
-                    <select 
-                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-cyan-500 outline-none"
-                      value={newEntry.status}
-                      onChange={(e) => setNewEntry({...newEntry, status: e.target.value as any})}
-                    >
-                      <option value="Posted">Posted</option>
-                      <option value="Pending">Pending</option>
-                      <option value="Flagged">Flagged</option>
-                    </select>
-                 </div>
-               </div>
-               
-               <div className="pt-6 flex gap-3">
-                  <button 
-                    type="button" 
-                    onClick={() => setIsEntryModalOpen(false)} 
-                    className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                  >
-                    Cancel
+               <div className="flex gap-3">
+                  <button className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded text-gray-600 dark:text-gray-300">
+                     <Filter className="w-4 h-4" />
+                  </button>
+                  <button className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded text-gray-600 dark:text-gray-300">
+                     <Download className="w-4 h-4" />
                   </button>
                   <button 
-                    type="submit" 
-                    className="flex-1 px-4 py-2 bg-cyan-600 text-white font-medium rounded-lg hover:bg-cyan-700 transition-colors shadow-lg shadow-cyan-200 dark:shadow-none"
+                    onClick={() => setIsEntryModalOpen(true)}
+                    className="flex items-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg text-sm font-medium transition-colors"
                   >
-                    Add Entry
+                     <Plus className="w-4 h-4" /> Add Entry
                   </button>
                </div>
-            </form>
-          </div>
-        </div>
+            </div>
+            <div className="flex-1 overflow-auto">
+               <table className="w-full text-sm text-left">
+                  <thead className="text-xs text-gray-500 dark:text-gray-400 uppercase bg-gray-50 dark:bg-gray-700 sticky top-0">
+                     <tr>
+                        <th className="px-6 py-3 font-medium border-b border-gray-200 dark:border-gray-700">Date</th>
+                        <th className="px-6 py-3 font-medium border-b border-gray-200 dark:border-gray-700">Ref ID</th>
+                        <th className="px-6 py-3 font-medium border-b border-gray-200 dark:border-gray-700">Description</th>
+                        <th className="px-6 py-3 font-medium border-b border-gray-200 dark:border-gray-700">Account</th>
+                        <th className="px-6 py-3 font-medium border-b border-gray-200 dark:border-gray-700 text-right">Debit</th>
+                        <th className="px-6 py-3 font-medium border-b border-gray-200 dark:border-gray-700 text-right">Credit</th>
+                        <th className="px-6 py-3 font-medium border-b border-gray-200 dark:border-gray-700 text-center">Status</th>
+                     </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                     {filteredLedger.map((entry, i) => (
+                        <tr key={i} className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
+                           <td className="px-6 py-4 text-gray-500 dark:text-gray-400 whitespace-nowrap">{entry.date}</td>
+                           <td className="px-6 py-4 font-mono text-xs text-gray-400">{entry.id}</td>
+                           <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">{entry.description}</td>
+                           <td className="px-6 py-4 text-gray-600 dark:text-gray-300">{entry.account}</td>
+                           <td className="px-6 py-4 text-right font-mono text-gray-900 dark:text-white">
+                              {entry.type === 'Debit' ? entry.amount.toLocaleString() : '-'}
+                           </td>
+                           <td className="px-6 py-4 text-right font-mono text-gray-900 dark:text-white">
+                              {entry.type === 'Credit' ? entry.amount.toLocaleString() : '-'}
+                           </td>
+                           <td className="px-6 py-4 text-center">
+                              <span className={`px-2 py-1 rounded-full text-xs font-bold ${
+                                 entry.status === 'Posted' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+                                 entry.status === 'Flagged' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
+                                 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+                              }`}>
+                                 {entry.status}
+                              </span>
+                           </td>
+                        </tr>
+                     ))}
+                  </tbody>
+               </table>
+            </div>
+         </div>
+      )}
+
+      {activeTab === 'reports' && (
+         <ExecutiveReporting metrics={ACCOUNTING_METRICS} initialRequests={ACCOUNTING_REQUESTS} />
+      )}
+
+      {/* Add Entry Modal */}
+      {isEntryModalOpen && (
+         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-6 shadow-2xl border border-gray-100 dark:border-gray-700">
+               <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-white">New Journal Entry</h3>
+                  <button onClick={() => setIsEntryModalOpen(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                    <X className="w-5 h-5" />
+                  </button>
+               </div>
+               <form onSubmit={handleAddEntry} className="space-y-4">
+                  <div>
+                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Date</label>
+                     <input type="date" value={newEntry.date} onChange={e => setNewEntry({...newEntry, date: e.target.value})} className="w-full px-4 py-2 border rounded-lg bg-transparent dark:text-white dark:border-gray-600" />
+                  </div>
+                  <div>
+                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+                     <input type="text" value={newEntry.description} onChange={e => setNewEntry({...newEntry, description: e.target.value})} className="w-full px-4 py-2 border rounded-lg bg-transparent dark:text-white dark:border-gray-600" placeholder="e.g. Utility Payment" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                     <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Account</label>
+                        <input type="text" value={newEntry.account} onChange={e => setNewEntry({...newEntry, account: e.target.value})} className="w-full px-4 py-2 border rounded-lg bg-transparent dark:text-white dark:border-gray-600" placeholder="e.g. Cash" />
+                     </div>
+                     <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Type</label>
+                        <select value={newEntry.type} onChange={e => setNewEntry({...newEntry, type: e.target.value as any})} className="w-full px-4 py-2 border rounded-lg bg-transparent dark:text-white dark:border-gray-600">
+                           <option>Debit</option>
+                           <option>Credit</option>
+                        </select>
+                     </div>
+                  </div>
+                  <div>
+                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Amount</label>
+                     <input type="number" value={newEntry.amount} onChange={e => setNewEntry({...newEntry, amount: +e.target.value})} className="w-full px-4 py-2 border rounded-lg bg-transparent dark:text-white dark:border-gray-600" />
+                  </div>
+                  <div className="pt-4 flex gap-3">
+                     <button type="button" onClick={() => setIsEntryModalOpen(false)} className="flex-1 px-4 py-2 border rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-white">Cancel</button>
+                     <button type="submit" className="flex-1 px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700">Post Entry</button>
+                  </div>
+               </form>
+            </div>
+         </div>
       )}
     </div>
   );
