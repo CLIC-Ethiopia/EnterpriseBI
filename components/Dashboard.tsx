@@ -397,33 +397,45 @@ const Dashboard: React.FC<DashboardProps> = ({
       <style>{`
         @media print {
           @page { margin: 0; size: auto; }
+          
+          /* Hide all elements by default */
           body * {
             visibility: hidden;
-            height: 0; 
-            overflow: hidden;
           }
-          /* Target only the specific report content container */
+
+          /* Ensure the root containers don't collapse */
+          html, body, #root {
+            height: auto !important;
+            min-height: 100vh !important;
+            overflow: visible !important;
+            background: white !important;
+          }
+
+          /* Target the report container and its children explicitly */
           #report-content, #report-content * {
-            visibility: visible;
-            height: auto;
-            overflow: visible;
+            visibility: visible !important;
           }
+
+          /* Position the report at the absolute top-left of the page */
           #report-content {
             position: absolute;
             left: 0;
             top: 0;
             width: 100%;
+            height: auto;
             margin: 0;
-            padding: 2cm; /* Professional print padding */
+            padding: 20px; /* Safe padding for print */
             background: white !important;
             color: black !important;
-            z-index: 9999;
+            z-index: 99999;
+            box-shadow: none !important; /* Remove shadows */
+            overflow: visible !important;
           }
-          /* Force page breaks if needed */
-          .page-break { page-break-before: always; }
           
-          /* Hide non-printable elements inside the report if any */
-          .no-print { display: none !important; }
+          /* Hide elements meant to be hidden in print */
+          .print\\:hidden {
+            display: none !important;
+          }
         }
       `}</style>
 
@@ -558,12 +570,12 @@ const Dashboard: React.FC<DashboardProps> = ({
         )}
 
         {/* Top Navigation Header */}
-        <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex justify-between items-center z-10 print:border-none flex-shrink-0">
+        <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex justify-between items-center z-10 print:border-none flex-shrink-0 print:hidden">
           {/* ... Header Content ... */}
           <div className="flex items-center gap-4">
             <button 
               onClick={() => setSidebarOpen(true)}
-              className="p-2 -ml-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg lg:hidden print:hidden"
+              className="p-2 -ml-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg lg:hidden"
             >
               <Menu className="w-6 h-6 text-gray-600 dark:text-gray-300" />
             </button>
@@ -574,7 +586,7 @@ const Dashboard: React.FC<DashboardProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center gap-4 print:hidden">
+          <div className="flex items-center gap-4">
             <div className="hidden md:flex items-center bg-gray-100 dark:bg-gray-700 px-4 py-2 rounded-lg transition-colors">
               <Search className="w-4 h-4 text-gray-400 mr-2" />
               <input type="text" placeholder="Search data..." className="bg-transparent border-none outline-none text-sm w-48 text-gray-800 dark:text-gray-200 placeholder-gray-400" />
@@ -664,7 +676,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                <>
                   {/* Executive View Toggle Switch (Only for General Management) */}
                   {isGeneralManagement && (
-                    <div className="flex justify-center -mt-2 mb-6">
+                    <div className="flex justify-center -mt-2 mb-6 print:hidden">
                       <div className="bg-white dark:bg-gray-800 p-1 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm inline-flex">
                         <button
                           onClick={() => setExecutiveView('overview')}
