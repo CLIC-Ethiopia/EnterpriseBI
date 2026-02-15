@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { DepartmentData, DepartmentType, TickerItem, CartItem, SummaryRow } from '../types';
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
@@ -1062,9 +1063,34 @@ const Dashboard: React.FC<DashboardProps> = ({
         <GraduationCap className="w-6 h-6" />
       </button>
 
-      {/* Report Preview Modal */}
-      {reportConfig.isOpen && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 backdrop-blur-sm bg-black/70 print:static print:bg-white print:p-0 print:block print:h-auto print:absolute print:inset-0 print:z-[9999]">
+      {/* Report Preview Modal - WRAPPED IN PORTAL TO BYPASS GLOBAL PRINT STYLES */}
+      {reportConfig.isOpen && createPortal(
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 backdrop-blur-sm bg-black/70 print:static print:bg-white print:p-0 print:block print:h-auto print:absolute print:inset-0 print:z-[9999] report-print-container">
+           {/* Custom Print Styles for this specific modal to override global app hiding */}
+           <style>{`
+              @media print {
+                /* Ensure this specific modal and its children are visible */
+                .report-print-container, .report-print-container * {
+                  visibility: visible !important;
+                  display: block !important;
+                }
+                /* Position strictly for print */
+                .report-print-container {
+                  position: absolute !important;
+                  top: 0 !important;
+                  left: 0 !important;
+                  width: 100% !important;
+                  height: auto !important;
+                  z-index: 10000 !important;
+                  background: white !important;
+                }
+                /* Hide the main print view if it was triggered accidentally */
+                .print-view-wrapper {
+                  display: none !important;
+                }
+              }
+           `}</style>
+
            <div className="bg-gray-100 dark:bg-gray-900 rounded-2xl w-full max-w-4xl h-[90vh] shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200 print:shadow-none print:w-full print:max-w-none print:h-auto print:overflow-visible print:rounded-none">
               
               {/* Header Actions - Hidden in Print */}
@@ -1203,7 +1229,8 @@ const Dashboard: React.FC<DashboardProps> = ({
                  </div>
               </div>
            </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Sales Processing Modal */}
