@@ -1,10 +1,10 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { DepartmentData, LedgerEntry, SupplierTaxCategory, TransactionType, TaxCalculationResult, ReportMetric, ReportRequest } from '../types';
 import { 
   Calculator, PieChart as PieIcon, TrendingUp, DollarSign, Calendar, Search, 
   FileText, Sliders, ArrowRight, Plus, Download, RefreshCw, Activity, Layers, Scale, X, GraduationCap,
-  Stamp, Printer, AlertCircle, FileCheck, CheckCircle2, FileBarChart
+  Stamp, Printer, AlertCircle, FileCheck, CheckCircle2, FileBarChart, Table, Grid3X3
 } from 'lucide-react';
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
@@ -33,7 +33,7 @@ const ACCOUNTING_REQUESTS: ReportRequest[] = [
 ];
 
 const AccountingPortal: React.FC<AccountingPortalProps> = ({ data, onOpenAI, isDarkMode }) => {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'ledger' | 'analysis' | 'compliance' | 'reports'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'ledger' | 'analysis' | 'compliance' | 'reports' | 'summary'>('dashboard');
   const [ledgerSearch, setLedgerSearch] = useState('');
   
   // Local state for ledger to allow adding new entries
@@ -46,6 +46,13 @@ const AccountingPortal: React.FC<AccountingPortalProps> = ({ data, onOpenAI, isD
     type: 'Debit',
     amount: 0,
     status: 'Pending'
+  });
+
+  // --- SUMMARY TABLE STATE ---
+  const [pivotConfig, setPivotConfig] = useState({
+    rowGroup: 'account' as keyof LedgerEntry | 'month',
+    colGroup: 'status' as keyof LedgerEntry | 'month',
+    valueOp: 'sum' as 'sum' | 'count'
   });
 
   // --- ETHIOPIAN TAX COMPLIANCE STATE ---
@@ -223,6 +230,63 @@ const AccountingPortal: React.FC<AccountingPortalProps> = ({ data, onOpenAI, isD
     { name: 'Net Margin', value: 12, color: '#6366f1' },
   ];
 
+  // --- PIVOT TABLE LOGIC ---
+  const pivotData = useMemo(() => {
+    const rowKeys = new Set<string>();
+    const colKeys = new Set<string>();
+    const matrix: Record<string, Record<string, number>> = {};
+    let maxVal = 0;
+
+    localLedger.forEach(entry => {
+      // Determine Row Key
+      let rKey = '';
+      if (pivotConfig.rowGroup === 'month') {
+        rKey = new Date(entry.date).toLocaleString('default', { month: 'short', year: '2-digit' });
+      } else {
+        rKey = String(entry[pivotConfig.rowGroup] || 'Unknown');
+      }
+
+      // Determine Col Key
+      let cKey = '';
+      if (pivotConfig.colGroup === 'month') {
+        cKey = new Date(entry.date).toLocaleString('default', { month: 'short', year: '2-digit' });
+      } else {
+        cKey = String(entry[pivotConfig.colGroup] || 'Unknown');
+      }
+
+      rowKeys.add(rKey);
+      colKeys.add(cKey);
+
+      if (!matrix[rKey]) matrix[rKey] = {};
+      if (!matrix[rKey][cKey]) matrix[rKey][cKey] = 0;
+
+      const val = pivotConfig.valueOp === 'sum' ? entry.amount : 1;
+      matrix[rKey][cKey] += val;
+
+      if (matrix[rKey][cKey] > maxVal) maxVal = matrix[rKey][cKey];
+    });
+
+    return {
+      rows: Array.from(rowKeys).sort(),
+      cols: Array.from(colKeys).sort(),
+      matrix,
+      maxVal
+    };
+  }, [localLedger, pivotConfig]);
+
+  // Helper to get heatmap color intensity
+  const getCellColor = (value: number, max: number) => {
+    if (!value) return 'transparent';
+    const intensity = Math.min((value / max) * 0.8 + 0.1, 0.9); // Scale opacity between 0.1 and 0.9
+    // Using Indigo as base color
+    return `rgba(99, 102, 241, ${intensity})`; 
+  };
+
+  const getTextColor = (value: number, max: number) => {
+    if (!value) return '';
+    return (value / max) > 0.5 ? 'text-white' : 'text-gray-900 dark:text-gray-100';
+  };
+
   return (
     <div className="space-y-6">
       
@@ -240,6 +304,12 @@ const AccountingPortal: React.FC<AccountingPortalProps> = ({ data, onOpenAI, isD
             className={`px-4 py-2 text-sm font-medium rounded-lg transition-all flex items-center gap-2 ${activeTab === 'ledger' ? 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300 shadow-sm' : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200'}`}
           >
             <FileText className="w-4 h-4" /> General Ledger
+          </button>
+          <button 
+            onClick={() => setActiveTab('summary')}
+            className={`px-4 py-2 text-sm font-medium rounded-lg transition-all flex items-center gap-2 ${activeTab === 'summary' ? 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300 shadow-sm' : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200'}`}
+          >
+            <Table className="w-4 h-4" /> Summary Tables
           </button>
           <button 
             onClick={() => setActiveTab('analysis')}
@@ -401,6 +471,130 @@ const AccountingPortal: React.FC<AccountingPortalProps> = ({ data, onOpenAI, isD
              </div>
           </div>
         </>
+      )}
+
+      {/* Summary Tables Tab */}
+      {activeTab === 'summary' && (
+        <div className="space-y-6">
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+              <div>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                  <Grid3X3 className="w-6 h-6 text-indigo-600" /> Comparative Pivot Table
+                </h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                  Dynamic multi-dimensional analysis with value heatmapping.
+                </p>
+              </div>
+              
+              {/* Controls */}
+              <div className="flex flex-wrap gap-4 bg-gray-50 dark:bg-gray-900/50 p-3 rounded-xl border border-gray-200 dark:border-gray-700">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Rows (Group By)</label>
+                  <select 
+                    value={pivotConfig.rowGroup}
+                    onChange={(e) => setPivotConfig({...pivotConfig, rowGroup: e.target.value as any})}
+                    className="px-3 py-1.5 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none"
+                  >
+                    <option value="account">Account Name</option>
+                    <option value="type">Transaction Type</option>
+                    <option value="status">Status</option>
+                    <option value="month">Month</option>
+                  </select>
+                </div>
+                
+                <ArrowRight className="w-4 h-4 self-center text-gray-400 mt-4 hidden md:block" />
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Columns</label>
+                  <select 
+                    value={pivotConfig.colGroup}
+                    onChange={(e) => setPivotConfig({...pivotConfig, colGroup: e.target.value as any})}
+                    className="px-3 py-1.5 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none"
+                  >
+                    <option value="month">Month</option>
+                    <option value="status">Status</option>
+                    <option value="type">Transaction Type</option>
+                    <option value="account">Account Name</option>
+                  </select>
+                </div>
+
+                <div className="w-px h-10 bg-gray-300 dark:bg-gray-600 self-center hidden md:block mx-2"></div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Values</label>
+                  <select 
+                    value={pivotConfig.valueOp}
+                    onChange={(e) => setPivotConfig({...pivotConfig, valueOp: e.target.value as any})}
+                    className="px-3 py-1.5 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none"
+                  >
+                    <option value="sum">Sum of Amount</option>
+                    <option value="count">Count of Entries</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700">
+              <table className="w-full text-sm text-left border-collapse">
+                <thead className="bg-gray-100 dark:bg-gray-700/50 text-gray-500 dark:text-gray-400 text-xs uppercase font-bold">
+                  <tr>
+                    <th className="p-4 border-b border-r border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 sticky left-0 z-10">
+                      {pivotConfig.rowGroup} \ {pivotConfig.colGroup}
+                    </th>
+                    {pivotData.cols.map(col => (
+                      <th key={col} className="p-4 border-b border-gray-200 dark:border-gray-600 text-right min-w-[120px]">
+                        {col}
+                      </th>
+                    ))}
+                    <th className="p-4 border-b border-gray-200 dark:border-gray-600 text-right bg-gray-50 dark:bg-gray-800 font-extrabold">
+                      Total
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                  {pivotData.rows.map(row => {
+                    let rowTotal = 0;
+                    return (
+                      <tr key={row} className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
+                        <td className="p-4 font-semibold text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 sticky left-0 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
+                          {row}
+                        </td>
+                        {pivotData.cols.map(col => {
+                          const val = pivotData.matrix[row][col] || 0;
+                          rowTotal += val;
+                          const bgStyle = getCellColor(val, pivotData.maxVal);
+                          const textClass = getTextColor(val, pivotData.maxVal);
+                          
+                          return (
+                            <td 
+                              key={col} 
+                              className={`p-3 text-right font-medium transition-colors ${textClass}`}
+                              style={{ backgroundColor: bgStyle }}
+                            >
+                              {val > 0 ? (pivotConfig.valueOp === 'sum' ? val.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0}) : val) : '-'}
+                            </td>
+                          );
+                        })}
+                        <td className="p-4 text-right font-bold text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800/50 border-l border-gray-200 dark:border-gray-600">
+                          {pivotConfig.valueOp === 'sum' ? rowTotal.toLocaleString() : rowTotal}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            
+            <div className="mt-4 flex justify-between items-center text-xs text-gray-500">
+               <div className="flex items-center gap-2">
+                  <span>Heatmap Intensity:</span>
+                  <div className="w-32 h-2 rounded-full bg-gradient-to-r from-indigo-100 to-indigo-600 dark:from-indigo-900/30 dark:to-indigo-500"></div>
+               </div>
+               <p>Showing {pivotData.rows.length} rows based on {filteredLedger.length} ledger entries.</p>
+            </div>
+          </div>
+        </div>
       )}
 
       {activeTab === 'compliance' && (
