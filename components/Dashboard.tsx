@@ -330,12 +330,9 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   // Report Logic
   const handleDownloadReport = () => {
-    setReportConfig(prev => ({...prev, isSaving: true}));
-    // Simulate API call/processing
-    setTimeout(() => {
-        setReportConfig(prev => ({...prev, isSaving: false}));
-        alert(`Report successfully saved: ${department.name}_${reportConfig.period}_Report.pdf`);
-    }, 1500);
+    // Standard web behavior: Open print dialog which includes "Save as PDF" option.
+    // This is the most reliable cross-browser way to save formatted content without backend generation.
+    window.print();
   };
 
   const generalDept = allDepartments.find(d => d.id === DepartmentType.GENERAL);
@@ -399,9 +396,34 @@ const Dashboard: React.FC<DashboardProps> = ({
     <div className="h-screen bg-gray-50 dark:bg-gray-900 flex overflow-hidden transition-colors duration-300 print:overflow-visible print:bg-white print:h-auto print:block">
       <style>{`
         @media print {
-          @page { margin: 0.5cm; size: landscape; }
-          /* ... print styles ... */
-          body { -webkit-print-color-adjust: exact; }
+          @page { margin: 0; size: auto; }
+          body * {
+            visibility: hidden;
+            height: 0; 
+            overflow: hidden;
+          }
+          /* Target only the specific report content container */
+          #report-content, #report-content * {
+            visibility: visible;
+            height: auto;
+            overflow: visible;
+          }
+          #report-content {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            margin: 0;
+            padding: 2cm; /* Professional print padding */
+            background: white !important;
+            color: black !important;
+            z-index: 9999;
+          }
+          /* Force page breaks if needed */
+          .page-break { page-break-before: always; }
+          
+          /* Hide non-printable elements inside the report if any */
+          .no-print { display: none !important; }
         }
       `}</style>
 
@@ -1073,11 +1095,11 @@ const Dashboard: React.FC<DashboardProps> = ({
 
       {/* Report Preview Modal */}
       {reportConfig.isOpen && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 backdrop-blur-sm bg-black/70">
-           <div className="bg-gray-100 dark:bg-gray-900 rounded-2xl w-full max-w-4xl h-[90vh] shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 backdrop-blur-sm bg-black/70 print:p-0 print:block print:relative print:z-auto print:bg-white">
+           <div className="bg-gray-100 dark:bg-gray-900 rounded-2xl w-full max-w-4xl h-[90vh] shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200 print:shadow-none print:w-full print:h-auto print:overflow-visible print:rounded-none">
               
-              {/* Header Actions */}
-              <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex justify-between items-center">
+              {/* Header Actions - Hidden in Print */}
+              <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex justify-between items-center print:hidden">
                  <div>
                     <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
                        <FileText className="w-5 h-5 text-indigo-600" /> Report Preview
@@ -1098,8 +1120,8 @@ const Dashboard: React.FC<DashboardProps> = ({
               </div>
 
               {/* PDF/Paper Preview Area - Always Light Mode for printing simulation */}
-              <div className="flex-1 overflow-y-auto p-8 bg-gray-200 dark:bg-gray-900 flex justify-center">
-                 <div className="bg-white text-black w-full max-w-[21cm] min-h-[29.7cm] p-12 shadow-xl print:shadow-none print:w-full print:max-w-none">
+              <div className="flex-1 overflow-y-auto p-8 bg-gray-200 dark:bg-gray-900 flex justify-center print:overflow-visible print:p-0 print:block print:bg-white">
+                 <div id="report-content" className="bg-white text-black w-full max-w-[21cm] min-h-[29.7cm] p-12 shadow-xl print:shadow-none print:w-full print:max-w-none print:p-0">
                     
                     {/* Report Header */}
                     <div className="flex justify-between items-start border-b-2 border-black pb-6 mb-8">
