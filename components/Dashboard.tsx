@@ -36,7 +36,7 @@ interface DashboardProps {
   setCart: React.Dispatch<React.SetStateAction<CartItem[]>>;
   isCartOpen: boolean;
   setIsCartOpen: React.Dispatch<React.SetStateAction<boolean>>;
-  onPrint: () => void; // New prop for printing
+  onPrint: () => void; 
 }
 
 const COLORS = ['#4f46e5', '#10b981', '#f59e0b', '#ef4444'];
@@ -332,6 +332,7 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   // Report Logic - Replaced by parent trigger via onPrint
   const handleDownloadReport = () => {
+    // This is for the Report Preview modal's internal download/print
     window.print();
   };
 
@@ -394,50 +395,7 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   return (
     <div className="h-screen bg-gray-50 dark:bg-gray-900 flex overflow-hidden transition-colors duration-300">
-      <style>{`
-        @media print {
-          @page { margin: 2.5cm; size: auto; }
-          html, body {
-            height: auto !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            overflow: visible !important;
-            background: white !important;
-          }
-          
-          /* Target specific elements to ensure they break cleanly */
-          .break-inside-avoid {
-            break-inside: avoid;
-            page-break-inside: avoid;
-          }
-
-          /* Ensure the report container flows properly */
-          #report-content, #dashboard-print-view {
-            position: relative !important;
-            width: 100% !important;
-            height: auto !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            overflow: visible !important;
-            box-shadow: none !important;
-          }
-          
-          /* Hide everything else when dashboard print view is active */
-          body:has(#dashboard-print-view) > * {
-             display: none;
-          }
-          body:has(#dashboard-print-view) #root {
-             display: block;
-          }
-          body:has(#dashboard-print-view) #root > * {
-             display: none;
-          }
-          body:has(#dashboard-print-view) #root .print-view-wrapper {
-             display: block;
-          }
-        }
-      `}</style>
-
+      
       {/* Mobile Overlay */}
       {isSidebarOpen && (
         <div 

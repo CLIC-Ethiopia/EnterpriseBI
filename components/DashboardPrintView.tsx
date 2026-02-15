@@ -18,6 +18,7 @@ const DashboardPrintView: React.FC<DashboardPrintViewProps> = ({ department, onC
   
   // Auto-trigger print dialog after a short delay to ensure charts render
   useEffect(() => {
+    // 800ms delay gives Recharts time to animate/render the SVG before print freeze
     const timer = setTimeout(() => {
       window.print();
     }, 800);
@@ -45,7 +46,8 @@ const DashboardPrintView: React.FC<DashboardPrintViewProps> = ({ department, onC
   const currentTime = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
 
   return (
-    <div className="fixed inset-0 z-[9999] bg-gray-100 overflow-y-auto flex justify-center items-start pt-10 print:bg-white print:pt-0 print:block print:inset-0 print:absolute print:overflow-visible">
+    // Outer Wrapper: Fixed/Absolute for screen preview, Static for print to allow paging
+    <div className="fixed inset-0 z-[9999] bg-gray-100 overflow-y-auto flex justify-center items-start pt-10 print:static print:pt-0 print:block print:bg-white print:overflow-visible">
       
       {/* Floating Close Button (Hidden in Print) */}
       <button 
@@ -56,12 +58,12 @@ const DashboardPrintView: React.FC<DashboardPrintViewProps> = ({ department, onC
       </button>
 
       {/* A4 Page Container */}
-      <div id="dashboard-print-view" className="bg-white w-[210mm] min-h-[297mm] p-[15mm] shadow-2xl print:shadow-none print:w-full print:p-0 text-black font-sans relative">
+      <div id="dashboard-print-view" className="bg-white w-[210mm] min-h-[297mm] p-[15mm] shadow-2xl print:shadow-none print:w-full print:p-0 print:m-0 text-black font-sans relative">
         
         {/* REPORT HEADER */}
-        <header className="border-b-4 border-indigo-900 pb-6 mb-8 flex justify-between items-start">
+        <header className="border-b-4 border-indigo-900 pb-6 mb-8 flex justify-between items-start print:break-inside-avoid">
             <div className="flex items-center gap-4">
-                <div className="w-16 h-16 bg-indigo-900 rounded-xl flex items-center justify-center text-white">
+                <div className="w-16 h-16 bg-indigo-900 rounded-xl flex items-center justify-center text-white print:print-color-adjust-exact">
                     <Globe className="w-10 h-10" />
                 </div>
                 <div>
@@ -78,7 +80,7 @@ const DashboardPrintView: React.FC<DashboardPrintViewProps> = ({ department, onC
         </header>
 
         {/* INTRO SECTION */}
-        <section className="bg-gray-50 border border-gray-200 rounded-lg p-6 mb-8 flex justify-between items-center break-inside-avoid">
+        <section className="bg-gray-50 border border-gray-200 rounded-lg p-6 mb-8 flex justify-between items-center break-inside-avoid print:bg-gray-50 print:print-color-adjust-exact">
             <div>
                 <h2 className="text-xl font-bold text-indigo-900 mb-1">{department.name}</h2>
                 <p className="text-sm text-gray-600 italic max-w-md">{department.description}</p>
@@ -138,7 +140,7 @@ const DashboardPrintView: React.FC<DashboardPrintViewProps> = ({ department, onC
                                 stroke={i === 0 ? '#4f46e5' : COLORS[i % COLORS.length]} 
                                 fill={i === 0 ? '#e0e7ff' : "none"} 
                                 strokeWidth={2}
-                                isAnimationActive={false} // CRITICAL for print
+                                isAnimationActive={false} // CRITICAL for print: disables animation so it renders immediately
                             />
                         ))}
                     </AreaChart>
@@ -200,7 +202,7 @@ const DashboardPrintView: React.FC<DashboardPrintViewProps> = ({ department, onC
         <section className="break-before-auto">
             <h3 className="text-sm font-bold text-gray-500 uppercase border-b border-gray-300 pb-2 mb-4">{department.tableTitle}</h3>
             <table className="w-full text-xs text-left border-collapse border border-gray-200">
-                <thead className="bg-gray-100 text-gray-700">
+                <thead className="bg-gray-100 text-gray-700 print:bg-gray-100 print:print-color-adjust-exact">
                     <tr>
                         <th className="p-3 border-b border-gray-300">Item</th>
                         <th className="p-3 border-b border-gray-300">Category</th>
@@ -215,7 +217,7 @@ const DashboardPrintView: React.FC<DashboardPrintViewProps> = ({ department, onC
                             <td className="p-3 font-medium text-gray-900">{row.item}</td>
                             <td className="p-3 text-gray-600">{row.category}</td>
                             <td className="p-3">
-                                <span className={`px-2 py-1 rounded-full font-bold text-[10px] uppercase border ${
+                                <span className={`px-2 py-1 rounded-full font-bold text-[10px] uppercase border print:print-color-adjust-exact ${
                                     row.status === 'Good' ? 'bg-green-50 text-green-700 border-green-200' :
                                     row.status === 'Critical' ? 'bg-red-50 text-red-700 border-red-200' :
                                     row.status === 'Warning' ? 'bg-yellow-50 text-yellow-700 border-yellow-200' :
@@ -227,7 +229,7 @@ const DashboardPrintView: React.FC<DashboardPrintViewProps> = ({ department, onC
                             <td className="p-3 text-right font-mono text-gray-800">{row.value}</td>
                             <td className="p-3 text-right">
                                 <div className="flex items-center justify-end gap-2">
-                                    <div className="w-16 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                                    <div className="w-16 h-1.5 bg-gray-200 rounded-full overflow-hidden print:print-color-adjust-exact">
                                         <div className="h-full bg-indigo-600" style={{width: `${row.completion}%`}}></div>
                                     </div>
                                     <span className="text-gray-500">{row.completion}%</span>
