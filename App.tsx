@@ -9,6 +9,7 @@ import AIAnalyst from './components/AIAnalyst';
 import LandingPage from './components/LandingPage';
 import InfoPage from './components/InfoPage';
 import BottomDock from './components/BottomDock';
+import DashboardPrintView from './components/DashboardPrintView';
 import { LayoutGrid, Globe, Moon, Sun, HelpCircle, Database } from 'lucide-react';
 
 type ViewState = 'LANDING' | 'SELECTION' | 'DASHBOARD' | 'INFO';
@@ -33,6 +34,9 @@ const App: React.FC = () => {
   
   // Theme State - Default to Dark Mode
   const [isDarkMode, setIsDarkMode] = useState(true);
+
+  // Print View State
+  const [isPrintViewOpen, setIsPrintViewOpen] = useState(false);
 
   // Fetch Data from Google Sheets on Mount
   useEffect(() => {
@@ -136,6 +140,15 @@ const App: React.FC = () => {
     }
   };
 
+  const handlePrint = () => {
+    if (viewState === 'DASHBOARD' && activeDepartment) {
+      setIsPrintViewOpen(true);
+    } else {
+      // If not in dashboard, default print
+      window.print();
+    }
+  };
+
   return (
     <div className={`min-h-screen ${viewState === 'LANDING' ? '' : 'bg-gray-50 dark:bg-gray-900'} font-sans text-gray-900 dark:text-gray-100 selection:bg-indigo-100 selection:text-indigo-900 transition-colors duration-300`}>
       
@@ -158,6 +171,16 @@ const App: React.FC = () => {
 
       {viewState === 'DASHBOARD' && activeDepartment && (
         <>
+          <div className="print-view-wrapper hidden">
+             {/* This wrapper is hidden by default and shown ONLY during print via CSS in Dashboard.tsx */}
+             {isPrintViewOpen && (
+                <DashboardPrintView 
+                  department={activeDepartment}
+                  onClose={() => setIsPrintViewOpen(false)}
+                />
+             )}
+          </div>
+          
           <Dashboard 
             department={activeDepartment} 
             allDepartments={departments}
@@ -171,6 +194,7 @@ const App: React.FC = () => {
             setCart={setCart}
             isCartOpen={isCartOpen}
             setIsCartOpen={setIsCartOpen}
+            onPrint={handlePrint}
           />
           <AIAnalyst 
             department={activeDepartment} 
@@ -248,7 +272,7 @@ const App: React.FC = () => {
           </main>
           
           <footer className="py-6 text-center text-sm text-gray-400 dark:text-gray-600 pb-24">
-            &copy; 2024 GlobalTrade Logistics Inc. All rights reserved.
+            &copy; 2024 GlobalTrade Logistics Inc. | Enterprise Grade BI Suite
           </footer>
         </div>
       )}
@@ -314,6 +338,7 @@ const App: React.FC = () => {
           showLogout={viewState === 'DASHBOARD'}
           onOpenCart={() => setIsCartOpen(true)}
           cartCount={cart.length}
+          onPrint={handlePrint}
         />
       )}
 

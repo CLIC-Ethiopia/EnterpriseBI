@@ -13,6 +13,7 @@ interface BottomDockProps {
   showLogout: boolean;
   onOpenCart?: () => void;
   cartCount?: number;
+  onPrint?: () => void;
 }
 
 const BottomDock: React.FC<BottomDockProps> = ({ 
@@ -23,7 +24,8 @@ const BottomDock: React.FC<BottomDockProps> = ({
   onLogout,
   showLogout,
   onOpenCart,
-  cartCount
+  cartCount,
+  onPrint
 }) => {
   const dockItems = [
     { icon: Home, label: 'Home', onClick: onHome },
@@ -34,7 +36,7 @@ const BottomDock: React.FC<BottomDockProps> = ({
       badge: cartCount 
     }] : []),
     { icon: Info, label: 'Documentation', onClick: onShowInfo },
-    { icon: Printer, label: 'Print View', onClick: () => window.print() },
+    { icon: Printer, label: 'Print View', onClick: onPrint || (() => window.print()) },
     { 
       icon: isDarkMode ? Sun : Moon, 
       label: isDarkMode ? 'Light Mode' : 'Dark Mode', 

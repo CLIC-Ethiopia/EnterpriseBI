@@ -36,6 +36,7 @@ interface DashboardProps {
   setCart: React.Dispatch<React.SetStateAction<CartItem[]>>;
   isCartOpen: boolean;
   setIsCartOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  onPrint: () => void; // New prop for printing
 }
 
 const COLORS = ['#4f46e5', '#10b981', '#f59e0b', '#ef4444'];
@@ -62,7 +63,8 @@ const Dashboard: React.FC<DashboardProps> = ({
   cart,
   setCart,
   isCartOpen,
-  setIsCartOpen
+  setIsCartOpen,
+  onPrint
 }) => {
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const [activeKpiComment, setActiveKpiComment] = useState<number | null>(null);
@@ -328,10 +330,8 @@ const Dashboard: React.FC<DashboardProps> = ({
     });
   };
 
-  // Report Logic
+  // Report Logic - Replaced by parent trigger via onPrint
   const handleDownloadReport = () => {
-    // Standard web behavior: Open print dialog which includes "Save as PDF" option.
-    // This is the most reliable cross-browser way to save formatted content without backend generation.
     window.print();
   };
 
@@ -412,7 +412,7 @@ const Dashboard: React.FC<DashboardProps> = ({
           }
 
           /* Ensure the report container flows properly */
-          #report-content {
+          #report-content, #dashboard-print-view {
             position: relative !important;
             width: 100% !important;
             height: auto !important;
@@ -420,6 +420,20 @@ const Dashboard: React.FC<DashboardProps> = ({
             padding: 0 !important;
             overflow: visible !important;
             box-shadow: none !important;
+          }
+          
+          /* Hide everything else when dashboard print view is active */
+          body:has(#dashboard-print-view) > * {
+             display: none;
+          }
+          body:has(#dashboard-print-view) #root {
+             display: block;
+          }
+          body:has(#dashboard-print-view) #root > * {
+             display: none;
+          }
+          body:has(#dashboard-print-view) #root .print-view-wrapper {
+             display: block;
           }
         }
       `}</style>
@@ -594,7 +608,7 @@ const Dashboard: React.FC<DashboardProps> = ({
             )}
 
             <button 
-              onClick={() => window.print()}
+              onClick={onPrint}
               className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-gray-600 dark:text-gray-400 transition-colors"
               title="Print Dashboard / Save as PDF"
             >
