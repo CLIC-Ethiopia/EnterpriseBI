@@ -1,3 +1,4 @@
+
 const express = require('express');
 const { Pool } = require('pg');
 const cors = require('cors');
@@ -33,6 +34,10 @@ app.get('/api/departments', async (req, res) => {
     const routes = await pool.query('SELECT * FROM logistics_routes');
     const users = await pool.query('SELECT * FROM users');
     const logs = await pool.query('SELECT * FROM system_logs');
+    
+    // NEW: Fetch Pivot Data
+    const budgetRecords = await pool.query('SELECT * FROM budget_records');
+    const crossDeptRisks = await pool.query('SELECT * FROM cross_dept_risks');
 
     // Map DB rows to Frontend Structure
     const mappedDepartments = depts.rows.map(d => {
@@ -49,7 +54,19 @@ app.get('/api/departments', async (req, res) => {
       else if (d.id === 'ACCOUNTING') {
          d.accountingData = { 
              ledger: ledger.rows.map(l => ({...l, amount: Number(l.amount)})),
-             upcomingTax: tax.rows.map(t => ({...t, amount: Number(t.amount)}))
+             upcomingTax: tax.rows.map(t => ({...t, amount: Number(t.amount)})),
+             // Inject new pivot data sets for the Comparative Pivot feature
+             budgetAnalysis: budgetRecords.rows.map(b => ({
+                 ...b,
+                 budget: Number(b.budget_amount),
+                 actual: Number(b.actual_amount),
+                 variance: Number(b.variance)
+             })),
+             crossDeptAnalysis: crossDeptRisks.rows.map(r => ({
+                 ...r,
+                 amount: Number(r.amount),
+                 riskScore: Number(r.risk_score)
+             }))
          };
       }
       else if (d.id === 'IMPORT_COSTING') {
