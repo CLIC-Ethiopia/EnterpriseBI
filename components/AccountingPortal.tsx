@@ -1474,9 +1474,9 @@ const AccountingPortal: React.FC<AccountingPortalProps> = ({ data, onOpenAI, isD
                          <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Market Elasticity (Price Sensitivity)</label>
                          <select value={priceSimInputs.elasticity} onChange={e => setPriceSimInputs({...priceSimInputs, elasticity: Number(e.target.value)})} className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-600 rounded-lg outline-none text-gray-900 dark:text-white text-sm">
                             <option value="0.5">Low (Inelastic Demand)</option>
-                            <option value="1">Medium (Unitary)</option>
+                            <option value="1.0">Medium (Unitary)</option>
                             <option value="1.5">High (Elastic Demand)</option>
-                            <option value="2">Very High (Luxury Goods)</option>
+                            <option value="2.0">Very High (Luxury Goods)</option>
                          </select>
                       </div>
                       <div className="pt-2">
