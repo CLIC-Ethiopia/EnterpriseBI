@@ -1070,13 +1070,10 @@ const Dashboard: React.FC<DashboardProps> = ({
            <style>{`
               @media print {
                 @page { margin: 1.5cm; }
-                /* Ensure this specific modal and its children are visible */
-                .report-print-container, .report-print-container * {
-                  visibility: visible !important;
-                  display: block !important;
-                }
-                /* Position strictly for print */
+                
+                /* Ensure the container is visible and positioned */
                 .report-print-container {
+                  visibility: visible !important;
                   position: absolute !important;
                   top: 0 !important;
                   left: 0 !important;
@@ -1084,11 +1081,24 @@ const Dashboard: React.FC<DashboardProps> = ({
                   height: auto !important;
                   z-index: 10000 !important;
                   background: white !important;
+                  display: block !important;
                 }
+
+                /* Ensure children are visible but keep their layout (flex/grid) */
+                .report-print-container * {
+                  visibility: visible !important;
+                }
+
+                /* CRITICAL: Hide this style block from being rendered as text */
+                .report-print-container style {
+                  display: none !important;
+                }
+
                 /* Hide the main print view if it was triggered accidentally */
                 .print-view-wrapper {
                   display: none !important;
                 }
+                
                 /* Ensure Background colors print */
                 .print-exact {
                   -webkit-print-color-adjust: exact !important;
