@@ -5,11 +5,11 @@ import {
   Calculator, PieChart as PieIcon, TrendingUp, DollarSign, Calendar, Search, 
   FileText, Sliders, ArrowRight, Plus, Download, RefreshCw, Activity, Layers, Scale, X, GraduationCap,
   Stamp, Printer, AlertCircle, FileCheck, CheckCircle2, FileBarChart, Table, Grid3X3, Maximize2, Minimize2, Divide,
-  Package, Landmark, Truck
+  Package, Landmark, Truck, BarChart2, Sigma, GitCommit, Target, Zap, Coins, ShoppingBag, TrendingDown
 } from 'lucide-react';
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
-  BarChart, Bar, Legend, Cell, PieChart, Pie
+  BarChart, Bar, Legend, Cell, PieChart, Pie, ComposedChart, Line, Scatter, ReferenceLine
 } from 'recharts';
 import ExecutiveReporting from './ExecutiveReporting';
 
@@ -28,12 +28,12 @@ const ACCOUNTING_METRICS: ReportMetric[] = [
   { id: 'acc6', name: 'Payroll Cost', category: 'HR', type: 'currency' },
 ];
 
+// ... (Existing Constants: ACCOUNTING_REQUESTS, CROSS_DEPT_DATA, BUDGET_DATA, INVENTORY_DATA, Pivot Logic) ...
 const ACCOUNTING_REQUESTS: ReportRequest[] = [
   { id: 'REQ-201', title: 'Q3 Vendor Payment Summary', submittedBy: 'Belete Chala', department: 'Finance', dateSubmitted: '2024-10-25', priority: 'Normal', status: 'Pending', description: 'Consolidated report of all payments made to chemical suppliers in Q3.' },
   { id: 'REQ-202', title: 'Expense Audit: Marketing', submittedBy: 'Tigist Bekele', department: 'Sales', dateSubmitted: '2024-10-24', priority: 'High', status: 'Approved', description: 'Review of travel and event expenses against budget.' },
 ];
 
-// Mock Data for Cross-Department Analysis
 const CROSS_DEPT_DATA = [
   { id: 1, dept: 'Sales', category: 'Travel', month: 'Jan', amount: 15000, riskScore: 85 },
   { id: 2, dept: 'Sales', category: 'Software', month: 'Jan', amount: 4200, riskScore: 20 },
@@ -49,7 +49,6 @@ const CROSS_DEPT_DATA = [
   { id: 12, dept: 'IT', category: 'Software', month: 'Mar', amount: 6000, riskScore: 15 },
 ];
 
-// Mock Data for Budget Analysis
 const BUDGET_DATA = [
   { dept: 'Sales', category: 'Travel', month: 'Jan', budget: 20000, actual: 15000, variance: 5000 },
   { dept: 'Sales', category: 'Marketing', month: 'Jan', budget: 50000, actual: 48000, variance: 2000 },
@@ -62,7 +61,6 @@ const BUDGET_DATA = [
   { dept: 'Ops', category: 'Maintenance', month: 'Feb', budget: 25000, actual: 22000, variance: 3000 },
 ];
 
-// Mock Data for Inventory Analysis
 const INVENTORY_DATA = [
   { item: 'Chemical A', category: 'Chemicals', location: 'Zone A', quantity: 500, unit_cost: 50, total_value: 25000, status: 'In Stock' },
   { item: 'Fabric Roll X', category: 'Textiles', location: 'Zone B', quantity: 100, unit_cost: 150, total_value: 15000, status: 'Low Stock' },
@@ -73,14 +71,13 @@ const INVENTORY_DATA = [
   { item: 'Packaging', category: 'Supplies', location: 'Zone C', quantity: 5000, unit_cost: 2, total_value: 10000, status: 'In Stock' },
 ];
 
-// --- PIVOT HELPER FUNCTIONS ---
+// Pivot Helper Functions
 type AggregationType = 'sum' | 'count' | 'avg' | 'max' | 'min';
 
 const calculatePivotData = (data: any[], rowKeyField: string, colKeyField: string, valueField: string, operation: AggregationType) => {
   const rowKeys = new Set<string>();
   const colKeys = new Set<string>();
   const matrix: Record<string, Record<string, number>> = {};
-  // For average calculation
   const counts: Record<string, Record<string, number>> = {}; 
   
   let maxVal = 0;
@@ -95,7 +92,6 @@ const calculatePivotData = (data: any[], rowKeyField: string, colKeyField: strin
 
     if (!matrix[rKey]) matrix[rKey] = {};
     if (!matrix[rKey][cKey] && matrix[rKey][cKey] !== 0) {
-       // Initialize based on op
        matrix[rKey][cKey] = operation === 'min' ? Infinity : operation === 'max' ? -Infinity : 0;
     }
     
@@ -107,12 +103,11 @@ const calculatePivotData = (data: any[], rowKeyField: string, colKeyField: strin
     else if (operation === 'max') matrix[rKey][cKey] = Math.max(matrix[rKey][cKey], val);
     else if (operation === 'min') matrix[rKey][cKey] = Math.min(matrix[rKey][cKey], val);
     else if (operation === 'avg') {
-      matrix[rKey][cKey] += val; // Sum first, divide later
+      matrix[rKey][cKey] += val;
       counts[rKey][cKey] += 1;
     }
   });
 
-  // Final Pass for Averages and Global Max finding
   const rows = Array.from(rowKeys).sort();
   const cols = Array.from(colKeys).sort();
 
@@ -122,9 +117,7 @@ const calculatePivotData = (data: any[], rowKeyField: string, colKeyField: strin
         if (operation === 'avg') {
           matrix[r][c] = matrix[r][c] / counts[r][c];
         }
-        // Handle Infinity for Min if no data
         if (matrix[r][c] === Infinity || matrix[r][c] === -Infinity) matrix[r][c] = 0;
-        
         if (matrix[r][c] > maxVal) maxVal = matrix[r][c];
       }
     });
@@ -141,7 +134,6 @@ const PivotTableVisual: React.FC<{
   config: { row: string, col: string, val: string, op: AggregationType },
   onConfigChange?: (key: string, val: string) => void
 }> = ({ title, icon, data, config, onConfigChange }) => {
-  
   const { rows, cols, matrix, maxVal } = useMemo(() => 
     calculatePivotData(data, config.row, config.col, config.val, config.op), 
   [data, config]);
@@ -149,7 +141,6 @@ const PivotTableVisual: React.FC<{
   const getCellColor = (value: number, max: number) => {
     if (!value && value !== 0) return 'transparent';
     const intensity = max === 0 ? 0 : Math.min((Math.abs(value) / max) * 0.8 + 0.1, 0.9);
-    // Use Red for negative values if it's variance, else Indigo
     const isNegative = value < 0;
     if (isNegative) return `rgba(239, 68, 68, ${intensity})`;
     return `rgba(99, 102, 241, ${intensity})`; 
@@ -231,6 +222,24 @@ const PivotTableVisual: React.FC<{
   );
 };
 
+// --- DATASETS FOR AD-HOC ANALYSIS ---
+const CROSS_DEPT_METRICS = [
+  { id: 'rev', name: 'Sales Revenue', dept: 'Sales', type: 'currency', data: [85000, 92000, 88000, 95000, 105000, 115000] },
+  { id: 'cogs', name: 'Cost of Goods', dept: 'Inventory', type: 'currency', data: [45000, 48000, 46000, 50000, 55000, 58000] },
+  { id: 'pay', name: 'Payroll Expense', dept: 'HR', type: 'currency', data: [25000, 25000, 26000, 26000, 28000, 28000] },
+  { id: 'mar', name: 'Marketing Spend', dept: 'Sales', type: 'currency', data: [5000, 8000, 4000, 9000, 6000, 7000] },
+  { id: 'inv', name: 'Inventory Value', dept: 'Inventory', type: 'currency', data: [120000, 115000, 130000, 125000, 110000, 105000] },
+  { id: 'tax', name: 'Tax Liability', dept: 'Finance', type: 'currency', data: [12750, 13800, 13200, 14250, 15750, 17250] },
+  { id: 'cash', name: 'Cash Flow', dept: 'Finance', type: 'currency', data: [15000, 8000, 18000, 5000, 20000, 25000] },
+];
+
+const IMPORT_CANDIDATES = [
+  { id: 1, name: "Industrial Solvents (Barrels)", cost: 1200, price: 1800, margin: 0.5, demand: 500, category: "Chemicals" },
+  { id: 2, name: "Giza Cotton Bales", cost: 18500, price: 24000, margin: 0.3, demand: 80, category: "Textiles" },
+  { id: 3, name: "Weaving Machinery Parts", cost: 4500, price: 7200, margin: 0.6, demand: 40, category: "Machinery" }
+];
+
+const PERIODS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
 
 const AccountingPortal: React.FC<AccountingPortalProps> = ({ data, onOpenAI, isDarkMode }) => {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'ledger' | 'analysis' | 'compliance' | 'reports' | 'summary'>('dashboard');
@@ -247,6 +256,22 @@ const AccountingPortal: React.FC<AccountingPortalProps> = ({ data, onOpenAI, isD
     amount: 0,
     status: 'Pending'
   });
+
+  // --- AD-HOC ANALYSIS STATES ---
+  const [selectedMetricIds, setSelectedMetricIds] = useState<string[]>(['rev', 'cogs']);
+  const [showForecast, setShowForecast] = useState(false);
+
+  // 1. PRICE SENSITIVITY STATE
+  const [priceSimInputs, setPriceSimInputs] = useState({
+    baseCost: 1000,
+    targetMargin: 20,
+    taxRate: 15,
+    elasticity: 1.5, // 1.5 means 1% price increase drops demand by 1.5%
+    baseDemand: 500
+  });
+
+  // 2. MIX OPTIMIZATION STATE
+  const [mixBudget, setMixBudget] = useState(1000000);
 
   // --- SUMMARY TABLE STATES ---
   type DatasetType = 'ledger' | 'budget' | 'inventory';
@@ -277,7 +302,6 @@ const AccountingPortal: React.FC<AccountingPortalProps> = ({ data, onOpenAI, isD
   // Determine available keys for the current dataset (for dropdowns)
   const availableKeys = useMemo(() => {
     if (currentDataset.length === 0) return [];
-    // Get keys from first item, filter out 'id' if generic
     return Object.keys(currentDataset[0]).filter(k => k !== 'id' && typeof currentDataset[0][k] !== 'object');
   }, [currentDataset]);
 
@@ -330,14 +354,12 @@ const AccountingPortal: React.FC<AccountingPortalProps> = ({ data, onOpenAI, isD
       vatAmount = baseAmount * 0.15;
       notes.push('VAT (15%) applied.');
     } else if (supplierCategory === 'TOT_Reg') {
-      // TOT is 2% for Goods, 10% for Services usually, but simplified here as per user prompt logic requests
       const totRate = transactionType === 'Goods' ? 0.02 : 0.10;
       totAmount = baseAmount * totRate;
       notes.push(`TOT (${totRate * 100}%) applied for ${transactionType}.`);
     }
 
     // 2. Withholding Tax Logic
-    // Threshold > 3,000 ETB
     const isWhtApplicable = baseAmount >= 3000;
     if (isWhtApplicable) {
       const whtRate = transactionType === 'Goods' ? 0.02 : 0.05;
@@ -347,7 +369,6 @@ const AccountingPortal: React.FC<AccountingPortalProps> = ({ data, onOpenAI, isD
       notes.push('No Withholding Tax (Amount < 3,000 ETB).');
     }
 
-    // Net Payable = Base + VAT/TOT - WHT
     const netPayable = baseAmount + vatAmount + totAmount - whtAmount;
 
     setTaxResult({
@@ -360,38 +381,6 @@ const AccountingPortal: React.FC<AccountingPortalProps> = ({ data, onOpenAI, isD
       notes
     });
   };
-
-  // Analysis Tool States
-  const [ratioInputs, setRatioInputs] = useState({
-    currentAssets: 1250000,
-    currentLiabilities: 690000,
-    inventory: 450000,
-    cash: 150000
-  });
-
-  const [breakevenInputs, setBreakevenInputs] = useState({
-    fixedCosts: 50000,
-    variableCostPerUnit: 120,
-    pricePerUnit: 250
-  });
-
-  // DuPont Analysis State
-  const [dupontInputs, setDupontInputs] = useState({
-    netIncome: 320000,
-    revenue: 1450000,
-    assets: 2100000,
-    equity: 1200000
-  });
-
-  // Profit Sensitivity State
-  const [sensitivityInputs, setSensitivityInputs] = useState({
-    revenueGrowth: 0,
-    cogsIncrease: 0,
-    opexIncrease: 0,
-    baseRevenue: 1000000,
-    baseCOGS: 600000,
-    baseOpex: 200000
-  });
 
   // Updated Tooltip Style for Better Contrast
   const tooltipStyle = {
@@ -407,26 +396,6 @@ const AccountingPortal: React.FC<AccountingPortalProps> = ({ data, onOpenAI, isD
   const itemStyle = {
     color: isDarkMode ? '#f3f4f6' : '#1f2937',
   };
-
-  const currentRatio = (ratioInputs.currentAssets / ratioInputs.currentLiabilities).toFixed(2);
-  const quickRatio = ((ratioInputs.currentAssets - ratioInputs.inventory) / ratioInputs.currentLiabilities).toFixed(2);
-  const cashRatio = (ratioInputs.cash / ratioInputs.currentLiabilities).toFixed(2);
-  
-  const breakevenUnits = Math.ceil(breakevenInputs.fixedCosts / (breakevenInputs.pricePerUnit - breakevenInputs.variableCostPerUnit));
-  const breakevenRevenue = breakevenUnits * breakevenInputs.pricePerUnit;
-
-  // DuPont Calculations
-  const profitMargin = (dupontInputs.netIncome / dupontInputs.revenue) * 100;
-  const assetTurnover = dupontInputs.revenue / dupontInputs.assets;
-  const financialLeverage = dupontInputs.assets / dupontInputs.equity;
-  const roe = (profitMargin / 100) * assetTurnover * financialLeverage * 100;
-
-  // Sensitivity Calculations
-  const sensRevenue = sensitivityInputs.baseRevenue * (1 + sensitivityInputs.revenueGrowth / 100);
-  const sensCOGS = sensitivityInputs.baseCOGS * (1 + sensitivityInputs.cogsIncrease / 100);
-  const sensOpex = sensitivityInputs.baseOpex * (1 + sensitivityInputs.opexIncrease / 100);
-  const sensNetProfit = sensRevenue - sensCOGS - sensOpex;
-  const sensMargin = (sensNetProfit / sensRevenue) * 100;
 
   const accountingData = data.accountingData;
   
@@ -476,6 +445,207 @@ const AccountingPortal: React.FC<AccountingPortalProps> = ({ data, onOpenAI, isD
     { name: 'Op. Margin', value: 18, color: '#3b82f6' },
     { name: 'Net Margin', value: 12, color: '#6366f1' },
   ];
+
+  // --- AD-HOC LOGIC HELPERS ---
+  const toggleMetric = (id: string) => {
+    if (selectedMetricIds.includes(id)) {
+      setSelectedMetricIds(prev => prev.filter(m => m !== id));
+    } else {
+      setSelectedMetricIds(prev => [...prev, id]);
+    }
+  };
+
+  const chartData = useMemo(() => {
+    const base = PERIODS.map((p, i) => {
+      const point: any = { name: p };
+      selectedMetricIds.forEach(mId => {
+        const metric = CROSS_DEPT_METRICS.find(m => m.id === mId);
+        if (metric) point[metric.name] = metric.data[i];
+      });
+      return point;
+    });
+
+    if (showForecast) {
+      // Simple linear regression forecast for next 3 periods
+      const nextPeriods = ['Jul', 'Aug', 'Sep'];
+      const forecastPoints = nextPeriods.map((p, i) => {
+        const point: any = { name: p, isForecast: true };
+        selectedMetricIds.forEach(mId => {
+          const metric = CROSS_DEPT_METRICS.find(m => m.id === mId);
+          if (metric) {
+            const values = metric.data;
+            const n = values.length;
+            const sumX = values.reduce((acc, _, idx) => acc + idx, 0);
+            const sumY = values.reduce((acc, val) => acc + val, 0);
+            const sumXY = values.reduce((acc, val, idx) => acc + (idx * val), 0);
+            const sumX2 = values.reduce((acc, _, idx) => acc + (idx * idx), 0);
+            
+            const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+            const intercept = (sumY - slope * sumX) / n;
+            
+            const nextIndex = n + i;
+            point[metric.name] = Math.round(slope * nextIndex + intercept);
+          }
+        });
+        return point;
+      });
+      return [...base, ...forecastPoints];
+    }
+    return base;
+  }, [selectedMetricIds, showForecast]);
+
+  const stats = useMemo(() => {
+    if (selectedMetricIds.length === 0) return null;
+    
+    // Aggregate all selected data into a single array for basic stats
+    const allValues: number[] = [];
+    selectedMetricIds.forEach(id => {
+      const m = CROSS_DEPT_METRICS.find(m => m.id === id);
+      if (m) allValues.push(...m.data);
+    });
+
+    const sum = allValues.reduce((a, b) => a + b, 0);
+    const avg = sum / allValues.length;
+    const min = Math.min(...allValues);
+    const max = Math.max(...allValues);
+    
+    // Volatility (Std Dev)
+    const squareDiffs = allValues.map(value => Math.pow(value - avg, 2));
+    const avgSquareDiff = squareDiffs.reduce((a, b) => a + b, 0) / squareDiffs.length;
+    const stdDev = Math.sqrt(avgSquareDiff);
+
+    return { sum, avg, min, max, stdDev };
+  }, [selectedMetricIds]);
+
+  // Accounting Specifics (Mock calculations based on selected 'rev' and 'cogs' if available, else defaults)
+  const accountingRatios = useMemo(() => {
+    const revMetric = CROSS_DEPT_METRICS.find(m => m.id === 'rev');
+    const cogsMetric = CROSS_DEPT_METRICS.find(m => m.id === 'cogs');
+    const opExpMetric = CROSS_DEPT_METRICS.find(m => m.id === 'pay') || {data: [20000, 20000, 20000, 20000, 20000, 20000]}; // Fallback
+
+    // Using most recent month (last index)
+    const idx = 5; 
+    const revenue = revMetric?.data[idx] || 100000;
+    const cogs = cogsMetric?.data[idx] || 50000;
+    const opex = opExpMetric.data[idx];
+
+    const grossProfit = revenue - cogs;
+    const grossMargin = (grossProfit / revenue) * 100;
+    const netProfit = grossProfit - opex;
+    const netMargin = (netProfit / revenue) * 100;
+    const opRatio = ((cogs + opex) / revenue) * 100;
+
+    return { grossMargin, netMargin, opRatio, netProfit };
+  }, []);
+
+  // --- NEW SIMULATION CALCULATIONS ---
+  const priceSimulationData = useMemo(() => {
+    const { baseCost, taxRate, elasticity, baseDemand } = priceSimInputs;
+    const dataPoints = [];
+    
+    // Fixed Market Baseline: The "Norm" against which elasticity is measured.
+    // We assume the user's baseDemand (e.g. 500) is valid at a "Standard" 20% margin and 15% tax.
+    const standardMargin = 20; 
+    const standardTaxRate = 15;
+    const baselinePrice = baseCost * (1 + standardMargin / 100) * (1 + standardTaxRate / 100);
+
+    // Simulate from 5% margin to 50% margin
+    for (let m = 5; m <= 50; m += 5) {
+       const taxMultiplier = 1 + (taxRate / 100);
+       const price = baseCost * (1 + m / 100) * taxMultiplier;
+       
+       // Calculate new demand based on price elasticity (relative to the Standard Baseline)
+       const priceChangePct = (price - baselinePrice) / baselinePrice;
+       // Elasticity formula: %ChangeDemand = Elasticity * %ChangePrice * -1
+       const demandChangePct = priceChangePct * elasticity * -1;
+       const projectedDemand = Math.max(0, Math.round(baseDemand * (1 + demandChangePct)));
+       
+       // Profit Calc: (Price w/o Tax - Cost) * Demand
+       const revenue = (price / taxMultiplier) * projectedDemand; // Net Sales (Excl Tax)
+       const costTotal = baseCost * projectedDemand;
+       const profit = revenue - costTotal;
+
+       dataPoints.push({
+          margin: m,
+          price: Math.round(price),
+          demand: projectedDemand,
+          revenue: Math.round(revenue),
+          profit: Math.round(profit)
+       });
+    }
+    return dataPoints;
+  }, [priceSimInputs]);
+
+  const mixSimulationData = useMemo(() => {
+     // 3 Strategies: Volume (Low Cost), Margin (High Margin), Balanced
+     const strategies = [
+        { name: 'Volume First', key: 'volume', color: '#3b82f6' },
+        { name: 'Profit First', key: 'profit', color: '#10b981' },
+        { name: 'Balanced', key: 'balanced', color: '#f59e0b' }
+     ];
+
+     const results = strategies.map(strat => {
+        let remainingBudget = mixBudget;
+        let totalRevenue = 0;
+        let totalProfit = 0;
+        let totalUnits = 0;
+        const mix: Record<string, number> = {};
+
+        // Sort candidates based on strategy
+        const sortedCandidates = [...IMPORT_CANDIDATES].sort((a, b) => {
+           if (strat.key === 'volume') return a.cost - b.cost; // Cheapest first
+           if (strat.key === 'profit') return b.margin - a.margin; // Highest margin first
+           return 0; // No sort for balanced (round robin)
+        });
+
+        if (strat.key === 'balanced') {
+           // Allocate 1/3 budget to each (simplification)
+           const splitBudget = mixBudget / IMPORT_CANDIDATES.length;
+           IMPORT_CANDIDATES.forEach(prod => {
+              const qty = Math.floor(splitBudget / prod.cost);
+              const cost = qty * prod.cost;
+              const rev = qty * prod.price;
+              const profit = rev - cost; // Simple gross profit
+              totalRevenue += rev;
+              totalProfit += profit;
+              totalUnits += qty;
+              mix[prod.name] = qty;
+           });
+        } else {
+           // Fill bucket
+           sortedCandidates.forEach(prod => {
+              const maxAffordable = Math.floor(remainingBudget / prod.cost);
+              // Cap at mock demand or budget
+              const qty = Math.min(maxAffordable, prod.demand); 
+              
+              const cost = qty * prod.cost;
+              remainingBudget -= cost;
+              
+              const rev = qty * prod.price;
+              const profit = rev - cost;
+              
+              totalRevenue += rev;
+              totalProfit += profit;
+              totalUnits += qty;
+              mix[prod.name] = qty;
+           });
+        }
+
+        return {
+           name: strat.name,
+           key: strat.key,
+           Revenue: totalRevenue,
+           Profit: totalProfit,
+           Units: totalUnits,
+           color: strat.color,
+           mix
+        };
+     });
+
+     return results;
+  }, [mixBudget]);
+
+  const chartColors = ['#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4'];
 
   return (
     <div className="space-y-6">
@@ -1114,45 +1284,360 @@ const AccountingPortal: React.FC<AccountingPortalProps> = ({ data, onOpenAI, isD
       )}
 
       {activeTab === 'analysis' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
-                  <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Financial Ratios</h3>
-                  <div className="space-y-4">
-                      <div className="flex justify-between p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
-                          <span className="text-gray-600 dark:text-gray-300">Current Ratio</span>
-                          <span className="font-bold text-gray-900 dark:text-white">{currentRatio}</span>
+          <div className="space-y-6">
+             {/* 1. SELECTION BAR */}
+             <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                   <div>
+                      <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                         <BarChart2 className="w-6 h-6 text-indigo-600" /> Multi-Variable Ad-hoc Analysis
+                      </h3>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Select metrics across departments to correlate trends and performance.</p>
+                   </div>
+                   <button 
+                      onClick={() => setShowForecast(!showForecast)}
+                      className={`px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-colors ${showForecast ? 'bg-indigo-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'}`}
+                   >
+                      <Target className="w-4 h-4" /> {showForecast ? 'Hide Forecast' : 'Project Future (Linear)'}
+                   </button>
+                </div>
+                
+                <div className="flex flex-wrap gap-2">
+                   {CROSS_DEPT_METRICS.map(metric => {
+                      const isSelected = selectedMetricIds.includes(metric.id);
+                      return (
+                         <button
+                            key={metric.id}
+                            onClick={() => toggleMetric(metric.id)}
+                            className={`px-3 py-2 rounded-lg text-xs font-bold border transition-all flex items-center gap-2 ${
+                               isSelected 
+                               ? 'bg-indigo-50 border-indigo-500 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400' 
+                               : 'bg-gray-50 border-gray-200 text-gray-600 dark:bg-gray-900/50 dark:border-gray-700 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                            }`}
+                         >
+                            {isSelected && <CheckCircle2 className="w-3 h-3" />}
+                            {metric.name} <span className="opacity-50 text-[10px] uppercase">({metric.dept})</span>
+                         </button>
+                      );
+                   })}
+                </div>
+             </div>
+
+             {/* 2. MAIN VISUALIZATION */}
+             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2 bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 h-[400px]">
+                   <h4 className="font-bold text-gray-900 dark:text-white mb-4">Trend Visualization</h4>
+                   <ResponsiveContainer width="100%" height="100%">
+                      <ComposedChart data={chartData} margin={{ top: 20, right: 30, left: 0, bottom: 20 }}>
+                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDarkMode ? '#374151' : '#e5e7eb'} />
+                         <XAxis dataKey="name" tick={{fontSize: 12}} />
+                         <YAxis tick={{fontSize: 12}} />
+                         <RechartsTooltip 
+                            contentStyle={tooltipStyle}
+                            itemStyle={itemStyle} 
+                         />
+                         <Legend />
+                         {selectedMetricIds.map((id, index) => {
+                            const metric = CROSS_DEPT_METRICS.find(m => m.id === id);
+                            const color = chartColors[index % chartColors.length];
+                            if (!metric) return null;
+                            // Use Bar for single selection, Lines for comparison
+                            if (selectedMetricIds.length === 1 && !showForecast) {
+                               return <Bar key={id} dataKey={metric.name} fill={color} radius={[4,4,0,0]} />;
+                            }
+                            return <Line key={id} type="monotone" dataKey={metric.name} stroke={color} strokeWidth={3} dot={{r:4}} strokeDasharray={showForecast ? undefined : undefined} />;
+                         })}
+                      </ComposedChart>
+                   </ResponsiveContainer>
+                </div>
+
+                {/* 3. STATISTICAL SUMMARY CARDS */}
+                <div className="space-y-4">
+                   {stats && (
+                      <>
+                         <div className="bg-indigo-600 text-white p-5 rounded-2xl shadow-lg">
+                            <p className="text-indigo-200 text-xs font-bold uppercase mb-1">Aggregated Value (Sum)</p>
+                            <h3 className="text-3xl font-bold">Bir {stats.sum.toLocaleString()}</h3>
+                            <div className="mt-4 flex gap-4 text-xs">
+                               <div>
+                                  <span className="block opacity-70">Min</span>
+                                  <span className="font-bold">{stats.min.toLocaleString()}</span>
+                               </div>
+                               <div>
+                                  <span className="block opacity-70">Max</span>
+                                  <span className="font-bold">{stats.max.toLocaleString()}</span>
+                               </div>
+                            </div>
+                         </div>
+                         
+                         <div className="bg-white dark:bg-gray-800 p-5 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 flex items-center justify-between">
+                            <div>
+                               <p className="text-gray-500 text-xs font-bold uppercase">Average (Mean)</p>
+                               <p className="text-xl font-bold text-gray-900 dark:text-white">Bir {Math.round(stats.avg).toLocaleString()}</p>
+                            </div>
+                            <div className="bg-blue-100 dark:bg-blue-900/30 p-2 rounded-lg">
+                               <Divide className="w-5 h-5 text-blue-600" />
+                            </div>
+                         </div>
+
+                         <div className="bg-white dark:bg-gray-800 p-5 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 flex items-center justify-between">
+                            <div>
+                               <p className="text-gray-500 text-xs font-bold uppercase">Volatility (StdDev)</p>
+                               <p className="text-xl font-bold text-gray-900 dark:text-white">± {Math.round(stats.stdDev).toLocaleString()}</p>
+                            </div>
+                            <div className="bg-purple-100 dark:bg-purple-900/30 p-2 rounded-lg">
+                               <Sigma className="w-5 h-5 text-purple-600" />
+                            </div>
+                         </div>
+                      </>
+                   )}
+                   {!stats && (
+                      <div className="h-full flex flex-col items-center justify-center text-gray-400 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-2xl">
+                         <GitCommit className="w-8 h-8 mb-2" />
+                         <p className="text-sm">Select metrics to analyze</p>
                       </div>
-                      <div className="flex justify-between p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
-                          <span className="text-gray-600 dark:text-gray-300">Quick Ratio</span>
-                          <span className="font-bold text-gray-900 dark:text-white">{quickRatio}</span>
+                   )}
+                </div>
+             </div>
+
+             {/* 4. ACCOUNTING SPECIFIC METRICS */}
+             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="bg-emerald-50 dark:bg-emerald-900/20 p-5 rounded-2xl border border-emerald-100 dark:border-emerald-800">
+                   <div className="flex justify-between items-start mb-2">
+                      <p className="text-emerald-700 dark:text-emerald-300 text-xs font-bold uppercase">Gross Margin</p>
+                      <Activity className="w-4 h-4 text-emerald-600" />
+                   </div>
+                   <h3 className="text-2xl font-bold text-emerald-900 dark:text-emerald-100">{accountingRatios.grossMargin.toFixed(1)}%</h3>
+                   <p className="text-xs text-emerald-600 mt-1">Revenue vs COGS</p>
+                </div>
+
+                <div className="bg-blue-50 dark:bg-blue-900/20 p-5 rounded-2xl border border-blue-100 dark:border-blue-800">
+                   <div className="flex justify-between items-start mb-2">
+                      <p className="text-blue-700 dark:text-blue-300 text-xs font-bold uppercase">Net Profit Margin</p>
+                      <Zap className="w-4 h-4 text-blue-600" />
+                   </div>
+                   <h3 className="text-2xl font-bold text-blue-900 dark:text-blue-100">{accountingRatios.netMargin.toFixed(1)}%</h3>
+                   <p className="text-xs text-blue-600 mt-1">After Op. Expenses</p>
+                </div>
+
+                <div className="bg-orange-50 dark:bg-orange-900/20 p-5 rounded-2xl border border-orange-100 dark:border-orange-800">
+                   <div className="flex justify-between items-start mb-2">
+                      <p className="text-orange-700 dark:text-orange-300 text-xs font-bold uppercase">Operating Ratio</p>
+                      <Scale className="w-4 h-4 text-orange-600" />
+                   </div>
+                   <h3 className="text-2xl font-bold text-orange-900 dark:text-orange-100">{accountingRatios.opRatio.toFixed(1)}%</h3>
+                   <p className="text-xs text-orange-600 mt-1">Op. Expenses / Revenue</p>
+                </div>
+
+                <div className="bg-gray-50 dark:bg-gray-800 p-5 rounded-2xl border border-gray-200 dark:border-gray-700">
+                   <div className="flex justify-between items-start mb-2">
+                      <p className="text-gray-500 dark:text-gray-400 text-xs font-bold uppercase">Net Profit Value</p>
+                      <DollarSign className="w-4 h-4 text-gray-400" />
+                   </div>
+                   <h3 className="text-2xl font-bold text-gray-900 dark:text-white">Bir {accountingRatios.netProfit.toLocaleString()}</h3>
+                   <p className="text-xs text-gray-500 mt-1">Latest Period</p>
+                </div>
+             </div>
+
+             {/* 5. PRICE SENSITIVITY & PROFIT SIMULATOR */}
+             <div className="border-t border-gray-200 dark:border-gray-700 pt-8 mt-4">
+                <div className="flex items-center gap-2 mb-6">
+                   <TrendingUp className="w-6 h-6 text-indigo-600" />
+                   <div>
+                      <h3 className="text-xl font-bold text-gray-900 dark:text-white">Price Sensitivity & Profit Simulator</h3>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Simulate how tax burdens and profit margins affect final price and projected demand.</p>
+                   </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                   <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 space-y-5">
+                      <h4 className="font-bold text-gray-800 dark:text-white mb-2">Simulation Parameters</h4>
+                      <div>
+                         <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Base Product Cost</label>
+                         <input type="number" value={priceSimInputs.baseCost} onChange={e => setPriceSimInputs({...priceSimInputs, baseCost: Number(e.target.value)})} className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-600 rounded-lg outline-none text-gray-900 dark:text-white" />
                       </div>
-                      <div className="flex justify-between p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
-                          <span className="text-gray-600 dark:text-gray-300">Cash Ratio</span>
-                          <span className="font-bold text-gray-900 dark:text-white">{cashRatio}</span>
+                      <div>
+                         <label className="block text-xs font-semibold text-gray-500 uppercase mb-1 flex justify-between">
+                            <span>Tax Burden (VAT/Duty)</span>
+                            <span className="text-indigo-600 font-bold">{priceSimInputs.taxRate}%</span>
+                         </label>
+                         <input type="range" min="0" max="50" value={priceSimInputs.taxRate} onChange={e => setPriceSimInputs({...priceSimInputs, taxRate: Number(e.target.value)})} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600" />
                       </div>
-                  </div>
-              </div>
-              <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
-                  <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">DuPont Analysis</h3>
-                   <div className="space-y-4">
-                      <div className="flex justify-between p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
-                          <span className="text-gray-600 dark:text-gray-300">Profit Margin</span>
-                          <span className="font-bold text-gray-900 dark:text-white">{profitMargin.toFixed(2)}%</span>
+                      <div>
+                         <label className="block text-xs font-semibold text-gray-500 uppercase mb-1 flex justify-between">
+                            <span>Target Profit Margin</span>
+                            <span className="text-indigo-600 font-bold">{priceSimInputs.targetMargin}%</span>
+                         </label>
+                         <input type="range" min="5" max="50" value={priceSimInputs.targetMargin} onChange={e => setPriceSimInputs({...priceSimInputs, targetMargin: Number(e.target.value)})} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600" />
                       </div>
-                      <div className="flex justify-between p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
-                          <span className="text-gray-600 dark:text-gray-300">Asset Turnover</span>
-                          <span className="font-bold text-gray-900 dark:text-white">{assetTurnover.toFixed(2)}</span>
+                      <div>
+                         <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Market Elasticity (Price Sensitivity)</label>
+                         <select value={priceSimInputs.elasticity} onChange={e => setPriceSimInputs({...priceSimInputs, elasticity: Number(e.target.value)})} className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-600 rounded-lg outline-none text-gray-900 dark:text-white text-sm">
+                            <option value="0.5">Low (Inelastic Demand)</option>
+                            <option value="1">Medium (Unitary)</option>
+                            <option value="1.5">High (Elastic Demand)</option>
+                            <option value="2">Very High (Luxury Goods)</option>
+                         </select>
                       </div>
-                      <div className="flex justify-between p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
-                          <span className="text-gray-600 dark:text-gray-300">Financial Leverage</span>
-                          <span className="font-bold text-gray-900 dark:text-white">{financialLeverage.toFixed(2)}</span>
+                      <div className="pt-2">
+                         <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Base Demand (at 20% Margin, 15% Tax)</label>
+                         <input type="number" value={priceSimInputs.baseDemand} onChange={e => setPriceSimInputs({...priceSimInputs, baseDemand: Number(e.target.value)})} className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-600 rounded-lg outline-none text-gray-900 dark:text-white" />
+                         <p className="text-[10px] text-gray-400 mt-1">Note: Increasing tax or margin beyond baseline will reduce projected demand.</p>
                       </div>
-                      <div className="pt-2 border-t border-gray-200 dark:border-gray-700 flex justify-between">
-                          <span className="font-bold text-gray-900 dark:text-white">ROE</span>
-                          <span className="font-bold text-indigo-600 dark:text-indigo-400">{roe.toFixed(2)}%</span>
+                   </div>
+
+                   <div className="lg:col-span-2 bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col">
+                      <h4 className="font-bold text-gray-800 dark:text-white mb-4">Projected Outcomes vs Margin %</h4>
+                      <div className="flex-1 h-[300px]">
+                         <ResponsiveContainer width="100%" height="100%">
+                            <ComposedChart data={priceSimulationData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDarkMode ? '#374151' : '#e5e7eb'} />
+                               <XAxis dataKey="margin" label={{ value: 'Margin %', position: 'insideBottom', offset: -5 }} />
+                               <YAxis yAxisId="left" orientation="left" stroke="#82ca9d" />
+                               <YAxis yAxisId="right" orientation="right" stroke="#8884d8" />
+                               <RechartsTooltip contentStyle={tooltipStyle} itemStyle={itemStyle} />
+                               <Legend />
+                               <Area yAxisId="left" type="monotone" dataKey="revenue" fill="#82ca9d" stroke="#82ca9d" fillOpacity={0.3} name="Total Revenue" />
+                               <Line yAxisId="right" type="monotone" dataKey="profit" stroke="#8884d8" strokeWidth={3} name="Projected Profit" />
+                               <Scatter yAxisId="right" dataKey="profit" fill="red" />
+                               {/* Reference Line for Target Margin */}
+                               <ReferenceLine x={priceSimInputs.targetMargin} stroke="red" label="Target" strokeDasharray="3 3" />
+                            </ComposedChart>
+                         </ResponsiveContainer>
                       </div>
-                  </div>
-              </div>
+                      <div className="grid grid-cols-3 gap-4 mt-4">
+                         <div className="bg-gray-50 dark:bg-gray-900/50 p-3 rounded-lg text-center">
+                            <p className="text-xs text-gray-500 uppercase">Final Unit Price</p>
+                            <p className="font-bold text-gray-900 dark:text-white">
+                               Bir {Math.round(priceSimInputs.baseCost * (1 + priceSimInputs.targetMargin/100) * (1 + priceSimInputs.taxRate/100)).toLocaleString()}
+                            </p>
+                         </div>
+                         <div className="bg-gray-50 dark:bg-gray-900/50 p-3 rounded-lg text-center">
+                            <p className="text-xs text-gray-500 uppercase">Est. Demand (Units)</p>
+                            {(() => {
+                               // Recalculate demand specifically for the summary card using the fixed baseline logic
+                               const standardMargin = 20; 
+                               const standardTaxRate = 15;
+                               const baselinePrice = priceSimInputs.baseCost * (1 + standardMargin / 100) * (1 + standardTaxRate / 100);
+                               const currentPrice = priceSimInputs.baseCost * (1 + priceSimInputs.targetMargin / 100) * (1 + priceSimInputs.taxRate / 100);
+                               const priceChangePct = (currentPrice - baselinePrice) / baselinePrice;
+                               const demandChangePct = priceChangePct * priceSimInputs.elasticity * -1;
+                               const demand = Math.max(0, Math.round(priceSimInputs.baseDemand * (1 + demandChangePct)));
+                               
+                               return (
+                                  <p className={`font-bold ${demand < priceSimInputs.baseDemand ? 'text-red-500' : 'text-blue-600'}`}>
+                                     {demand}
+                                  </p>
+                               );
+                            })()}
+                         </div>
+                         <div className="bg-gray-50 dark:bg-gray-900/50 p-3 rounded-lg text-center">
+                            <p className="text-xs text-gray-500 uppercase">Profit Multiplier</p>
+                            <p className="font-bold text-green-600">
+                               {priceSimInputs.targetMargin}%
+                            </p>
+                         </div>
+                      </div>
+                   </div>
+                </div>
+             </div>
+
+             {/* 6. IMPORT PRODUCT MIX OPTIMIZER */}
+             <div className="border-t border-gray-200 dark:border-gray-700 pt-8 mt-4">
+                <div className="flex items-center gap-2 mb-6">
+                   <Coins className="w-6 h-6 text-emerald-600" />
+                   <div>
+                      <h3 className="text-xl font-bold text-gray-900 dark:text-white">Import Product Mix Optimizer</h3>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Determine the optimal product combination to maximize returns given a limited budget.</p>
+                   </div>
+                </div>
+
+                <div className="bg-emerald-900 text-white p-6 rounded-2xl shadow-lg mb-8">
+                   <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+                      <div className="flex-1 w-full">
+                         <label className="text-emerald-200 text-xs font-bold uppercase tracking-wider mb-2 block">Total Import Budget</label>
+                         <div className="flex items-center gap-4">
+                            <input 
+                               type="range" 
+                               min="100000" 
+                               max="5000000" 
+                               step="50000" 
+                               value={mixBudget} 
+                               onChange={(e) => setMixBudget(Number(e.target.value))} 
+                               className="w-full h-3 bg-emerald-700 rounded-lg appearance-none cursor-pointer accent-white" 
+                            />
+                            <span className="font-mono text-2xl font-bold whitespace-nowrap">Bir {mixBudget.toLocaleString()}</span>
+                         </div>
+                      </div>
+                      <div className="flex gap-4">
+                         <div className="bg-emerald-800/50 p-4 rounded-xl border border-emerald-700 min-w-[120px]">
+                            <p className="text-xs text-emerald-300 uppercase">Candidates</p>
+                            <p className="text-xl font-bold">{IMPORT_CANDIDATES.length} Items</p>
+                         </div>
+                      </div>
+                   </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                   {/* Comparison Chart */}
+                   <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
+                      <h4 className="font-bold text-gray-800 dark:text-white mb-4">Strategy Outcomes Comparison</h4>
+                      <div className="h-[300px]">
+                         <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={mixSimulationData} layout="vertical" margin={{top: 5, right: 30, left: 20, bottom: 5}}>
+                               <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke={isDarkMode ? '#374151' : '#e5e7eb'} />
+                               <XAxis type="number" hide />
+                               <YAxis dataKey="name" type="category" width={100} tick={{fontSize: 12}} />
+                               <RechartsTooltip cursor={{fill: 'transparent'}} contentStyle={tooltipStyle} itemStyle={itemStyle} />
+                               <Legend />
+                               <Bar dataKey="Revenue" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={20} />
+                               <Bar dataKey="Profit" fill="#10b981" radius={[0, 4, 4, 0]} barSize={20} />
+                            </BarChart>
+                         </ResponsiveContainer>
+                      </div>
+                   </div>
+
+                   {/* Recommended Mix Table (Using the 'Profit First' strategy as default recommendation) */}
+                   <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col">
+                      <h4 className="font-bold text-gray-800 dark:text-white mb-4 flex items-center justify-between">
+                         <span>Recommended Order Mix</span>
+                         <span className="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-2 py-1 rounded">Based on Profit Maximization</span>
+                      </h4>
+                      <div className="flex-1 overflow-auto">
+                         <table className="w-full text-sm text-left">
+                            <thead className="text-xs text-gray-500 uppercase bg-gray-50 dark:bg-gray-700/50">
+                               <tr>
+                                  <th className="px-4 py-2">Product</th>
+                                  <th className="px-4 py-2 text-right">Unit Cost</th>
+                                  <th className="px-4 py-2 text-right">Suggested Qty</th>
+                                  <th className="px-4 py-2 text-right">Total Cost</th>
+                               </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                               {Object.entries(mixSimulationData.find(s => s.key === 'profit')?.mix || {}).map(([name, qty], idx) => {
+                                  if (qty === 0) return null;
+                                  const product = IMPORT_CANDIDATES.find(p => p.name === name);
+                                  return (
+                                     <tr key={idx}>
+                                        <td className="px-4 py-2 font-medium text-gray-900 dark:text-white">{name}</td>
+                                        <td className="px-4 py-2 text-right text-gray-500">Bir {product?.cost.toLocaleString()}</td>
+                                        <td className="px-4 py-2 text-right font-bold text-indigo-600 dark:text-indigo-400">{qty}</td>
+                                        <td className="px-4 py-2 text-right">Bir {((product?.cost || 0) * qty).toLocaleString()}</td>
+                                     </tr>
+                                  );
+                               })}
+                            </tbody>
+                         </table>
+                      </div>
+                      <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700 flex justify-between items-center text-sm">
+                         <span className="text-gray-500">Projected Net Profit:</span>
+                         <span className="font-bold text-xl text-green-600">
+                            Bir {mixSimulationData.find(s => s.key === 'profit')?.Profit.toLocaleString()}
+                         </span>
+                      </div>
+                   </div>
+                </div>
+             </div>
           </div>
       )}
 
