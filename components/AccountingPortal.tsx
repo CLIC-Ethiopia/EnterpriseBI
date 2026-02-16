@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
-  BarChart, Bar, Legend, Cell, PieChart, Pie, ComposedChart, Line, Scatter, ReferenceLine
+  BarChart, Bar, Legend, Cell, PieChart, Pie, ComposedChart, Line, Scatter
 } from 'recharts';
 import ExecutiveReporting from './ExecutiveReporting';
 
@@ -543,32 +543,28 @@ const AccountingPortal: React.FC<AccountingPortalProps> = ({ data, onOpenAI, isD
     const { baseCost, taxRate, elasticity, baseDemand } = priceSimInputs;
     const dataPoints = [];
     
-    // Fixed Market Baseline: The "Norm" against which elasticity is measured.
-    // We assume the user's baseDemand (e.g. 500) is valid at a "Standard" 20% margin and 15% tax.
-    const standardMargin = 20; 
-    const standardTaxRate = 15;
-    const baselinePrice = baseCost * (1 + standardMargin / 100) * (1 + standardTaxRate / 100);
-
     // Simulate from 5% margin to 50% margin
     for (let m = 5; m <= 50; m += 5) {
        const taxMultiplier = 1 + (taxRate / 100);
        const price = baseCost * (1 + m / 100) * taxMultiplier;
        
-       // Calculate new demand based on price elasticity (relative to the Standard Baseline)
+       // Calculate new demand based on price elasticity
+       // Base Scenario: 20% margin is the baseline
+       const baselinePrice = baseCost * 1.2 * taxMultiplier;
        const priceChangePct = (price - baselinePrice) / baselinePrice;
-       // Elasticity formula: %ChangeDemand = Elasticity * %ChangePrice * -1
        const demandChangePct = priceChangePct * elasticity * -1;
-       const projectedDemand = Math.max(0, Math.round(baseDemand * (1 + demandChangePct)));
+       const projectedDemand = Math.max(0, baseDemand * (1 + demandChangePct));
        
        // Profit Calc: (Price w/o Tax - Cost) * Demand
-       const revenue = (price / taxMultiplier) * projectedDemand; // Net Sales (Excl Tax)
+       // Note: Tax is passthrough, usually doesn't affect profit per unit directly, but affects price which affects demand
+       const revenue = (price / taxMultiplier) * projectedDemand; // Net Sales
        const costTotal = baseCost * projectedDemand;
        const profit = revenue - costTotal;
 
        dataPoints.push({
           margin: m,
           price: Math.round(price),
-          demand: projectedDemand,
+          demand: Math.round(projectedDemand),
           revenue: Math.round(revenue),
           profit: Math.round(profit)
        });
@@ -1479,11 +1475,6 @@ const AccountingPortal: React.FC<AccountingPortalProps> = ({ data, onOpenAI, isD
                             <option value="2.0">Very High (Luxury Goods)</option>
                          </select>
                       </div>
-                      <div className="pt-2">
-                         <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Base Demand (at 20% Margin, 15% Tax)</label>
-                         <input type="number" value={priceSimInputs.baseDemand} onChange={e => setPriceSimInputs({...priceSimInputs, baseDemand: Number(e.target.value)})} className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-600 rounded-lg outline-none text-gray-900 dark:text-white" />
-                         <p className="text-[10px] text-gray-400 mt-1">Note: Increasing tax or margin beyond baseline will reduce projected demand.</p>
-                      </div>
                    </div>
 
                    <div className="lg:col-span-2 bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col">
@@ -1500,8 +1491,6 @@ const AccountingPortal: React.FC<AccountingPortalProps> = ({ data, onOpenAI, isD
                                <Area yAxisId="left" type="monotone" dataKey="revenue" fill="#82ca9d" stroke="#82ca9d" fillOpacity={0.3} name="Total Revenue" />
                                <Line yAxisId="right" type="monotone" dataKey="profit" stroke="#8884d8" strokeWidth={3} name="Projected Profit" />
                                <Scatter yAxisId="right" dataKey="profit" fill="red" />
-                               {/* Reference Line for Target Margin */}
-                               <ReferenceLine x={priceSimInputs.targetMargin} stroke="red" label="Target" strokeDasharray="3 3" />
                             </ComposedChart>
                          </ResponsiveContainer>
                       </div>
@@ -1514,22 +1503,9 @@ const AccountingPortal: React.FC<AccountingPortalProps> = ({ data, onOpenAI, isD
                          </div>
                          <div className="bg-gray-50 dark:bg-gray-900/50 p-3 rounded-lg text-center">
                             <p className="text-xs text-gray-500 uppercase">Est. Demand (Units)</p>
-                            {(() => {
-                               // Recalculate demand specifically for the summary card using the fixed baseline logic
-                               const standardMargin = 20; 
-                               const standardTaxRate = 15;
-                               const baselinePrice = priceSimInputs.baseCost * (1 + standardMargin / 100) * (1 + standardTaxRate / 100);
-                               const currentPrice = priceSimInputs.baseCost * (1 + priceSimInputs.targetMargin / 100) * (1 + priceSimInputs.taxRate / 100);
-                               const priceChangePct = (currentPrice - baselinePrice) / baselinePrice;
-                               const demandChangePct = priceChangePct * priceSimInputs.elasticity * -1;
-                               const demand = Math.max(0, Math.round(priceSimInputs.baseDemand * (1 + demandChangePct)));
-                               
-                               return (
-                                  <p className={`font-bold ${demand < priceSimInputs.baseDemand ? 'text-red-500' : 'text-blue-600'}`}>
-                                     {demand}
-                                  </p>
-                               );
-                            })()}
+                            <p className="font-bold text-blue-600">
+                               {Math.round(priceSimInputs.baseDemand * (1 - (priceSimInputs.elasticity * ((priceSimInputs.targetMargin - 20)/100))))}
+                            </p>
                          </div>
                          <div className="bg-gray-50 dark:bg-gray-900/50 p-3 rounded-lg text-center">
                             <p className="text-xs text-gray-500 uppercase">Profit Multiplier</p>
